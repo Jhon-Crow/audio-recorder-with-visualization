@@ -518,6 +518,13 @@
         document.querySelector('.progress-bar').style.display = 'block';
         updateStatus('Converting audio to video...', 'recording');
 
+        // Pause AudioRecorder visualization during conversion to prevent flickering
+        // (both would draw to the same canvas causing visual artifacts)
+        const wasVisualizationActive = recorder.isVisualizationActive;
+        if (wasVisualizationActive) {
+          recorder.stopVisualization();
+        }
+
         try {
           const blob = await converter.convert({
             audioSource: file,
@@ -541,6 +548,11 @@
           convertBtn.disabled = false;
           document.querySelector('.progress-bar').style.display = 'none';
           progressFill.style.width = '0%';
+
+          // Resume AudioRecorder visualization if it was active before conversion
+          if (wasVisualizationActive && recorder.sourceType) {
+            recorder.resumeVisualization();
+          }
         }
       });
 

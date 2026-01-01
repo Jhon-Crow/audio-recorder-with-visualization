@@ -131,6 +131,7 @@ recorder.cancelRecording(): void
 recorder.setVisualizer(visualizer: Visualizer | string, options?: VisualizerOptions): void
 recorder.setVisualizerOptions(options: Partial<VisualizerOptions>): void
 recorder.stopVisualization(): void
+recorder.resumeVisualization(): void  // Resume after stopVisualization (e.g., during conversion)
 
 // Properties
 recorder.recordingState: 'inactive' | 'recording' | 'paused'

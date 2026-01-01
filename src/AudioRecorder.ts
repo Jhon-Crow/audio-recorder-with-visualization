@@ -242,6 +242,17 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
+   * Resume visualization loop
+   * Use this to restart visualization after it was stopped (e.g., during audio-to-video conversion)
+   * Only works if an audio source is connected
+   */
+  resumeVisualization(): void {
+    if (this._sourceType !== null) {
+      this.startVisualization();
+    }
+  }
+
+  /**
    * Draw a single visualization frame
    */
   private drawFrame(timestamp: number): void {
