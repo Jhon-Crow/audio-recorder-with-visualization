@@ -123,6 +123,18 @@ export class AudioAnalyzer {
     if (this.analyzerNode) {
       this.analyzerNode.disconnect();
     }
+    // Clear the audio data buffers to show silence when disconnected
+    this.clearAudioData();
+  }
+
+  /**
+   * Clear audio data buffers (fill with silence)
+   */
+  private clearAudioData(): void {
+    // Fill with 128 for time domain (represents silence in Uint8Array)
+    this.timeDomainData.fill(128);
+    // Fill with 0 for frequency domain (no frequencies)
+    this.frequencyData.fill(0);
   }
 
   /**
