@@ -44,6 +44,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private audioElement: HTMLAudioElement | null = null;
   private _sourceType: AudioSourceType | null = null;
   private debug: boolean;
+  private _readyPromise: Promise<void>;
 
   constructor(config: AudioRecorderConfig) {
     super();
@@ -104,8 +105,18 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       this.visualizer = new BarVisualizer(config.visualizerOptions);
     }
 
-    this.visualizer.init(this.canvas, config.visualizerOptions);
+    // Initialize visualizer and store the ready promise
+    const initResult = this.visualizer.init(this.canvas, config.visualizerOptions);
+    this._readyPromise = initResult instanceof Promise ? initResult : Promise.resolve();
     this.log('AudioRecorder initialized');
+  }
+
+  /**
+   * Wait for the AudioRecorder to be fully ready (including image loading)
+   * Call this before starting visualization if using background/foreground images
+   */
+  async ready(): Promise<void> {
+    return this._readyPromise;
   }
 
   private log(...args: unknown[]): void {
@@ -304,8 +315,9 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
 
   /**
    * Change visualizer
+   * @returns Promise that resolves when the new visualizer is fully initialized
    */
-  setVisualizer(visualizer: Visualizer | string, options?: VisualizerOptions): void {
+  async setVisualizer(visualizer: Visualizer | string, options?: VisualizerOptions): Promise<void> {
     this.visualizer.destroy();
 
     if (typeof visualizer === 'string') {
@@ -314,7 +326,10 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       this.visualizer = visualizer;
     }
 
-    this.visualizer.init(this.canvas, options);
+    // Wait for visualizer initialization (including image loading) to prevent flickering
+    const initResult = this.visualizer.init(this.canvas, options);
+    this._readyPromise = initResult instanceof Promise ? initResult : Promise.resolve();
+    await this._readyPromise;
     this.emit('visualizer:change', this.visualizer);
     this.log('Changed visualizer to:', this.visualizer.name);
   }

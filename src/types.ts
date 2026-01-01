@@ -35,8 +35,9 @@ export interface Visualizer {
    * Initialize the visualizer
    * @param canvas - The canvas element to draw on
    * @param options - Optional configuration options
+   * @returns Promise that resolves when initialization is complete (including image loading)
    */
-  init(canvas: HTMLCanvasElement, options?: VisualizerOptions): void;
+  init(canvas: HTMLCanvasElement, options?: VisualizerOptions): void | Promise<void>;
 
   /**
    * Draw a single frame of visualization

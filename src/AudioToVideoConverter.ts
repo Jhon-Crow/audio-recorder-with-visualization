@@ -107,7 +107,8 @@ export class AudioToVideoConverter {
     } else {
       visualizer = new BarVisualizer(visualizerOptions);
     }
-    visualizer.init(canvas, visualizerOptions);
+    // Wait for visualizer initialization (including image loading) to prevent flickering
+    await visualizer.init(canvas, visualizerOptions);
 
     // Create audio element
     const audioElement = new Audio();
