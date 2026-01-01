@@ -1,0 +1,68 @@
+{
+  "name": "audio-recorder-with-visualization",
+  "version": "1.0.0",
+  "description": "Audio visualization from microphone with simultaneous recording (audio + visualization) to video (MP4). Supports different visualizations, images/GIFs, and is designed for extensibility and maximum performance.",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit",
+    "serve": "http-server examples -o -c-1",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "audio",
+    "visualization",
+    "recorder",
+    "video",
+    "mp4",
+    "webm",
+    "canvas",
+    "microphone",
+    "web-audio-api",
+    "mediarecorder",
+    "gif",
+    "waveform",
+    "spectrum",
+    "fft"
+  ],
+  "author": "",
+  "license": "Unlicense",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/jest": "^29.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "http-server": "^14.0.0",
+    "jest": "^29.0.0",
+    "jest-environment-jsdom": "^29.0.0",
+    "rollup": "^4.0.0",
+    "rollup-plugin-dts": "^6.0.0",
+    "ts-jest": "^29.0.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jhon-Crow/audio-recorder-with-visualization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

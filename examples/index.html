@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Recorder with Visualization</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(90deg, #00ff88, #0088ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    #visualizer {
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #00ff88, #00cc6a);
+      color: #000;
+    }
+
+    .btn-danger {
+      background: linear-gradient(90deg, #ff4444, #cc0000);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(90deg, #666, #444);
+      color: #fff;
+    }
+
+    .btn-info {
+      background: linear-gradient(90deg, #0088ff, #0066cc);
+      color: #fff;
+    }
+
+    .options {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .options h3 {
+      margin-top: 0;
+    }
+
+    .option-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .option-group label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .option-group select,
+    .option-group input[type="color"],
+    .option-group input[type="file"],
+    .option-group input[type="range"] {
+      padding: 8px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #222;
+      color: #fff;
+      min-width: 150px;
+    }
+
+    .status {
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .status.recording {
+      background: rgba(255, 0, 0, 0.2);
+      border: 1px solid #ff4444;
+    }
+
+    .status.ready {
+      background: rgba(0, 255, 136, 0.2);
+      border: 1px solid #00ff88;
+    }
+
+    .recordings {
+      margin-top: 30px;
+    }
+
+    .recordings h3 {
+      margin-bottom: 15px;
+    }
+
+    .recording-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .recording-item video {
+      max-width: 200px;
+      border-radius: 4px;
+    }
+
+    .recording-item a {
+      color: #00ff88;
+      text-decoration: none;
+    }
+
+    .recording-item a:hover {
+      text-decoration: underline;
+    }
+
+    .tab-container {
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 6px 6px 0 0;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: rgba(0, 255, 136, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 0 8px 8px 8px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #333;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #0088ff);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Audio Recorder with Visualization</h1>
+
+    <div class="canvas-container">
+      <canvas id="visualizer" width="800" height="400"></canvas>
+    </div>
+
+    <div id="status" class="status ready">Ready - Click "Start Microphone" to begin</div>
+
+    <div class="tab-container">
+      <div class="tabs">
+        <button class="tab active" data-tab="microphone">Microphone Recording</button>
+        <button class="tab" data-tab="convert">Audio to Video</button>
+      </div>
+
+      <div id="microphone" class="tab-content active">
+        <div class="controls">
+          <button id="startMic" class="btn-primary">Start Microphone</button>
+          <button id="stopMic" class="btn-secondary" disabled>Stop Microphone</button>
+          <button id="startRecord" class="btn-danger" disabled>Start Recording</button>
+          <button id="stopRecord" class="btn-secondary" disabled>Stop Recording</button>
+        </div>
+      </div>
+
+      <div id="convert" class="tab-content">
+        <div class="option-group">
+          <label>
+            Audio File
+            <input type="file" id="audioFile" accept="audio/*">
+          </label>
+        </div>
+        <div class="controls">
+          <button id="convertBtn" class="btn-info" disabled>Convert to Video</button>
+        </div>
+        <div class="progress-bar" style="display: none;">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="options">
+      <h3>Visualization Options</h3>
+      <div class="option-group">
+        <label>
+          Visualizer
+          <select id="visualizerSelect">
+            <option value="bars">Bars</option>
+            <option value="waveform">Waveform</option>
+            <option value="circular">Circular</option>
+            <option value="particles">Particles</option>
+          </select>
+        </label>
+        <label>
+          Primary Color
+          <input type="color" id="primaryColor" value="#00ff88">
+        </label>
+        <label>
+          Secondary Color
+          <input type="color" id="secondaryColor" value="#0088ff">
+        </label>
+        <label>
+          Background Color
+          <input type="color" id="bgColor" value="#000000">
+        </label>
+        <label>
+          Bar Count
+          <input type="range" id="barCount" min="16" max="256" value="64">
+        </label>
+        <label>
+          Background Image (optional)
+          <input type="file" id="bgImage" accept="image/*">
+        </label>
+      </div>
+      <div class="option-group">
+        <label>
+          <input type="checkbox" id="mirror"> Mirror
+        </label>
+      </div>
+    </div>
+
+    <div class="recordings" id="recordings">
+      <h3>Recordings</h3>
+      <div id="recordingsList"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import from built library (in real usage, you'd import from the npm package)
+    // For development, we'll use the UMD build
+  </script>
+  <script src="../dist/audio-recorder-visualization.umd.js"></script>
+  <script>
+    (async function() {
+      // Wait for library to load
+      await new Promise(resolve => {
+        if (window.AudioRecorderVisualization) {
+          resolve();
+        } else {
+          // Retry loading
+          const interval = setInterval(() => {
+            if (window.AudioRecorderVisualization) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        }
+      });
+
+      const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
+
+      // Elements
+      const canvas = document.getElementById('visualizer');
+      const status = document.getElementById('status');
+      const startMicBtn = document.getElementById('startMic');
+      const stopMicBtn = document.getElementById('stopMic');
+      const startRecordBtn = document.getElementById('startRecord');
+      const stopRecordBtn = document.getElementById('stopRecord');
+      const visualizerSelect = document.getElementById('visualizerSelect');
+      const primaryColor = document.getElementById('primaryColor');
+      const secondaryColor = document.getElementById('secondaryColor');
+      const bgColor = document.getElementById('bgColor');
+      const barCount = document.getElementById('barCount');
+      const bgImage = document.getElementById('bgImage');
+      const mirror = document.getElementById('mirror');
+      const recordingsList = document.getElementById('recordingsList');
+      const audioFile = document.getElementById('audioFile');
+      const convertBtn = document.getElementById('convertBtn');
+      const progressFill = document.getElementById('progressFill');
+
+      // Tab switching
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+      });
+
+      // Initialize AudioRecorder
+      const recorder = new AudioRecorder({
+        canvas,
+        fftSize: 2048,
+        fps: 30,
+        visualizer: 'bars',
+        visualizerOptions: {
+          primaryColor: '#00ff88',
+          secondaryColor: '#0088ff',
+          backgroundColor: '#000000',
+          barCount: 64,
+        },
+        debug: true,
+      });
+
+      // Initialize converter
+      const converter = new AudioToVideoConverter({ debug: true });
+
+      // Recording counter
+      let recordingCount = 0;
+
+      // Update status
+      function updateStatus(message, type = 'ready') {
+        status.textContent = message;
+        status.className = 'status ' + type;
+      }
+
+      // Start microphone
+      startMicBtn.addEventListener('click', async () => {
+        try {
+          await recorder.startMicrophone();
+          updateStatus('Microphone active - visualization running', 'ready');
+          startMicBtn.disabled = true;
+          stopMicBtn.disabled = false;
+          startRecordBtn.disabled = false;
+        } catch (error) {
+          updateStatus('Error: ' + error.message, 'error');
+          console.error(error);
+        }
+      });
+
+      // Stop microphone
+      stopMicBtn.addEventListener('click', () => {
+        recorder.stopMicrophone();
+        recorder.stopVisualization();
+        updateStatus('Microphone stopped', 'ready');
+        startMicBtn.disabled = false;
+        stopMicBtn.disabled = true;
+        startRecordBtn.disabled = true;
+      });
+
+      // Start recording
+      startRecordBtn.addEventListener('click', () => {
+        recorder.startRecording();
+        updateStatus('Recording...', 'recording');
+        startRecordBtn.disabled = true;
+        stopRecordBtn.disabled = false;
+      });
+
+      // Stop recording
+      stopRecordBtn.addEventListener('click', async () => {
+        try {
+          const blob = await recorder.stopRecording();
+          updateStatus('Recording saved!', 'ready');
+          startRecordBtn.disabled = false;
+          stopRecordBtn.disabled = true;
+
+          // Add to recordings list
+          addRecording(blob);
+        } catch (error) {
+          updateStatus('Error: ' + error.message, 'error');
+          console.error(error);
+        }
+      });
+
+      // Add recording to list
+      function addRecording(blob) {
+        recordingCount++;
+        const url = URL.createObjectURL(blob);
+        const item = document.createElement('div');
+        item.className = 'recording-item';
+        item.innerHTML = `
+          <video controls src="${url}" width="200"></video>
+          <div>
+            <p>Recording ${recordingCount}</p>
+            <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
+            <a href="${url}" download="recording-${recordingCount}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}">Download</a>
+          </div>
+        `;
+        recordingsList.appendChild(item);
+      }
+
+      // Visualizer change
+      visualizerSelect.addEventListener('change', () => {
+        recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
+      });
+
+      // Get current options
+      function getCurrentOptions() {
+        return {
+          primaryColor: primaryColor.value,
+          secondaryColor: secondaryColor.value,
+          backgroundColor: bgColor.value,
+          barCount: parseInt(barCount.value),
+          mirror: mirror.checked,
+        };
+      }
+
+      // Options change handlers
+      [primaryColor, secondaryColor, bgColor, barCount, mirror].forEach(el => {
+        el.addEventListener('input', () => {
+          recorder.setVisualizerOptions(getCurrentOptions());
+        });
+      });
+
+      // Background image
+      bgImage.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          recorder.setVisualizerOptions({ backgroundImage: url });
+        }
+      });
+
+      // Audio file for conversion
+      audioFile.addEventListener('change', () => {
+        convertBtn.disabled = !audioFile.files.length;
+      });
+
+      // Convert audio to video
+      convertBtn.addEventListener('click', async () => {
+        const file = audioFile.files[0];
+        if (!file) return;
+
+        convertBtn.disabled = true;
+        document.querySelector('.progress-bar').style.display = 'block';
+        updateStatus('Converting audio to video...', 'recording');
+
+        try {
+          const blob = await converter.convert({
+            audioSource: file,
+            canvas,
+            visualizer: visualizerSelect.value,
+            visualizerOptions: getCurrentOptions(),
+            fps: 30,
+            videoWidth: 800,
+            videoHeight: 400,
+            onProgress: (progress) => {
+              progressFill.style.width = (progress * 100) + '%';
+            },
+          });
+
+          updateStatus('Conversion complete!', 'ready');
+          addRecording(blob);
+        } catch (error) {
+          updateStatus('Error: ' + error.message, 'error');
+          console.error(error);
+        } finally {
+          convertBtn.disabled = false;
+          document.querySelector('.progress-bar').style.display = 'none';
+          progressFill.style.width = '0%';
+        }
+      });
+
+      // Show available visualizers in console
+      console.log('Available visualizers:', AudioRecorder.getAvailableVisualizers());
+      console.log('Supported formats:', AudioRecorder.getSupportedFormats());
+    })();
+  </script>
+</body>
+</html>
