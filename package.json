@@ -18,7 +18,11 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "typecheck": "tsc --noEmit",
     "serve": "http-server examples -o -c-1",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "electron": "electron .",
+    "electron:dev": "electron . --dev",
+    "electron:build": "npm run build && electron-builder --win portable",
+    "electron:build:all": "npm run build && electron-builder --win --mac --linux"
   },
   "keywords": [
     "audio",
@@ -45,6 +49,8 @@
     "@types/jest": "^29.5.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
     "eslint": "^8.0.0",
     "http-server": "^14.0.0",
     "jest": "^29.0.0",
@@ -64,5 +70,50 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "build": {
+    "appId": "com.audiorecorder.visualization",
+    "productName": "Audio Recorder with Visualization",
+    "directories": {
+      "output": "electron-dist"
+    },
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "files": [
+      "dist/**/*",
+      "examples/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "electron/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "electron/icon.icns"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "electron/icon.png"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.exe"
+    }
   }
 }
