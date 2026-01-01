@@ -85,6 +85,8 @@ export interface VisualizerOptions {
   backgroundImage?: HTMLImageElement | string;
   /** Foreground image or GIF */
   foregroundImage?: HTMLImageElement | string;
+  /** Foreground image opacity (0-1), default: 1 */
+  foregroundAlpha?: number;
   /** Custom options for specific visualizers */
   custom?: Record<string, unknown>;
 }

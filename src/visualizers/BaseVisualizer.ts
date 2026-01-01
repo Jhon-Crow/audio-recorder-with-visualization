@@ -25,6 +25,7 @@ export abstract class BaseVisualizer implements Visualizer {
       barGap: 0.2,
       mirror: false,
       smoothing: 0.8,
+      foregroundAlpha: 1,
       ...options,
     };
   }
@@ -132,7 +133,11 @@ export abstract class BaseVisualizer implements Visualizer {
    */
   protected drawForeground(ctx: CanvasRenderingContext2D, data: VisualizationData): void {
     if (this.foregroundImageElement) {
+      const alpha = this.options.foregroundAlpha ?? 1;
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = alpha;
       this.drawImageCover(ctx, this.foregroundImageElement, data.width, data.height);
+      ctx.globalAlpha = previousAlpha;
     }
   }
 
