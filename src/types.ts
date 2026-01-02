@@ -87,6 +87,8 @@ export interface VisualizerOptions {
   foregroundImage?: HTMLImageElement | string;
   /** Foreground image opacity (0-1), default: 1 */
   foregroundAlpha?: number;
+  /** Visualization opacity (0-1), default: 1 - controls transparency of waveforms, bars, particles, etc. */
+  visualizationAlpha?: number;
   /** Custom options for specific visualizers */
   custom?: Record<string, unknown>;
 }

@@ -28,6 +28,14 @@ export class WaveformVisualizer extends BaseVisualizer {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // Apply visualization alpha
+    const visualizationAlpha = this.options.visualizationAlpha ?? 1;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = visualizationAlpha;
+
+    // When mirror mode is enabled, each half uses half the height to stay centered
+    const amplitudeScale = this.options.mirror ? 0.5 : 1;
+
     // Draw waveform
     ctx.beginPath();
 
@@ -36,7 +44,7 @@ export class WaveformVisualizer extends BaseVisualizer {
 
     for (let i = 0; i < timeDomainData.length; i++) {
       const v = timeDomainData[i] / 128.0 - 1.0; // Normalize to -1 to 1
-      const y = height / 2 + (v * height) / 2; // Center around height/2
+      const y = height / 2 + (v * height * amplitudeScale) / 2; // Center around height/2
 
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -56,7 +64,7 @@ export class WaveformVisualizer extends BaseVisualizer {
 
       for (let i = 0; i < timeDomainData.length; i++) {
         const v = timeDomainData[i] / 128.0 - 1.0; // Normalize to -1 to 1
-        const y = height / 2 - (v * height) / 2; // Mirror around height/2
+        const y = height / 2 - (v * height * amplitudeScale) / 2; // Mirror around height/2
 
         if (i === 0) {
           ctx.moveTo(x, y);
@@ -67,10 +75,12 @@ export class WaveformVisualizer extends BaseVisualizer {
         x += sliceWidth;
       }
 
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = visualizationAlpha * 0.5;
       ctx.stroke();
-      ctx.globalAlpha = 1;
     }
+
+    // Restore previous alpha
+    ctx.globalAlpha = previousAlpha;
 
     // Draw foreground
     this.drawForeground(ctx, data);

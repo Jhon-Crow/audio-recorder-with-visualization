@@ -26,6 +26,7 @@ export abstract class BaseVisualizer implements Visualizer {
       mirror: false,
       smoothing: 0.8,
       foregroundAlpha: 1,
+      visualizationAlpha: 1,
       ...options,
     };
   }

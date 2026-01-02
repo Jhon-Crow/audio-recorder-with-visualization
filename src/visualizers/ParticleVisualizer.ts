@@ -133,7 +133,8 @@ export class ParticleVisualizer extends BaseVisualizer {
       }
 
       // Draw particle
-      const alpha = p.life;
+      const visualizationAlpha = this.options.visualizationAlpha ?? 1;
+      const alpha = p.life * visualizationAlpha;
       const radius = p.radius * (0.5 + p.life * 0.5);
 
       ctx.beginPath();
