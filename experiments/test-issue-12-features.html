@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Issue #12 Features</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+    h1 { color: #00ff88; }
+    h2 { color: #0088ff; margin-top: 30px; }
+    .test-section {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    canvas {
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #000;
+      display: block;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      background: linear-gradient(90deg, #00ff88, #00cc6a);
+      color: #000;
+    }
+    input[type="range"] {
+      width: 300px;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      background: rgba(0, 255, 136, 0.2);
+      border: 1px solid #00ff88;
+    }
+    .info {
+      background: rgba(0, 136, 255, 0.2);
+      border: 1px solid #0088ff;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Testing Issue #12 Features</h1>
+
+  <div class="info">
+    <strong>Feature 1:</strong> After download, folder with file should open (Electron only)<br>
+    <strong>Feature 2:</strong> When changing Bar Count slider, visualization should display for standard sound
+  </div>
+
+  <div class="test-section">
+    <h2>Feature 1: Open Folder After Download</h2>
+    <div id="electronStatus" class="status"></div>
+    <p>Instructions:</p>
+    <ol>
+      <li>Start recording by clicking "Start Microphone" then "Start Recording"</li>
+      <li>Stop recording after a few seconds</li>
+      <li>Click "Save and Show in Folder" button (in Electron)</li>
+      <li>Verify that a save dialog opens and after saving, the folder opens automatically</li>
+    </ol>
+  </div>
+
+  <div class="test-section">
+    <h2>Feature 2: Demo Visualization on Bar Count Change</h2>
+    <p>Instructions:</p>
+    <ol>
+      <li>Make sure microphone is NOT active</li>
+      <li>Move the "Bar Count" slider below</li>
+      <li>You should see an animated visualization appear for 1 second showing different bar counts</li>
+    </ol>
+    <label>
+      Bar Count:
+      <input type="range" id="barCount" min="16" max="256" value="64">
+      <span id="barCountValue">64</span>
+    </label>
+  </div>
+
+  <canvas id="visualizer" width="800" height="400"></canvas>
+
+  <div class="test-section">
+    <h2>Controls</h2>
+    <button id="startMic">Start Microphone</button>
+    <button id="stopMic" disabled>Stop Microphone</button>
+    <button id="startRecord" disabled>Start Recording</button>
+    <button id="stopRecord" disabled>Stop Recording</button>
+    <div id="recordingsList"></div>
+  </div>
+
+  <script src="../dist/audio-recorder-visualization.umd.js"></script>
+  <script>
+    (async function() {
+      // Check if running in Electron
+      const isElectron = window.electronAPI && window.electronAPI.isElectron;
+      const electronStatus = document.getElementById('electronStatus');
+
+      if (isElectron) {
+        electronStatus.innerHTML = '<strong>✓ Running in Electron</strong> - Feature 1 will work';
+        electronStatus.style.background = 'rgba(0, 255, 136, 0.3)';
+      } else {
+        electronStatus.innerHTML = '<strong>⚠ Running in Browser</strong> - Feature 1 will use regular download (open folder not available)';
+        electronStatus.style.background = 'rgba(255, 136, 0, 0.3)';
+        electronStatus.style.borderColor = '#ff8800';
+      }
+
+      // Wait for library to load
+      await new Promise(resolve => {
+        if (window.AudioRecorderVisualization) {
+          resolve();
+        } else {
+          const interval = setInterval(() => {
+            if (window.AudioRecorderVisualization) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        }
+      });
+
+      const { AudioRecorder } = window.AudioRecorderVisualization;
+
+      // Elements
+      const canvas = document.getElementById('visualizer');
+      const startMicBtn = document.getElementById('startMic');
+      const stopMicBtn = document.getElementById('stopMic');
+      const startRecordBtn = document.getElementById('startRecord');
+      const stopRecordBtn = document.getElementById('stopRecord');
+      const barCount = document.getElementById('barCount');
+      const barCountValue = document.getElementById('barCountValue');
+      const recordingsList = document.getElementById('recordingsList');
+
+      // Initialize AudioRecorder
+      const recorder = new AudioRecorder({
+        canvas,
+        fftSize: 2048,
+        fps: 30,
+        visualizer: 'bars',
+        visualizerOptions: {
+          primaryColor: '#00ff88',
+          secondaryColor: '#0088ff',
+          backgroundColor: '#000000',
+          barCount: 64,
+        },
+        debug: true,
+      });
+
+      let recordingCount = 0;
+
+      // Start microphone
+      startMicBtn.addEventListener('click', async () => {
+        try {
+          await recorder.startMicrophone();
+          startMicBtn.disabled = true;
+          stopMicBtn.disabled = false;
+          startRecordBtn.disabled = false;
+        } catch (error) {
+          console.error(error);
+          alert('Error: ' + error.message);
+        }
+      });
+
+      // Stop microphone
+      stopMicBtn.addEventListener('click', () => {
+        recorder.stopMicrophone();
+        recorder.stopVisualization();
+        startMicBtn.disabled = false;
+        stopMicBtn.disabled = true;
+        startRecordBtn.disabled = true;
+      });
+
+      // Start recording
+      startRecordBtn.addEventListener('click', () => {
+        recorder.startRecording();
+        startRecordBtn.disabled = true;
+        stopRecordBtn.disabled = false;
+      });
+
+      // Stop recording
+      stopRecordBtn.addEventListener('click', async () => {
+        try {
+          const blob = await recorder.stopRecording();
+          startRecordBtn.disabled = false;
+          stopRecordBtn.disabled = true;
+
+          // Add to recordings list
+          addRecording(blob);
+        } catch (error) {
+          console.error(error);
+          alert('Error: ' + error.message);
+        }
+      });
+
+      // Add recording to list
+      function addRecording(blob) {
+        recordingCount++;
+        const url = URL.createObjectURL(blob);
+        const item = document.createElement('div');
+        item.style.margin = '20px 0';
+        item.style.padding = '15px';
+        item.style.background = 'rgba(255, 255, 255, 0.05)';
+        item.style.borderRadius = '8px';
+
+        const fileName = `test-recording-${recordingCount}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+
+        const video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.width = 400;
+
+        const info = document.createElement('div');
+        info.style.marginTop = '10px';
+
+        if (isElectron) {
+          // Test Feature 1: Electron save and show
+          info.innerHTML = `
+            <p>Recording ${recordingCount} - Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
+            <button id="saveBtn${recordingCount}">Save and Show in Folder</button>
+            <p id="saveStatus${recordingCount}" style="margin-top: 10px; font-size: 12px;"></p>
+          `;
+
+          item.appendChild(video);
+          item.appendChild(info);
+          recordingsList.appendChild(item);
+
+          const saveBtn = document.getElementById(`saveBtn${recordingCount}`);
+          const saveStatus = document.getElementById(`saveStatus${recordingCount}`);
+
+          saveBtn.addEventListener('click', async () => {
+            try {
+              saveBtn.disabled = true;
+              saveBtn.textContent = 'Saving...';
+              saveStatus.textContent = 'Requesting save location...';
+
+              const result = await window.electronAPI.saveVideoAndShow(blob, fileName);
+
+              if (result.success) {
+                saveBtn.textContent = 'Saved!';
+                saveStatus.textContent = `✓ Saved to: ${result.filePath}\n✓ Folder opened successfully`;
+                saveStatus.style.color = '#00ff88';
+                setTimeout(() => {
+                  saveBtn.textContent = 'Save and Show in Folder';
+                  saveBtn.disabled = false;
+                }, 3000);
+              } else if (result.canceled) {
+                saveBtn.textContent = 'Save and Show in Folder';
+                saveBtn.disabled = false;
+                saveStatus.textContent = 'Save cancelled';
+                saveStatus.style.color = '#ff8800';
+              } else {
+                saveBtn.textContent = 'Error - Try Again';
+                saveBtn.disabled = false;
+                saveStatus.textContent = `Error: ${result.error}`;
+                saveStatus.style.color = '#ff4444';
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              saveBtn.textContent = 'Error - Try Again';
+              saveBtn.disabled = false;
+              saveStatus.textContent = `Error: ${error.message}`;
+              saveStatus.style.color = '#ff4444';
+            }
+          });
+        } else {
+          // Browser fallback
+          info.innerHTML = `
+            <p>Recording ${recordingCount} - Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
+            <a href="${url}" download="${fileName}">Download (browser mode)</a>
+          `;
+          item.appendChild(video);
+          item.appendChild(info);
+          recordingsList.appendChild(item);
+        }
+      }
+
+      // Test Feature 2: Bar Count slider with demo visualization
+      barCount.addEventListener('input', () => {
+        const count = parseInt(barCount.value);
+        barCountValue.textContent = count;
+        recorder.setVisualizerOptions({ barCount: count });
+
+        // Show demo visualization if no audio source is active
+        if (!recorder.sourceType) {
+          console.log('Showing demo visualization with', count, 'bars');
+          recorder.showDemoVisualization(1000);
+        }
+      });
+
+      console.log('Test page loaded. Available visualizers:', AudioRecorder.getAvailableVisualizers());
+    })();
+  </script>
+</body>
+</html>
