@@ -314,6 +314,25 @@
           <input type="checkbox" id="mirror"> Mirror
         </label>
       </div>
+      <div class="option-group">
+        <label>
+          Visualization Transparency
+          <input type="range" id="visualizationAlpha" min="0" max="1" step="0.01" value="1">
+          <span id="alphaValue">100%</span>
+        </label>
+      </div>
+      <div class="option-group">
+        <label>
+          Offset X (Horizontal Position)
+          <input type="range" id="offsetX" min="-200" max="200" value="0">
+          <span id="offsetXValue">0px</span>
+        </label>
+        <label>
+          Offset Y (Vertical Position)
+          <input type="range" id="offsetY" min="-200" max="200" value="0">
+          <span id="offsetYValue">0px</span>
+        </label>
+      </div>
     </div>
 
     <div class="recordings" id="recordings">
@@ -360,6 +379,12 @@
       const barCount = document.getElementById('barCount');
       const bgImage = document.getElementById('bgImage');
       const mirror = document.getElementById('mirror');
+      const visualizationAlpha = document.getElementById('visualizationAlpha');
+      const alphaValue = document.getElementById('alphaValue');
+      const offsetX = document.getElementById('offsetX');
+      const offsetXValue = document.getElementById('offsetXValue');
+      const offsetY = document.getElementById('offsetY');
+      const offsetYValue = document.getElementById('offsetYValue');
       const recordingsList = document.getElementById('recordingsList');
       const audioFile = document.getElementById('audioFile');
       const convertBtn = document.getElementById('convertBtn');
@@ -507,6 +532,9 @@
           backgroundColor: bgColor.value,
           barCount: parseInt(barCount.value),
           mirror: mirror.checked,
+          visualizationAlpha: parseFloat(visualizationAlpha.value),
+          offsetX: parseInt(offsetX.value),
+          offsetY: parseInt(offsetY.value),
         };
         // Include background image if one is set
         if (currentBackgroundImageUrl) {
@@ -520,6 +548,27 @@
         el.addEventListener('input', () => {
           recorder.setVisualizerOptions(getCurrentOptions());
         });
+      });
+
+      // Visualization alpha handler with display update
+      visualizationAlpha.addEventListener('input', () => {
+        const alpha = parseFloat(visualizationAlpha.value);
+        alphaValue.textContent = Math.round(alpha * 100) + '%';
+        recorder.setVisualizerOptions({ visualizationAlpha: alpha });
+      });
+
+      // Offset X handler with display update
+      offsetX.addEventListener('input', () => {
+        const x = parseInt(offsetX.value);
+        offsetXValue.textContent = x + 'px';
+        recorder.setVisualizerOptions({ offsetX: x });
+      });
+
+      // Offset Y handler with display update
+      offsetY.addEventListener('input', () => {
+        const y = parseInt(offsetY.value);
+        offsetYValue.textContent = y + 'px';
+        recorder.setVisualizerOptions({ offsetY: y });
       });
 
       // Background image
