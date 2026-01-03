@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test New Features - Issue #10</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      color: #00ff88;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #000;
+      margin: 10px 0;
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #00cc6a;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .controls {
+      margin: 15px 0;
+    }
+    label {
+      display: inline-block;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    input[type="range"] {
+      width: 200px;
+      vertical-align: middle;
+    }
+    .video-container {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+    }
+    .video-container video {
+      max-width: 400px;
+      cursor: pointer;
+      border: 2px solid #333;
+      border-radius: 4px;
+    }
+    .video-container video:hover {
+      border-color: #00ff88;
+      box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+    }
+    .hint {
+      font-size: 12px;
+      color: #888;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Test New Features - Issue #10</h1>
+    <p>This page tests all the new features implemented for issue #10:</p>
+    <ol>
+      <li>Manual position control (offsetX/offsetY)</li>
+      <li>Improved video export quality</li>
+      <li>Better color accuracy in exported videos</li>
+      <li>More reliable export process</li>
+      <li>Fullscreen video preview support</li>
+    </ol>
+
+    <!-- Test 1: Position Control -->
+    <div class="test-section">
+      <h2>Test 1: Manual Position Control</h2>
+      <p>Use sliders to move the visualization around the canvas.</p>
+      <canvas id="canvas1" width="800" height="400"></canvas>
+      <div class="controls">
+        <label>
+          Offset X:
+          <input type="range" id="offsetX" min="-200" max="200" value="0">
+          <span id="offsetXValue">0</span> px
+        </label>
+        <br>
+        <label>
+          Offset Y:
+          <input type="range" id="offsetY" min="-200" max="200" value="0">
+          <span id="offsetYValue">0</span> px
+        </label>
+        <br>
+        <label>
+          <input type="checkbox" id="mirror1"> Mirror Mode
+        </label>
+      </div>
+      <button id="startTest1">Start Microphone</button>
+      <button id="stopTest1" disabled>Stop Microphone</button>
+      <div class="status" id="status1">Status: Ready</div>
+    </div>
+
+    <!-- Test 2: Video Export Quality -->
+    <div class="test-section">
+      <h2>Test 2: Video Export Quality & Reliability</h2>
+      <p>Upload an audio file and convert it to video. The export should be high quality with accurate colors.</p>
+      <canvas id="canvas2" width="800" height="400"></canvas>
+      <div class="controls">
+        <label>
+          Audio File:
+          <input type="file" id="audioFile" accept="audio/*">
+        </label>
+        <br>
+        <label>
+          Offset X:
+          <input type="range" id="offsetX2" min="-200" max="200" value="0">
+          <span id="offsetX2Value">0</span> px
+        </label>
+        <br>
+        <label>
+          Offset Y:
+          <input type="range" id="offsetY2" min="-200" max="200" value="0">
+          <span id="offsetY2Value">0</span> px
+        </label>
+      </div>
+      <button id="convertBtn" disabled>Convert to Video</button>
+      <div class="status" id="status2">Status: Ready</div>
+      <div class="video-container" id="videoContainer" style="display: none;">
+        <h3>Exported Video</h3>
+        <video id="exportedVideo" controls></video>
+        <p class="hint">Double-click video to view in fullscreen (works before download!)</p>
+        <button id="downloadBtn">Download Video</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../dist/audio-recorder-visualization.umd.js"></script>
+  <script>
+    (async function() {
+      // Wait for library to load
+      await new Promise(resolve => {
+        if (window.AudioRecorderVisualization) {
+          resolve();
+        } else {
+          const interval = setInterval(() => {
+            if (window.AudioRecorderVisualization) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        }
+      });
+
+      const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
+
+      // ====== Test 1: Position Control ======
+      const canvas1 = document.getElementById('canvas1');
+      const offsetX = document.getElementById('offsetX');
+      const offsetY = document.getElementById('offsetY');
+      const offsetXValue = document.getElementById('offsetXValue');
+      const offsetYValue = document.getElementById('offsetYValue');
+      const mirror1 = document.getElementById('mirror1');
+      const startTest1 = document.getElementById('startTest1');
+      const stopTest1 = document.getElementById('stopTest1');
+      const status1 = document.getElementById('status1');
+
+      const recorder1 = new AudioRecorder({
+        canvas: canvas1,
+        visualizer: 'waveform',
+        visualizerOptions: {
+          primaryColor: '#00ff88',
+          secondaryColor: '#0088ff',
+          backgroundColor: '#000000',
+          mirror: false,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        debug: true,
+      });
+
+      offsetX.addEventListener('input', () => {
+        offsetXValue.textContent = offsetX.value;
+        recorder1.setVisualizerOptions({ offsetX: parseInt(offsetX.value) });
+      });
+
+      offsetY.addEventListener('input', () => {
+        offsetYValue.textContent = offsetY.value;
+        recorder1.setVisualizerOptions({ offsetY: parseInt(offsetY.value) });
+      });
+
+      mirror1.addEventListener('change', () => {
+        recorder1.setVisualizerOptions({ mirror: mirror1.checked });
+      });
+
+      startTest1.addEventListener('click', async () => {
+        try {
+          await recorder1.startMicrophone();
+          status1.textContent = 'Status: Microphone active - move sliders to adjust position';
+          startTest1.disabled = true;
+          stopTest1.disabled = false;
+        } catch (error) {
+          status1.textContent = 'Error: ' + error.message;
+          console.error(error);
+        }
+      });
+
+      stopTest1.addEventListener('click', () => {
+        recorder1.stopMicrophone();
+        recorder1.stopVisualization();
+        status1.textContent = 'Status: Stopped';
+        startTest1.disabled = false;
+        stopTest1.disabled = true;
+      });
+
+      // ====== Test 2: Video Export ======
+      const canvas2 = document.getElementById('canvas2');
+      const audioFile = document.getElementById('audioFile');
+      const offsetX2 = document.getElementById('offsetX2');
+      const offsetY2 = document.getElementById('offsetY2');
+      const offsetX2Value = document.getElementById('offsetX2Value');
+      const offsetY2Value = document.getElementById('offsetY2Value');
+      const convertBtn = document.getElementById('convertBtn');
+      const status2 = document.getElementById('status2');
+      const videoContainer = document.getElementById('videoContainer');
+      const exportedVideo = document.getElementById('exportedVideo');
+      const downloadBtn = document.getElementById('downloadBtn');
+
+      const converter = new AudioToVideoConverter({ debug: true });
+      let videoBlob = null;
+      let videoUrl = null;
+
+      offsetX2.addEventListener('input', () => {
+        offsetX2Value.textContent = offsetX2.value;
+      });
+
+      offsetY2.addEventListener('input', () => {
+        offsetY2Value.textContent = offsetY2.value;
+      });
+
+      audioFile.addEventListener('change', () => {
+        convertBtn.disabled = !audioFile.files.length;
+      });
+
+      // Enable fullscreen on double-click
+      exportedVideo.addEventListener('dblclick', () => {
+        if (exportedVideo.requestFullscreen) {
+          exportedVideo.requestFullscreen();
+        } else if (exportedVideo.webkitRequestFullscreen) {
+          exportedVideo.webkitRequestFullscreen();
+        } else if (exportedVideo.mozRequestFullScreen) {
+          exportedVideo.mozRequestFullScreen();
+        } else if (exportedVideo.msRequestFullscreen) {
+          exportedVideo.msRequestFullscreen();
+        }
+      });
+
+      convertBtn.addEventListener('click', async () => {
+        const file = audioFile.files[0];
+        if (!file) return;
+
+        convertBtn.disabled = true;
+        status2.textContent = 'Status: Converting... 0%';
+        videoContainer.style.display = 'none';
+
+        try {
+          videoBlob = await converter.convert({
+            audioSource: file,
+            canvas: canvas2,
+            visualizer: 'waveform',
+            visualizerOptions: {
+              primaryColor: '#00ff88',
+              secondaryColor: '#0088ff',
+              backgroundColor: '#000000',
+              mirror: true,
+              offsetX: parseInt(offsetX2.value),
+              offsetY: parseInt(offsetY2.value),
+            },
+            fps: 30,
+            videoWidth: 800,
+            videoHeight: 400,
+            onProgress: (progress) => {
+              status2.textContent = `Status: Converting... ${Math.round(progress * 100)}%`;
+            },
+          });
+
+          // Clean up old video URL if exists
+          if (videoUrl) {
+            URL.revokeObjectURL(videoUrl);
+          }
+
+          // Create new video URL
+          videoUrl = URL.createObjectURL(videoBlob);
+          exportedVideo.src = videoUrl;
+
+          status2.textContent = `Status: Conversion complete! Size: ${(videoBlob.size / 1024 / 1024).toFixed(2)} MB`;
+          videoContainer.style.display = 'block';
+        } catch (error) {
+          status2.textContent = 'Error: ' + error.message;
+          console.error(error);
+        } finally {
+          convertBtn.disabled = false;
+        }
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        if (!videoUrl) return;
+
+        const a = document.createElement('a');
+        a.href = videoUrl;
+        a.download = `export-${Date.now()}.${videoBlob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+        a.click();
+      });
+    })();
+  </script>
+</body>
+</html>

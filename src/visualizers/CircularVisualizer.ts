@@ -31,8 +31,13 @@ export class CircularVisualizer extends BaseVisualizer {
     // Draw background
     this.drawBackground(ctx, data);
 
-    const centerX = width / 2;
-    const centerY = height / 2;
+    // Apply visualization alpha
+    const visualizationAlpha = this.options.visualizationAlpha ?? 1;
+
+    const offsetX = this.options.offsetX ?? 0;
+    const offsetY = this.options.offsetY ?? 0;
+    const centerX = width / 2 + offsetX;
+    const centerY = height / 2 + offsetY;
     const minDimension = Math.min(width, height);
 
     const barCount = this.options.barCount!;
@@ -88,6 +93,7 @@ export class CircularVisualizer extends BaseVisualizer {
       ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
       ctx.lineWidth = Math.max(1, (angleStep * innerRadius) * 0.8);
       ctx.lineCap = 'round';
+      ctx.globalAlpha = visualizationAlpha;
 
       ctx.beginPath();
       ctx.moveTo(x1, y1);
@@ -99,22 +105,23 @@ export class CircularVisualizer extends BaseVisualizer {
         const x1Mirror = Math.cos(angle) * (innerRadius - barHeight * 0.5);
         const y1Mirror = Math.sin(angle) * (innerRadius - barHeight * 0.5);
 
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = visualizationAlpha * 0.5;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x1Mirror, y1Mirror);
         ctx.stroke();
-        ctx.globalAlpha = 1;
       }
     }
 
     ctx.restore();
 
     // Draw center circle
+    ctx.globalAlpha = visualizationAlpha;
     ctx.beginPath();
     ctx.arc(centerX, centerY, innerRadius * 0.9, 0, Math.PI * 2);
     ctx.fillStyle = this.options.backgroundColor!;
     ctx.fill();
+    ctx.globalAlpha = 1;
 
     // Draw foreground
     this.drawForeground(ctx, data);

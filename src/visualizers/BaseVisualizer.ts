@@ -25,6 +25,10 @@ export abstract class BaseVisualizer implements Visualizer {
       barGap: 0.2,
       mirror: false,
       smoothing: 0.8,
+      foregroundAlpha: 1,
+      visualizationAlpha: 1,
+      offsetX: 0,
+      offsetY: 0,
       ...options,
     };
   }
@@ -132,7 +136,11 @@ export abstract class BaseVisualizer implements Visualizer {
    */
   protected drawForeground(ctx: CanvasRenderingContext2D, data: VisualizationData): void {
     if (this.foregroundImageElement) {
+      const alpha = this.options.foregroundAlpha ?? 1;
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = alpha;
       this.drawImageCover(ctx, this.foregroundImageElement, data.width, data.height);
+      ctx.globalAlpha = previousAlpha;
     }
   }
 
@@ -184,6 +192,33 @@ export abstract class BaseVisualizer implements Visualizer {
     gradient.addColorStop(0, this.options.primaryColor!);
     gradient.addColorStop(1, this.options.secondaryColor!);
     return gradient;
+  }
+
+  /**
+   * Apply position offset transformation to context
+   * Call this before drawing visualization, and call restoreTransform() after
+   */
+  protected applyTransform(ctx: CanvasRenderingContext2D): void {
+    const offsetX = this.options.offsetX ?? 0;
+    const offsetY = this.options.offsetY ?? 0;
+
+    if (offsetX !== 0 || offsetY !== 0) {
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+    }
+  }
+
+  /**
+   * Restore context transformation state
+   * Call this after drawing visualization if applyTransform() was called
+   */
+  protected restoreTransform(ctx: CanvasRenderingContext2D): void {
+    const offsetX = this.options.offsetX ?? 0;
+    const offsetY = this.options.offsetY ?? 0;
+
+    if (offsetX !== 0 || offsetY !== 0) {
+      ctx.restore();
+    }
   }
 
   /**

@@ -89,13 +89,16 @@ export class ParticleVisualizer extends BaseVisualizer {
     const speedFactor = this.options.custom?.particleSpeedFactor as number;
     const baseSize = this.options.custom?.particleBaseSize as number;
 
+    const offsetX = this.options.offsetX ?? 0;
+    const offsetY = this.options.offsetY ?? 0;
+
     for (let i = 0; i < particlesToSpawn && this.particles.length < this.maxParticles; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = (0.5 + Math.random() * 1.5) * speedFactor * (0.5 + overallIntensity);
 
       this.particles.push({
-        x: width / 2 + (Math.random() - 0.5) * 50,
-        y: height / 2 + (Math.random() - 0.5) * 50,
+        x: width / 2 + offsetX + (Math.random() - 0.5) * 50,
+        y: height / 2 + offsetY + (Math.random() - 0.5) * 50,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         radius: baseSize + Math.random() * baseSize * bassIntensity * 3,
@@ -133,7 +136,8 @@ export class ParticleVisualizer extends BaseVisualizer {
       }
 
       // Draw particle
-      const alpha = p.life;
+      const visualizationAlpha = this.options.visualizationAlpha ?? 1;
+      const alpha = p.life * visualizationAlpha;
       const radius = p.radius * (0.5 + p.life * 0.5);
 
       ctx.beginPath();

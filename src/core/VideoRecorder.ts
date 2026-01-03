@@ -81,8 +81,11 @@ export class VideoRecorder {
       throw new Error(`Format "${format}" is not supported in this browser`);
     }
 
-    // Get canvas stream
+    // Get canvas stream with higher quality settings
     const fps = options.fps ?? 30;
+
+    // Ensure canvas is using proper color settings for export
+    // This helps prevent color shifts in the exported video
     const canvasStream = canvas.captureStream(fps);
     this.log('Got canvas stream at', fps, 'fps');
 
@@ -94,10 +97,11 @@ export class VideoRecorder {
     }
     this.stream = new MediaStream(tracks);
 
-    // Create MediaRecorder
+    // Create MediaRecorder with higher quality settings
+    // Increased default bitrate from 2.5Mbps to 8Mbps for better quality
     const recorderOptions: MediaRecorderOptions = {
       mimeType,
-      videoBitsPerSecond: options.videoBitrate ?? 2500000,
+      videoBitsPerSecond: options.videoBitrate ?? 8000000,
     };
     if (audioStream && options.audioBitrate) {
       recorderOptions.audioBitsPerSecond = options.audioBitrate;

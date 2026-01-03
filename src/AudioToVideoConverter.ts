@@ -69,8 +69,8 @@ export class AudioToVideoConverter {
       fps = 30,
       videoWidth = 1280,
       videoHeight = 720,
-      videoBitrate = 2500000,
-      audioBitrate = 128000,
+      videoBitrate = 8000000,
+      audioBitrate = 192000,
       format = 'webm',
       onProgress,
     } = config;
@@ -91,10 +91,19 @@ export class AudioToVideoConverter {
     canvas.width = videoWidth;
     canvas.height = videoHeight;
 
-    const ctx = canvas.getContext('2d');
+    // Get 2D context with color space settings for better color accuracy
+    const ctx = canvas.getContext('2d', {
+      alpha: true,
+      colorSpace: 'srgb',
+      willReadFrequently: false,
+    });
     if (!ctx) {
       throw new Error('Failed to get 2D context from canvas');
     }
+
+    // Set image smoothing for better quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Create visualizer
     let visualizer: Visualizer;
@@ -168,76 +177,105 @@ export class AudioToVideoConverter {
     audioElement.play();
     this.log('Started playback and recording');
 
-    // Render loop
+    // Render loop with improved timing and reliability
     const frameInterval = 1000 / fps;
     let lastFrameTime = 0;
+    let frameCount = 0;
 
     return new Promise((resolve, reject) => {
-      const renderFrame = (): void => {
-        const now = performance.now();
+      let hasErrored = false;
 
-        if (now - lastFrameTime >= frameInterval) {
-          lastFrameTime = now;
-
-          const data: VisualizationData = {
-            timeDomainData: analyzer.getTimeDomainData(),
-            frequencyData: analyzer.getFrequencyData(),
-            timestamp: now,
-            width: canvas.width,
-            height: canvas.height,
-            sampleRate: analyzer.sampleRate,
-            fftSize: analyzer.fftSize,
-          };
-
-          visualizer.draw(ctx, data);
-
-          // Report progress
-          if (onProgress) {
-            const progress = Math.min(audioElement.currentTime / duration, 1);
-            onProgress(progress);
-          }
+      const cleanup = (): void => {
+        visualizer.destroy();
+        analyzer.destroy();
+        if (audioSource instanceof File) {
+          URL.revokeObjectURL(audioElement.src);
         }
+      };
 
-        // Continue until audio ends
-        if (!audioElement.ended && !audioElement.paused) {
-          requestAnimationFrame(renderFrame);
-        } else {
-          // Audio ended, stop recording
-          this.log('Audio playback ended');
+      const renderFrame = (): void => {
+        if (hasErrored) return;
 
-          // Wait a bit to ensure final frames are captured
-          setTimeout(async () => {
-            try {
-              const blob = await videoRecorder.stop();
+        try {
+          const now = performance.now();
 
-              // Cleanup
-              visualizer.destroy();
-              analyzer.destroy();
-              if (audioSource instanceof File) {
-                URL.revokeObjectURL(audioElement.src);
-              }
+          if (now - lastFrameTime >= frameInterval) {
+            lastFrameTime = now;
+            frameCount++;
 
-              if (onProgress) {
-                onProgress(1);
-              }
+            const data: VisualizationData = {
+              timeDomainData: analyzer.getTimeDomainData(),
+              frequencyData: analyzer.getFrequencyData(),
+              timestamp: now,
+              width: canvas.width,
+              height: canvas.height,
+              sampleRate: analyzer.sampleRate,
+              fftSize: analyzer.fftSize,
+            };
 
-              this.log('Conversion complete, blob size:', blob.size);
-              resolve(blob);
-            } catch (error) {
-              reject(error);
+            visualizer.draw(ctx, data);
+
+            // Report progress
+            if (onProgress && duration > 0) {
+              const progress = Math.min(audioElement.currentTime / duration, 1);
+              onProgress(progress);
             }
-          }, 500);
+          }
+
+          // Continue until audio ends
+          if (!audioElement.ended && !audioElement.paused) {
+            requestAnimationFrame(renderFrame);
+          } else {
+            // Audio ended, stop recording
+            this.log('Audio playback ended after', frameCount, 'frames');
+
+            // Wait longer to ensure all frames are captured by MediaRecorder
+            setTimeout(async () => {
+              if (hasErrored) return;
+
+              try {
+                const blob = await videoRecorder.stop();
+
+                // Cleanup
+                cleanup();
+
+                if (onProgress) {
+                  onProgress(1);
+                }
+
+                this.log('Conversion complete, blob size:', blob.size, 'bytes');
+
+                // Verify blob is valid
+                if (blob.size === 0) {
+                  reject(new Error('Export failed: video blob is empty'));
+                  return;
+                }
+
+                resolve(blob);
+              } catch (error) {
+                hasErrored = true;
+                cleanup();
+                reject(error);
+              }
+            }, 1000); // Increased from 500ms to 1000ms for better reliability
+          }
+        } catch (error) {
+          hasErrored = true;
+          videoRecorder.cancel();
+          cleanup();
+          reject(error);
         }
       };
 
       audioElement.onerror = () => {
+        hasErrored = true;
         videoRecorder.cancel();
-        visualizer.destroy();
-        analyzer.destroy();
+        cleanup();
         reject(new Error('Audio playback error'));
       };
 
-      renderFrame();
+      // Render first frame immediately to ensure recording starts with content
+      requestAnimationFrame(renderFrame);
     });
   }
 

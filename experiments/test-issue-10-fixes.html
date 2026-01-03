@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Issue #10 Fixes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      color: #00ff88;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #000;
+      margin: 10px 0;
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #00cc6a;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .controls {
+      margin: 15px 0;
+    }
+    label {
+      display: inline-block;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    input[type="range"] {
+      width: 200px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Test Issue #10 Fixes</h1>
+    <p>This page tests the three fixes for issue #10:</p>
+    <ol>
+      <li>Foreground transparency control (foregroundAlpha option)</li>
+      <li>Visualization centering (waveform should be centered vertically)</li>
+      <li>Visualization freezes when microphone is disabled (should reset to silence)</li>
+    </ol>
+
+    <!-- Test 1: Foreground Transparency -->
+    <div class="test-section">
+      <h2>Test 1: Foreground Transparency</h2>
+      <p>A semi-transparent foreground overlay should be visible with the visualization showing through.</p>
+      <canvas id="canvas1" width="800" height="400"></canvas>
+      <div class="controls">
+        <label>
+          Foreground Alpha:
+          <input type="range" id="alphaSlider" min="0" max="100" value="50">
+          <span id="alphaValue">0.5</span>
+        </label>
+      </div>
+      <button id="startTest1">Start Microphone</button>
+      <button id="stopTest1" disabled>Stop Microphone</button>
+      <div class="status" id="status1">Status: Ready</div>
+    </div>
+
+    <!-- Test 2: Waveform Centering -->
+    <div class="test-section">
+      <h2>Test 2: Waveform Centering</h2>
+      <p>The waveform should be centered vertically in the canvas (oscillating around the middle line).</p>
+      <canvas id="canvas2" width="800" height="400"></canvas>
+      <button id="startTest2">Start Microphone</button>
+      <button id="stopTest2" disabled>Stop Microphone</button>
+      <div class="status" id="status2">Status: Ready</div>
+    </div>
+
+    <!-- Test 3: Freeze on Disconnect -->
+    <div class="test-section">
+      <h2>Test 3: Freeze on Microphone Disconnect</h2>
+      <p>When you stop the microphone, the visualization should reset to silence (flat line/no bars), not freeze in its current state.</p>
+      <canvas id="canvas3" width="800" height="400"></canvas>
+      <button id="startTest3">Start Microphone</button>
+      <button id="stopTest3" disabled>Stop Microphone</button>
+      <div class="status" id="status3">Status: Ready</div>
+      <p><strong>Test Instructions:</strong> Click "Start Microphone", make some noise, then click "Stop Microphone". The visualization should immediately show silence (flat line), not freeze.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { AudioRecorder } from '../dist/audio-recorder-visualization.esm.js';
+
+    // Test 1: Foreground Transparency
+    let recorder1 = null;
+    const canvas1 = document.getElementById('canvas1');
+    const status1 = document.getElementById('status1');
+    const startBtn1 = document.getElementById('startTest1');
+    const stopBtn1 = document.getElementById('stopTest1');
+    const alphaSlider = document.getElementById('alphaSlider');
+    const alphaValue = document.getElementById('alphaValue');
+
+    // Create a simple foreground overlay image
+    const createOverlayImage = () => {
+      const overlayCanvas = document.createElement('canvas');
+      overlayCanvas.width = 800;
+      overlayCanvas.height = 400;
+      const ctx = overlayCanvas.getContext('2d');
+
+      // Draw a pattern
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(0, 0, 400, 400);
+      ctx.fillStyle = '#0000ff';
+      ctx.fillRect(400, 0, 400, 400);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '48px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('OVERLAY', 400, 200);
+
+      const img = new Image();
+      img.src = overlayCanvas.toDataURL();
+      return img;
+    };
+
+    const overlayImg = createOverlayImage();
+
+    alphaSlider.addEventListener('input', (e) => {
+      const alpha = e.target.value / 100;
+      alphaValue.textContent = alpha.toFixed(2);
+      if (recorder1) {
+        recorder1.setVisualizerOptions({ foregroundAlpha: alpha });
+      }
+    });
+
+    startBtn1.addEventListener('click', async () => {
+      try {
+        status1.textContent = 'Status: Requesting microphone access...';
+        recorder1 = new AudioRecorder({
+          canvas: canvas1,
+          visualizer: 'bars',
+          visualizerOptions: {
+            primaryColor: '#00ff88',
+            secondaryColor: '#0088ff',
+            foregroundImage: overlayImg,
+            foregroundAlpha: 0.5,
+          },
+        });
+
+        await recorder1.ready();
+        await recorder1.startMicrophone();
+        status1.textContent = 'Status: Microphone active - You should see visualization with semi-transparent overlay';
+        startBtn1.disabled = true;
+        stopBtn1.disabled = false;
+      } catch (error) {
+        status1.textContent = `Status: Error - ${error.message}`;
+      }
+    });
+
+    stopBtn1.addEventListener('click', () => {
+      if (recorder1) {
+        recorder1.stopMicrophone();
+        status1.textContent = 'Status: Microphone stopped';
+        startBtn1.disabled = false;
+        stopBtn1.disabled = true;
+      }
+    });
+
+    // Test 2: Waveform Centering
+    let recorder2 = null;
+    const canvas2 = document.getElementById('canvas2');
+    const status2 = document.getElementById('status2');
+    const startBtn2 = document.getElementById('startTest2');
+    const stopBtn2 = document.getElementById('stopTest2');
+
+    // Draw a center line for reference
+    const drawCenterLine = () => {
+      const ctx = canvas2.getContext('2d');
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(0, 200);
+      ctx.lineTo(800, 200);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
+
+    startBtn2.addEventListener('click', async () => {
+      try {
+        status2.textContent = 'Status: Requesting microphone access...';
+        recorder2 = new AudioRecorder({
+          canvas: canvas2,
+          visualizer: 'waveform',
+          visualizerOptions: {
+            primaryColor: '#00ff88',
+            secondaryColor: '#0088ff',
+            lineWidth: 3,
+          },
+        });
+
+        await recorder2.ready();
+
+        // Draw center reference line once before starting
+        drawCenterLine();
+        setTimeout(() => {
+          recorder2.startMicrophone().then(() => {
+            status2.textContent = 'Status: Microphone active - Waveform should oscillate around the red center line';
+            startBtn2.disabled = true;
+            stopBtn2.disabled = false;
+          });
+        }, 100);
+      } catch (error) {
+        status2.textContent = `Status: Error - ${error.message}`;
+      }
+    });
+
+    stopBtn2.addEventListener('click', () => {
+      if (recorder2) {
+        recorder2.stopMicrophone();
+        status2.textContent = 'Status: Microphone stopped';
+        startBtn2.disabled = false;
+        stopBtn2.disabled = true;
+      }
+    });
+
+    // Test 3: Freeze on Disconnect
+    let recorder3 = null;
+    const canvas3 = document.getElementById('canvas3');
+    const status3 = document.getElementById('status3');
+    const startBtn3 = document.getElementById('startTest3');
+    const stopBtn3 = document.getElementById('stopTest3');
+
+    startBtn3.addEventListener('click', async () => {
+      try {
+        status3.textContent = 'Status: Requesting microphone access...';
+        recorder3 = new AudioRecorder({
+          canvas: canvas3,
+          visualizer: 'bars',
+          visualizerOptions: {
+            primaryColor: '#00ff88',
+            secondaryColor: '#0088ff',
+          },
+        });
+
+        await recorder3.ready();
+        await recorder3.startMicrophone();
+        status3.textContent = 'Status: Microphone active - Make some noise, then click Stop';
+        startBtn3.disabled = true;
+        stopBtn3.disabled = false;
+      } catch (error) {
+        status3.textContent = `Status: Error - ${error.message}`;
+      }
+    });
+
+    stopBtn3.addEventListener('click', () => {
+      if (recorder3) {
+        recorder3.stopMicrophone();
+        status3.textContent = 'Status: Microphone stopped - Visualization should show silence (flat/no bars), not frozen';
+        startBtn3.disabled = false;
+        stopBtn3.disabled = true;
+      }
+    });
+  </script>
+</body>
+</html>
