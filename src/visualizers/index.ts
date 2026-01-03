@@ -3,3 +3,7 @@ export { WaveformVisualizer } from './WaveformVisualizer';
 export { BarVisualizer } from './BarVisualizer';
 export { CircularVisualizer } from './CircularVisualizer';
 export { ParticleVisualizer } from './ParticleVisualizer';
+export { SpectrumGradientVisualizer } from './SpectrumGradientVisualizer';
+export { GlowWaveformVisualizer } from './GlowWaveformVisualizer';
+export { VUMeterVisualizer } from './VUMeterVisualizer';
+export { SpectrogramVisualizer } from './SpectrogramVisualizer';

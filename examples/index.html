@@ -812,6 +812,10 @@
             <option value="waveform">Waveform - Oscilloscope</option>
             <option value="circular">Circular - Radial Spectrum</option>
             <option value="particles">Particles - Audio-Reactive</option>
+            <option value="spectrum-gradient">Spectrum Gradient - Winamp Style</option>
+            <option value="glow-waveform">Glow Waveform - Modern Effect</option>
+            <option value="vu-meter">VU Meter - Professional Style</option>
+            <option value="spectrogram">Spectrogram - Frequency Waterfall</option>
           </select>
         </label>
         <label>
@@ -1256,10 +1260,10 @@
           }
         }
 
-        // 1-4: Switch visualizers
-        if (e.code >= 'Digit1' && e.code <= 'Digit4') {
+        // 1-8: Switch visualizers
+        if (e.code >= 'Digit1' && e.code <= 'Digit8') {
           e.preventDefault();
-          const visualizers = ['bars', 'waveform', 'circular', 'particles'];
+          const visualizers = ['bars', 'waveform', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram'];
           const index = parseInt(e.code.replace('Digit', '')) - 1;
           if (visualizers[index]) {
             visualizerSelect.value = visualizers[index];
@@ -1294,7 +1298,9 @@
 
 Space - Start/Stop Microphone
 R - Start/Stop Recording
-1-4 - Switch Visualizers (1=Bars, 2=Waveform, 3=Circular, 4=Particles)
+1-8 - Switch Visualizers:
+  1=Bars, 2=Waveform, 3=Circular, 4=Particles
+  5=Spectrum Gradient, 6=Glow Waveform, 7=VU Meter, 8=Spectrogram
 M - Toggle Mirror Mode
 ↑/↓ - Adjust Bar Count
 ? or / - Show this help`);

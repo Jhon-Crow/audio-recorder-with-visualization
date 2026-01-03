@@ -12,6 +12,10 @@ A TypeScript library for audio visualization and recording. Capture audio from m
   - Bars (spectrum analyzer)
   - Circular (radial spectrum)
   - Particles (audio-reactive particles)
+  - Spectrum Gradient (Winamp-style spectrum with peak indicators)
+  - Glow Waveform (waveform with glow effects and smooth curves)
+  - VU Meter (classic audio equipment style meters)
+  - Spectrogram (waterfall frequency display)
 - **Custom images/GIFs** as backgrounds or overlays
 - **Extensible visualizer system** - create your own visualizers
 - **Maximum performance** - optimized rendering with requestAnimationFrame and typed arrays
@@ -39,7 +43,7 @@ import { AudioRecorder } from 'audio-recorder-with-visualization';
 // Create recorder
 const recorder = new AudioRecorder({
   canvas: '#visualizer', // Canvas element or selector
-  visualizer: 'bars',    // 'waveform', 'bars', 'circular', 'particles'
+  visualizer: 'bars',    // 'waveform', 'bars', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram'
   fftSize: 2048,
   fps: 30,
 });
@@ -197,6 +201,87 @@ interface VisualizerOptions {
   foregroundImage?: string | HTMLImageElement;  // Foreground overlay
   custom?: Record<string, unknown>;  // Visualizer-specific options
 }
+```
+
+### Built-in Visualizers
+
+#### Spectrum Gradient (`spectrum-gradient`)
+Winamp-style spectrum analyzer with gradient fills and peak indicators.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    fillStyle: 'gradient' | 'solid' | 'rainbow',  // Fill style (default: 'gradient')
+    peakDots: true,                                // Show peak indicator dots (default: true)
+    peakFallSpeed: 0.5,                           // Peak fall speed (default: 0.5)
+    gradientColors: ['#ff0000', '#ff7700', '#ffff00', '#00ff00'],  // Custom gradient colors
+  }
+}
+```
+
+#### Glow Waveform (`glow-waveform`)
+Enhanced waveform with glow effects and smooth curves.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    glowIntensity: 20,      // Glow blur radius (default: 20)
+    fillWave: true,         // Fill area under waveform (default: true)
+    fillOpacity: 0.3,       // Fill opacity (default: 0.3)
+    smoothCurves: true,     // Use smooth bezier curves (default: true)
+  }
+}
+```
+
+#### VU Meter (`vu-meter`)
+Classic audio equipment style VU meters with peak hold.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    meterStyle: 'modern' | 'classic' | 'led',  // Meter style (default: 'modern')
+    showPeakIndicator: true,                    // Show peak indicator (default: true)
+    peakHoldTime: 30,                           // Frames to hold peak (default: 30)
+    horizontalLayout: true,                     // Horizontal or vertical layout (default: true)
+  }
+}
+```
+
+#### Spectrogram (`spectrogram`)
+Waterfall display showing frequency data over time.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    scrollSpeed: 1,                              // Pixels to scroll per frame (default: 1)
+    colorScheme: 'rainbow' | 'heat' | 'cool' | 'grayscale',  // Color scheme (default: 'rainbow')
+    orientation: 'vertical' | 'horizontal',      // Scroll direction (default: 'vertical')
+    frequencyRange: 'full' | 'bass' | 'mid' | 'high',  // Frequency range to display (default: 'full')
+  }
+}
+```
+
+#### Usage Example with Custom Options
+
+```typescript
+const recorder = new AudioRecorder({
+  canvas: '#visualizer',
+  visualizer: 'spectrum-gradient',
+  visualizerOptions: {
+    primaryColor: '#00ff88',
+    secondaryColor: '#0088ff',
+    barCount: 128,
+    custom: {
+      fillStyle: 'rainbow',
+      peakDots: true,
+      peakFallSpeed: 0.8,
+    },
+  },
+});
 ```
 
 ## Creating Custom Visualizers

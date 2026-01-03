@@ -15,6 +15,10 @@ import {
   BarVisualizer,
   CircularVisualizer,
   ParticleVisualizer,
+  SpectrumGradientVisualizer,
+  GlowWaveformVisualizer,
+  VUMeterVisualizer,
+  SpectrogramVisualizer,
 } from './visualizers';
 
 /**
@@ -25,6 +29,10 @@ const BUILT_IN_VISUALIZERS: Record<string, new (options?: VisualizerOptions) => 
   bars: BarVisualizer,
   circular: CircularVisualizer,
   particles: ParticleVisualizer,
+  'spectrum-gradient': SpectrumGradientVisualizer,
+  'glow-waveform': GlowWaveformVisualizer,
+  'vu-meter': VUMeterVisualizer,
+  spectrogram: SpectrogramVisualizer,
 };
 
 /**
