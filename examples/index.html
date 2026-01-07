@@ -988,7 +988,17 @@
             <option value="spiral-waveform">Spiral Waveform - Rotating Pattern</option>
             <option value="radial-bars">Radial Bars - Circular Analyzer</option>
             <option value="frequency-rings">Frequency Rings - Concentric Pulses</option>
+            <!-- Custom visualizers will be added here dynamically -->
           </select>
+        </label>
+        <label>
+          Custom Visualizer
+          <input type="file" id="customVisualizerFile" accept=".js,.mjs" aria-label="Upload custom visualizer JS file">
+        </label>
+        <label style="justify-content: center;">
+          <button type="button" id="downloadTemplateBtn" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" data-tooltip="Download a template for creating custom visualizers" aria-label="Download visualizer template">
+            Download Template
+          </button>
         </label>
         <label>
           Primary Color
@@ -1178,7 +1188,7 @@
         }
       });
 
-      const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
+      const { AudioRecorder, AudioToVideoConverter, CustomVisualizerLoader } = window.AudioRecorderVisualization;
 
       // Elements
       const canvas = document.getElementById('visualizer');
@@ -1227,6 +1237,8 @@
       const centerImageOffsetXValue = document.getElementById('centerImageOffsetXValue');
       const centerImageOffsetY = document.getElementById('centerImageOffsetY');
       const centerImageOffsetYValue = document.getElementById('centerImageOffsetYValue');
+      const customVisualizerFile = document.getElementById('customVisualizerFile');
+      const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 
       // Settings persistence
       const SETTINGS_KEY = 'audio-recorder-settings';
@@ -1446,6 +1458,12 @@
       // Initialize converter
       const converter = new AudioToVideoConverter({ debug: true });
 
+      // Initialize custom visualizer loader
+      const customVisualizerLoader = new CustomVisualizerLoader({ debug: true });
+
+      // Track loaded custom visualizers
+      const loadedCustomVisualizers = new Map();
+
       // Recording counter
       let recordingCount = 0;
 
@@ -1518,6 +1536,8 @@
           centerImageZoom.disabled = true;
           centerImageOffsetX.disabled = true;
           centerImageOffsetY.disabled = true;
+          customVisualizerFile.disabled = true;
+          downloadTemplateBtn.disabled = true;
           visualizationAlpha.disabled = true;
           offsetX.disabled = true;
           offsetY.disabled = true;
@@ -1542,6 +1562,8 @@
           centerImageZoom.disabled = false;
           centerImageOffsetX.disabled = false;
           centerImageOffsetY.disabled = false;
+          customVisualizerFile.disabled = false;
+          downloadTemplateBtn.disabled = false;
           visualizationAlpha.disabled = false;
           offsetX.disabled = false;
           offsetY.disabled = false;
@@ -1697,7 +1719,21 @@
         }
 
         try {
-          await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
+          const selectedValue = visualizerSelect.value;
+
+          // Check if it's a custom visualizer
+          if (selectedValue.startsWith('custom:')) {
+            const customId = selectedValue.replace('custom:', '');
+            const loaded = loadedCustomVisualizers.get(customId);
+            if (loaded) {
+              // Create a new instance of the custom visualizer
+              const newInstance = customVisualizerLoader.createInstance(customId, getCurrentOptions());
+              await recorder.setVisualizer(newInstance, getCurrentOptions());
+            }
+          } else {
+            // Built-in visualizer
+            await recorder.setVisualizer(selectedValue, getCurrentOptions());
+          }
         } finally {
           // Resume visualization if it was active
           if (wasVisualizationActive && recorder.sourceType) {
@@ -2213,6 +2249,65 @@
       });
       centerImageOffsetY.addEventListener('change', () => {
         saveSettings(getCurrentSettings());
+      });
+
+      // Custom visualizer upload handler
+      customVisualizerFile.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+          updateStatus('Loading custom visualizer...', 'ready');
+
+          // Load the custom visualizer
+          const loaded = await customVisualizerLoader.loadFromFile(file, getCurrentOptions());
+
+          // Add to the select dropdown
+          const option = document.createElement('option');
+          option.value = `custom:${loaded.metadata.id}`;
+          option.textContent = `${loaded.metadata.name} (Custom)`;
+          option.dataset.customId = loaded.metadata.id;
+          visualizerSelect.appendChild(option);
+
+          // Store reference
+          loadedCustomVisualizers.set(loaded.metadata.id, loaded);
+
+          // Select the new visualizer
+          visualizerSelect.value = `custom:${loaded.metadata.id}`;
+
+          // Apply the custom visualizer
+          await recorder.setVisualizer(loaded.visualizer, getCurrentOptions());
+
+          updateStatus(`Custom visualizer "${loaded.metadata.name}" loaded successfully!`, 'ready');
+          updatePreview();
+        } catch (error) {
+          console.error('Failed to load custom visualizer:', error);
+          updateStatus(`Error loading visualizer: ${error.message}`, 'error');
+        }
+
+        // Reset file input
+        customVisualizerFile.value = '';
+      });
+
+      // Download template button handler
+      downloadTemplateBtn.addEventListener('click', () => {
+        const template = CustomVisualizerLoader.generateTemplate({
+          name: 'MyCustomVisualizer',
+          id: 'my-custom-visualizer'
+        });
+
+        // Create blob and download
+        const blob = new Blob([template], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'custom-visualizer-template.js';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        updateStatus('Template downloaded! Edit it and upload to use.', 'ready');
       });
 
       // Update progress bar with accessibility

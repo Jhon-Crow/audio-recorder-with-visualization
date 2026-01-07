@@ -1,6 +1,10 @@
 // Main exports
 export { AudioRecorder } from './AudioRecorder';
 export { AudioToVideoConverter } from './AudioToVideoConverter';
+export {
+  CustomVisualizerLoader,
+  CustomVisualizerError,
+} from './CustomVisualizerLoader';
 
 // Core exports
 export { AudioAnalyzer } from './core/AudioAnalyzer';
@@ -29,5 +33,12 @@ export type {
   AudioSourceType,
   EventHandler,
 } from './types';
+
+export type {
+  CustomVisualizerModule,
+  CustomVisualizerMetadata,
+  CustomOptionSchema,
+  LoadedCustomVisualizer,
+} from './CustomVisualizerLoader';
 
 export { SUPPORTED_MIME_TYPES } from './types';

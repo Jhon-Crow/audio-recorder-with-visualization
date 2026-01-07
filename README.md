@@ -18,6 +18,7 @@ A TypeScript library for audio visualization and recording. Capture audio from m
   - Spectrogram (waterfall frequency display)
 - **Custom images/GIFs** as backgrounds or overlays
 - **Extensible visualizer system** - create your own visualizers
+- **Custom visualizer loader** - upload and use custom visualization JS files directly in the UI
 - **Maximum performance** - optimized rendering with requestAnimationFrame and typed arrays
 - **TypeScript support** with full type definitions
 
@@ -286,6 +287,17 @@ const recorder = new AudioRecorder({
 
 ## Creating Custom Visualizers
 
+### Using the UI (Recommended)
+
+The easiest way to create and use custom visualizers:
+
+1. Click **"Download Template"** in the Visualization Options panel
+2. Edit the downloaded `custom-visualizer-template.js` file
+3. Upload your modified `.js` file using the **"Custom Visualizer"** file input
+4. Your visualizer will appear in the dropdown and be automatically selected
+
+### Programmatic Usage
+
 Extend the `BaseVisualizer` class to create custom visualizations:
 
 ```typescript
@@ -319,6 +331,35 @@ const recorder = new AudioRecorder({
   visualizer: new MyVisualizer({ primaryColor: '#ff0000' }),
 });
 ```
+
+### Loading Custom Visualizers from Files
+
+Use `CustomVisualizerLoader` to load visualizers from JavaScript files:
+
+```typescript
+import { CustomVisualizerLoader, AudioRecorder } from 'audio-recorder-with-visualization';
+
+const loader = new CustomVisualizerLoader({ debug: true });
+
+// Load from file
+const fileInput = document.getElementById('visualizer-file');
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const loaded = await loader.loadFromFile(file);
+
+  // Use the loaded visualizer
+  await recorder.setVisualizer(loaded.visualizer);
+  console.log(`Loaded: ${loaded.metadata.name}`);
+});
+
+// Generate a template
+const template = CustomVisualizerLoader.generateTemplate({
+  name: 'MyVisualizer',
+  id: 'my-visualizer'
+});
+```
+
+For detailed documentation on creating custom visualizers, see [docs/CUSTOM_VISUALIZERS.md](docs/CUSTOM_VISUALIZERS.md).
 
 ### VisualizationData
 
