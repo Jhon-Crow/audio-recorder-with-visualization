@@ -1276,6 +1276,10 @@
                 Sensitivity: <span id="sensitivityValue">1.0x</span>
                 <input type="range" id="sensitivity" min="0.1" max="5.0" step="0.1" value="1.0" aria-label="Adjust sensitivity">
               </label>
+              <label data-tooltip="Number of particles for the Particles visualizer (20-1000). More particles = denser effect.">
+                Particle Count: <span id="particleCountValue">200</span>
+                <input type="range" id="particleCount" min="20" max="1000" value="200" aria-label="Adjust particle count">
+              </label>
               </div>
             </div>
           </div>
@@ -1802,6 +1806,7 @@
       const barCount = document.getElementById('barCount');
       const frequencyWidth = document.getElementById('frequencyWidth');
       const sensitivity = document.getElementById('sensitivity');
+      const particleCount = document.getElementById('particleCount');
       // ADSR Envelope controls
       const adsrAccordion = document.getElementById('adsrAccordion');
       const adsrAccordionHeader = document.getElementById('adsrAccordionHeader');
@@ -1918,6 +1923,7 @@
         barCount: 64,
         frequencyWidth: 100,
         sensitivity: 1.0,
+        particleCount: 200,
         // ADSR envelope settings
         adsrAttack: 20,
         adsrDecay: 30,
@@ -2077,6 +2083,7 @@
           barCount: parseInt(barCount.value),
           frequencyWidth: parseInt(frequencyWidth.value),
           sensitivity: parseFloat(sensitivity.value),
+          particleCount: parseInt(particleCount.value),
           // ADSR envelope settings
           adsrAttack: parseInt(adsrAttack.value),
           adsrDecay: parseInt(adsrDecay.value),
@@ -2142,6 +2149,8 @@
         document.getElementById('frequencyWidthValue').textContent = (settings.frequencyWidth || 100) + '%';
         sensitivity.value = settings.sensitivity ?? 1.0;
         document.getElementById('sensitivityValue').textContent = (settings.sensitivity ?? 1.0).toFixed(1) + 'x';
+        particleCount.value = settings.particleCount || 200;
+        document.getElementById('particleCountValue').textContent = settings.particleCount || 200;
         // ADSR envelope settings
         adsrAttack.value = settings.adsrAttack ?? 20;
         adsrAttackValue.textContent = (settings.adsrAttack ?? 20) + '%';
@@ -2446,6 +2455,7 @@
           bgColor.disabled = true;
           barCount.disabled = true;
           frequencyWidth.disabled = true;
+          particleCount.disabled = true;
           bgImage.disabled = true;
           bgSizeMode.disabled = true;
           bgCustomWidth.disabled = true;
@@ -2473,6 +2483,7 @@
           bgColor.disabled = false;
           barCount.disabled = false;
           frequencyWidth.disabled = false;
+          particleCount.disabled = false;
           bgImage.disabled = false;
           bgSizeMode.disabled = false;
           bgCustomWidth.disabled = false;
@@ -2724,6 +2735,8 @@
         options.custom.barShape = barShapeSelect.value;
         // Include particle shape (for particles visualizer)
         options.custom.particleShape = particleShapeSelect.value;
+        // Include particle count (for particles visualizer)
+        options.custom.maxParticles = parseInt(particleCount.value);
         // Include image blink settings if enabled
         if (imageBlinkEnabled.checked) {
           options.imageBlinkEnabled = true;
@@ -2828,6 +2841,16 @@
         const newSensitivity = parseFloat(sensitivity.value);
         sensitivityValue.textContent = newSensitivity.toFixed(1) + 'x';
         recorder.setVisualizerOptions({ sensitivity: newSensitivity });
+        saveSettings(getCurrentSettings());
+        updatePreview();
+      });
+
+      // Particle Count change handler with demo visualization and value display
+      const particleCountValue = document.getElementById('particleCountValue');
+      particleCount.addEventListener('input', () => {
+        const newParticleCount = parseInt(particleCount.value);
+        particleCountValue.textContent = newParticleCount;
+        recorder.setVisualizerOptions({ custom: { maxParticles: newParticleCount } });
         saveSettings(getCurrentSettings());
         updatePreview();
       });
