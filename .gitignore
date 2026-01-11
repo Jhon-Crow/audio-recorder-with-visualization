@@ -31,3 +31,6 @@ npm-debug.log*
 *.tgz
 .env
 .env.local
+
+# Playwright MCP
+.playwright-mcp/

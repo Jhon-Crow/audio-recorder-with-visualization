@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dual Range Slider Bug Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #00ff88;
+    }
+
+    .test-section {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h2 {
+      color: #0088ff;
+      margin-top: 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+      height: 40px;
+      cursor: pointer;
+    }
+
+    .slider-container {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .slider-container input {
+      flex: 1;
+    }
+
+    .log {
+      background: #000;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      margin: 2px 0;
+      padding: 2px 4px;
+    }
+
+    .log-error {
+      color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+    }
+
+    .log-warn {
+      color: #ffaa00;
+      background: rgba(255, 170, 0, 0.1);
+    }
+
+    .log-info {
+      color: #00ff88;
+    }
+
+    .value-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff88;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #0088ff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #0066cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dual Range Slider Bug Reproduction</h1>
+
+  <div class="test-section">
+    <h2>Current (Buggy) Implementation</h2>
+    <p>Try dragging the sliders. Notice how one slider might become "stuck" or unresponsive.</p>
+
+    <div class="value-display" id="buggyValue">Range: 60 - 250</div>
+
+    <div class="slider-container">
+      <div style="flex: 1;">
+        <label>Min: <span id="buggyMinLabel">60</span></label>
+        <input type="range" id="buggyMin" min="20" max="500" value="60">
+      </div>
+      <div style="flex: 1;">
+        <label>Max: <span id="buggyMaxLabel">250</span></label>
+        <input type="range" id="buggyMax" min="20" max="2000" value="250">
+      </div>
+    </div>
+
+    <div class="log" id="buggyLog"></div>
+    <button onclick="clearLog('buggyLog')">Clear Log</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Fixed Implementation</h2>
+    <p>Improved version with proper event handling to prevent interference between sliders.</p>
+
+    <div class="value-display" id="fixedValue">Range: 60 - 250</div>
+
+    <div class="slider-container">
+      <div style="flex: 1;">
+        <label>Min: <span id="fixedMinLabel">60</span></label>
+        <input type="range" id="fixedMin" min="20" max="500" value="60">
+      </div>
+      <div style="flex: 1;">
+        <label>Max: <span id="fixedMaxLabel">250</span></label>
+        <input type="range" id="fixedMax" min="20" max="2000" value="250">
+      </div>
+    </div>
+
+    <div class="log" id="fixedLog"></div>
+    <button onclick="clearLog('fixedLog')">Clear Log</button>
+  </div>
+
+  <script>
+    function log(logId, message, type = 'info') {
+      const logDiv = document.getElementById(logId);
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+      entry.textContent = `[${timestamp}] ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function clearLog(logId) {
+      document.getElementById(logId).innerHTML = '';
+    }
+
+    // BUGGY IMPLEMENTATION (current code from index.html)
+    const buggyMin = document.getElementById('buggyMin');
+    const buggyMax = document.getElementById('buggyMax');
+    const buggyValue = document.getElementById('buggyValue');
+    const buggyMinLabel = document.getElementById('buggyMinLabel');
+    const buggyMaxLabel = document.getElementById('buggyMaxLabel');
+
+    buggyMin.addEventListener('input', () => {
+      const min = parseInt(buggyMin.value);
+      const max = parseInt(buggyMax.value);
+
+      log('buggyLog', `Min slider input event: min=${min}, max=${max}`, 'info');
+
+      if (min > max) {
+        log('buggyLog', `Min > Max! Setting Max to ${min}`, 'warn');
+        buggyMax.value = min;  // This triggers another input event on buggyMax!
+      }
+
+      buggyMinLabel.textContent = min;
+      buggyMaxLabel.textContent = parseInt(buggyMax.value);
+      buggyValue.textContent = `Range: ${min} - ${parseInt(buggyMax.value)}`;
+    });
+
+    buggyMax.addEventListener('input', () => {
+      const min = parseInt(buggyMin.value);
+      const max = parseInt(buggyMax.value);
+
+      log('buggyLog', `Max slider input event: min=${min}, max=${max}`, 'info');
+
+      if (max < min) {
+        log('buggyLog', `Max < Min! Setting Min to ${max}`, 'warn');
+        buggyMin.value = max;  // This triggers another input event on buggyMin!
+      }
+
+      buggyMinLabel.textContent = parseInt(buggyMin.value);
+      buggyMaxLabel.textContent = max;
+      buggyValue.textContent = `Range: ${parseInt(buggyMin.value)} - ${max}`;
+    });
+
+    // FIXED IMPLEMENTATION
+    const fixedMin = document.getElementById('fixedMin');
+    const fixedMax = document.getElementById('fixedMax');
+    const fixedValue = document.getElementById('fixedValue');
+    const fixedMinLabel = document.getElementById('fixedMinLabel');
+    const fixedMaxLabel = document.getElementById('fixedMaxLabel');
+
+    // Track which slider is currently being interacted with
+    let isUpdatingProgrammatically = false;
+
+    function updateFixedDisplay() {
+      const min = parseInt(fixedMin.value);
+      const max = parseInt(fixedMax.value);
+      fixedMinLabel.textContent = min;
+      fixedMaxLabel.textContent = max;
+      fixedValue.textContent = `Range: ${min} - ${max}`;
+    }
+
+    fixedMin.addEventListener('input', () => {
+      // Prevent recursive event handling
+      if (isUpdatingProgrammatically) {
+        log('fixedLog', 'Skipping programmatic update', 'info');
+        return;
+      }
+
+      const min = parseInt(fixedMin.value);
+      const max = parseInt(fixedMax.value);
+
+      log('fixedLog', `Min slider input event: min=${min}, max=${max}`, 'info');
+
+      if (min > max) {
+        log('fixedLog', `Min > Max! Setting Max to ${min} (programmatically)`, 'info');
+        isUpdatingProgrammatically = true;
+        fixedMax.value = min;
+        isUpdatingProgrammatically = false;
+      }
+
+      updateFixedDisplay();
+    });
+
+    fixedMax.addEventListener('input', () => {
+      // Prevent recursive event handling
+      if (isUpdatingProgrammatically) {
+        log('fixedLog', 'Skipping programmatic update', 'info');
+        return;
+      }
+
+      const min = parseInt(fixedMin.value);
+      const max = parseInt(fixedMax.value);
+
+      log('fixedLog', `Max slider input event: min=${min}, max=${max}`, 'info');
+
+      if (max < min) {
+        log('fixedLog', `Max < Min! Setting Min to ${max} (programmatically)`, 'info');
+        isUpdatingProgrammatically = true;
+        fixedMin.value = max;
+        isUpdatingProgrammatically = false;
+      }
+
+      updateFixedDisplay();
+    });
+
+    // Initialize
+    log('buggyLog', 'Initialized buggy sliders', 'info');
+    log('fixedLog', 'Initialized fixed sliders', 'info');
+  </script>
+</body>
+</html>
