@@ -602,6 +602,91 @@ export class AudioToVideoConverter {
   }
 
   /**
+   * List of video codecs to try in order of preference
+   * H.264 profiles: Baseline (42001f), Main (4d001f), High (64001f)
+   * VP9, AV1, HEVC as fallbacks (all supported by mp4-muxer)
+   */
+  private static readonly VIDEO_CODECS = [
+    { codec: 'avc1.42001f', name: 'H.264 Baseline', muxerCodec: 'avc' as const },
+    { codec: 'avc1.4d001f', name: 'H.264 Main', muxerCodec: 'avc' as const },
+    { codec: 'avc1.64001f', name: 'H.264 High', muxerCodec: 'avc' as const },
+    { codec: 'vp09.00.10.08', name: 'VP9', muxerCodec: 'vp9' as const },
+    { codec: 'av01.0.04M.08', name: 'AV1', muxerCodec: 'av1' as const },
+    { codec: 'hev1.1.6.L93.B0', name: 'HEVC', muxerCodec: 'hevc' as const },
+  ];
+
+  /**
+   * List of audio codecs to try in order of preference
+   */
+  private static readonly AUDIO_CODECS = [
+    { codec: 'mp4a.40.2', name: 'AAC-LC' },
+    { codec: 'mp4a.40.5', name: 'AAC-HE' },
+    { codec: 'opus', name: 'Opus' },
+  ];
+
+  /**
+   * Find a supported video codec configuration
+   */
+  private async findSupportedVideoCodec(
+    width: number,
+    height: number,
+    bitrate: number,
+    framerate: number
+  ): Promise<{ codec: string; name: string; muxerCodec: 'avc' | 'vp9' | 'av1' | 'hevc'; config: VideoEncoderConfig } | null> {
+    for (const codecInfo of AudioToVideoConverter.VIDEO_CODECS) {
+      const config: VideoEncoderConfig = {
+        codec: codecInfo.codec,
+        width,
+        height,
+        bitrate,
+        framerate,
+      };
+
+      try {
+        const support = await VideoEncoder.isConfigSupported(config);
+        if (support.supported) {
+          this.log(`Video codec ${codecInfo.name} (${codecInfo.codec}) is supported`);
+          return { ...codecInfo, config };
+        }
+        this.log(`Video codec ${codecInfo.name} (${codecInfo.codec}) not supported`);
+      } catch (e) {
+        this.log(`Error checking video codec ${codecInfo.name}:`, e);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Find a supported audio codec configuration
+   */
+  private async findSupportedAudioCodec(
+    sampleRate: number,
+    numberOfChannels: number,
+    bitrate: number
+  ): Promise<{ codec: string; name: string; config: AudioEncoderConfig } | null> {
+    for (const codecInfo of AudioToVideoConverter.AUDIO_CODECS) {
+      const config: AudioEncoderConfig = {
+        codec: codecInfo.codec,
+        sampleRate,
+        numberOfChannels,
+        bitrate,
+      };
+
+      try {
+        const support = await AudioEncoder.isConfigSupported(config);
+        if (support.supported) {
+          this.log(`Audio codec ${codecInfo.name} (${codecInfo.codec}) is supported`);
+          return { ...codecInfo, config };
+        }
+        this.log(`Audio codec ${codecInfo.name} (${codecInfo.codec}) not supported`);
+      } catch (e) {
+        this.log(`Error checking audio codec ${codecInfo.name}:`, e);
+      }
+    }
+    return null;
+  }
+
+  /**
    * Convert an audio file to video with visualization using true offline rendering
    *
    * This method performs REAL faster-than-realtime rendering using WebCodecs API:
@@ -737,16 +822,45 @@ export class AudioToVideoConverter {
     };
 
     try {
-      // Create mp4 muxer
+      // Find supported video codec
+      const videoCodecInfo = await this.findSupportedVideoCodec(
+        videoWidth,
+        videoHeight,
+        videoBitrate,
+        fps
+      );
+
+      if (!videoCodecInfo) {
+        this.log('No supported video codec found, falling back to regular convert()');
+        return this.convert(config);
+      }
+
+      // Find supported audio codec
+      const audioCodecInfo = await this.findSupportedAudioCodec(
+        sampleRate,
+        analysisCache.audioBuffer.numberOfChannels,
+        audioBitrate
+      );
+
+      if (!audioCodecInfo) {
+        this.log('No supported audio codec found, falling back to regular convert()');
+        return this.convert(config);
+      }
+
+      // Determine the appropriate audio codec for muxer based on the selected codec
+      // mp4-muxer supports 'aac' and 'opus' audio codecs
+      const muxerAudioCodec = audioCodecInfo.codec.startsWith('mp4a') ? 'aac' : 'opus';
+
+      // Create mp4 muxer with detected codecs
       const muxer = new Muxer({
         target: new ArrayBufferTarget(),
         video: {
-          codec: 'avc',
+          codec: videoCodecInfo.muxerCodec,
           width: videoWidth,
           height: videoHeight,
         },
         audio: {
-          codec: 'aac',
+          codec: muxerAudioCodec as 'aac' | 'opus',
           numberOfChannels: analysisCache.audioBuffer.numberOfChannels,
           sampleRate: sampleRate,
         },
@@ -763,23 +877,8 @@ export class AudioToVideoConverter {
         },
       });
 
-      // Check codec support and configure
-      const videoCodec = 'avc1.42001f'; // H.264 Baseline Profile
-      const videoConfig: VideoEncoderConfig = {
-        codec: videoCodec,
-        width: videoWidth,
-        height: videoHeight,
-        bitrate: videoBitrate,
-        framerate: fps,
-      };
-
-      const videoSupport = await VideoEncoder.isConfigSupported(videoConfig);
-      if (!videoSupport.supported) {
-        throw new Error(`Video codec ${videoCodec} not supported`);
-      }
-
-      videoEncoder.configure(videoConfig);
-      this.log('Video encoder configured:', videoConfig);
+      videoEncoder.configure(videoCodecInfo.config);
+      this.log('Video encoder configured:', videoCodecInfo.config);
 
       // Configure audio encoder
       const audioEncoder = new AudioEncoder({
@@ -790,21 +889,8 @@ export class AudioToVideoConverter {
         },
       });
 
-      const audioCodec = 'mp4a.40.2'; // AAC-LC
-      const audioConfig: AudioEncoderConfig = {
-        codec: audioCodec,
-        sampleRate: sampleRate,
-        numberOfChannels: analysisCache.audioBuffer.numberOfChannels,
-        bitrate: audioBitrate,
-      };
-
-      const audioSupport = await AudioEncoder.isConfigSupported(audioConfig);
-      if (!audioSupport.supported) {
-        throw new Error(`Audio codec ${audioCodec} not supported`);
-      }
-
-      audioEncoder.configure(audioConfig);
-      this.log('Audio encoder configured:', audioConfig);
+      audioEncoder.configure(audioCodecInfo.config);
+      this.log('Audio encoder configured:', audioCodecInfo.config);
 
       const startTime = performance.now();
 
