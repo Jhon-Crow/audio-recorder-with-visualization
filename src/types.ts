@@ -70,16 +70,6 @@ export type BackgroundSizeMode = 'cover' | 'contain' | 'stretch' | 'tile' | 'cen
 export type LayerEffectType = 'none' | 'blur' | 'brightness' | 'contrast' | 'grayscale' | 'invert' | 'sepia' | 'saturate' | 'hue-rotate';
 
 /**
- * Image blink effect styles
- */
-export type ImageBlinkStyle = 'gradient-sweep' | 'negative-flash' | 'brightness-pulse' | 'color-flash';
-
-/**
- * Image blink target layer
- */
-export type ImageBlinkTarget = 'background' | 'foreground' | 'both';
-
-/**
  * Options for visualizer configuration
  */
 export interface VisualizerOptions {
@@ -139,20 +129,6 @@ export interface VisualizerOptions {
   layerEffect?: LayerEffectType;
   /** Layer effect intensity (0-100), default: 50 */
   layerEffectIntensity?: number;
-  /** Enable image blinking based on frequency and volume, default: false */
-  imageBlinkEnabled?: boolean;
-  /** Frequency range in Hz to monitor for blinking trigger, default: { min: 60, max: 250 } (bass range) */
-  imageBlinkFrequencyRange?: { min: number; max: number };
-  /** Volume threshold (0-255) that must be exceeded to trigger blink, default: 200 */
-  imageBlinkVolumeThreshold?: number;
-  /** Style of blinking effect, default: 'gradient-sweep' */
-  imageBlinkStyle?: ImageBlinkStyle;
-  /** Intensity of blink effect (0-100), default: 80 */
-  imageBlinkIntensity?: number;
-  /** Target layer for blink effect, default: 'background' */
-  imageBlinkTarget?: ImageBlinkTarget;
-  /** Duration of blink effect in milliseconds, default: 150 */
-  imageBlinkDuration?: number;
   /** Custom options for specific visualizers */
   custom?: Record<string, unknown>;
 }

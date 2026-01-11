@@ -14,11 +14,6 @@ export abstract class BaseVisualizer implements Visualizer {
   protected foregroundImageElement: HTMLImageElement | null = null;
   protected imageLoadPromises: Promise<void>[] = [];
 
-  // Image blink state
-  private blinkActive: boolean = false;
-  private blinkStartTime: number = 0;
-  private blinkAnimationPhase: number = 0;
-
   constructor(options: VisualizerOptions = {}) {
     this.options = {
       primaryColor: '#00ff88',
@@ -45,13 +40,6 @@ export abstract class BaseVisualizer implements Visualizer {
       backgroundSizeMode: 'cover',
       layerEffect: 'none',
       layerEffectIntensity: 50,
-      imageBlinkEnabled: false,
-      imageBlinkFrequencyRange: { min: 60, max: 250 },
-      imageBlinkVolumeThreshold: 200,
-      imageBlinkStyle: 'gradient-sweep',
-      imageBlinkIntensity: 80,
-      imageBlinkTarget: 'background',
-      imageBlinkDuration: 150,
       ...options,
     };
   }
@@ -220,204 +208,11 @@ export abstract class BaseVisualizer implements Visualizer {
   }
 
   /**
-   * Check if frequency-based blink should be triggered
-   * Analyzes frequency data in the specified range and checks against threshold
-   */
-  protected checkBlinkTrigger(data: VisualizationData): boolean {
-    if (!this.options.imageBlinkEnabled) {
-      return false;
-    }
-
-    const { frequencyData, sampleRate, fftSize } = data;
-    const frequencyRange = this.options.imageBlinkFrequencyRange!;
-    const threshold = this.options.imageBlinkVolumeThreshold!;
-
-    // Convert frequency range (Hz) to bin indices
-    // Each bin represents: sampleRate / fftSize Hz
-    const binSize = sampleRate / fftSize;
-    const minBin = Math.floor(frequencyRange.min / binSize);
-    const maxBin = Math.ceil(frequencyRange.max / binSize);
-
-    // Calculate average amplitude in the frequency range
-    let sum = 0;
-    let count = 0;
-    for (let i = minBin; i <= maxBin && i < frequencyData.length; i++) {
-      sum += frequencyData[i];
-      count++;
-    }
-
-    const average = count > 0 ? sum / count : 0;
-
-    // Trigger blink if average exceeds threshold
-    return average > threshold;
-  }
-
-  /**
-   * Update blink animation state based on trigger
-   */
-  protected updateBlinkState(triggered: boolean, timestamp: number): void {
-    const duration = this.options.imageBlinkDuration!;
-
-    if (triggered && !this.blinkActive) {
-      // Start new blink
-      this.blinkActive = true;
-      this.blinkStartTime = timestamp;
-      this.blinkAnimationPhase = 0;
-    }
-
-    if (this.blinkActive) {
-      // Update animation phase (0 to 1 over duration)
-      const elapsed = timestamp - this.blinkStartTime;
-      this.blinkAnimationPhase = Math.min(1, elapsed / duration);
-
-      // End blink when animation completes
-      if (this.blinkAnimationPhase >= 1) {
-        this.blinkActive = false;
-        this.blinkAnimationPhase = 0;
-      }
-    }
-  }
-
-  /**
-   * Apply image blink effect to a canvas
-   */
-  protected applyImageBlinkEffect(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    phase: number
-  ): void {
-    if (phase <= 0) return;
-
-    const style = this.options.imageBlinkStyle!;
-    const intensity = this.options.imageBlinkIntensity! / 100;
-
-    // Create effect overlay based on style
-    switch (style) {
-      case 'gradient-sweep':
-        this.applyGradientSweepEffect(ctx, width, height, phase, intensity);
-        break;
-      case 'negative-flash':
-        this.applyNegativeFlashEffect(ctx, width, height, phase, intensity);
-        break;
-      case 'brightness-pulse':
-        this.applyBrightnessPulseEffect(ctx, width, height, phase, intensity);
-        break;
-      case 'color-flash':
-        this.applyColorFlashEffect(ctx, width, height, phase, intensity);
-        break;
-    }
-  }
-
-  /**
-   * Gradient sweep effect - animated gradient highlight
-   */
-  private applyGradientSweepEffect(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    phase: number,
-    intensity: number
-  ): void {
-    // Create an animated gradient that sweeps across the image
-    // Phase 0->0.5: sweep in, 0.5->1: sweep out
-    const sweepPhase = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-    const alpha = sweepPhase * intensity * 0.6;
-
-    // Diagonal gradient sweep from top-left to bottom-right
-    const gradientStart = (phase - 0.5) * (width + height);
-    const gradient = ctx.createLinearGradient(
-      gradientStart, gradientStart,
-      gradientStart + width, gradientStart + height
-    );
-
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-    gradient.addColorStop(0.3, `rgba(255, 255, 255, ${alpha})`);
-    gradient.addColorStop(0.7, `rgba(255, 255, 255, ${alpha})`);
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  /**
-   * Negative flash effect - invert colors briefly
-   */
-  private applyNegativeFlashEffect(
-    ctx: CanvasRenderingContext2D,
-    _width: number,
-    _height: number,
-    phase: number,
-    intensity: number
-  ): void {
-    // Quick flash effect: fade in and out
-    const flashPhase = phase < 0.3 ? phase / 0.3 : (1 - phase) / 0.7;
-    const effectStrength = flashPhase * intensity * 100;
-
-    // Apply invert filter
-    ctx.filter = `invert(${effectStrength}%)`;
-    ctx.drawImage(ctx.canvas, 0, 0);
-    ctx.filter = 'none';
-  }
-
-  /**
-   * Brightness pulse effect - brighten image
-   */
-  private applyBrightnessPulseEffect(
-    ctx: CanvasRenderingContext2D,
-    _width: number,
-    _height: number,
-    phase: number,
-    intensity: number
-  ): void {
-    // Smooth pulse: fade in and out
-    const pulsePhase = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-    const brightness = 100 + pulsePhase * intensity * 100;
-
-    // Apply brightness filter
-    ctx.filter = `brightness(${brightness}%)`;
-    ctx.drawImage(ctx.canvas, 0, 0);
-    ctx.filter = 'none';
-  }
-
-  /**
-   * Color flash effect - flash with primary color
-   */
-  private applyColorFlashEffect(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    phase: number,
-    intensity: number
-  ): void {
-    // Quick color flash: fade in and out
-    const flashPhase = phase < 0.3 ? phase / 0.3 : (1 - phase) / 0.7;
-    const alpha = flashPhase * intensity * 0.5;
-
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = this.options.primaryColor!;
-    ctx.globalAlpha = alpha;
-    ctx.fillRect(0, 0, width, height);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  /**
-   * Draw background (color or image) with optional blink effect
+   * Draw background (color or image)
    */
   protected drawBackground(ctx: CanvasRenderingContext2D, data: VisualizationData): void {
     if (!this.options.drawBackground) {
       return;
-    }
-
-    // Check for blink trigger and update state
-    const shouldBlink = this.options.imageBlinkEnabled &&
-                        (this.options.imageBlinkTarget === 'background' || this.options.imageBlinkTarget === 'both');
-    if (shouldBlink) {
-      const triggered = this.checkBlinkTrigger(data);
-      this.updateBlinkState(triggered, data.timestamp);
     }
 
     if (this.backgroundImageElement) {
@@ -444,11 +239,6 @@ export abstract class BaseVisualizer implements Visualizer {
           break;
         default:
           this.drawImageCover(ctx, this.backgroundImageElement, data.width, data.height);
-      }
-
-      // Apply blink effect to background if active
-      if (shouldBlink && this.blinkActive) {
-        this.applyImageBlinkEffect(ctx, data.width, data.height, this.blinkAnimationPhase);
       }
     } else {
       ctx.fillStyle = this.options.backgroundColor!;
@@ -519,7 +309,7 @@ export abstract class BaseVisualizer implements Visualizer {
   }
 
   /**
-   * Draw foreground image if specified with optional blink effect
+   * Draw foreground image if specified
    */
   protected drawForeground(ctx: CanvasRenderingContext2D, data: VisualizationData): void {
     if (this.foregroundImageElement) {
@@ -528,13 +318,6 @@ export abstract class BaseVisualizer implements Visualizer {
       ctx.globalAlpha = alpha;
       this.drawImageCover(ctx, this.foregroundImageElement, data.width, data.height);
       ctx.globalAlpha = previousAlpha;
-
-      // Apply blink effect to foreground if active and target includes foreground
-      const shouldBlink = this.options.imageBlinkEnabled &&
-                          (this.options.imageBlinkTarget === 'foreground' || this.options.imageBlinkTarget === 'both');
-      if (shouldBlink && this.blinkActive) {
-        this.applyImageBlinkEffect(ctx, data.width, data.height, this.blinkAnimationPhase);
-      }
     }
   }
 

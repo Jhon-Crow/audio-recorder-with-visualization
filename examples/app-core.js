@@ -95,39 +95,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const particleShapeSelect = document.getElementById('particleShape');
   const videoFormat = document.getElementById('videoFormat');
 
-  // Image blink controls
-  const imageBlinkEnabled = document.getElementById('imageBlinkEnabled');
-  const imageBlinkControls = document.getElementById('imageBlinkControls');
-  const imageBlinkStyle = document.getElementById('imageBlinkStyle');
-  const imageBlinkTarget = document.getElementById('imageBlinkTarget');
-  const blinkFrequencyMin = document.getElementById('blinkFrequencyMin');
-  const blinkFrequencyMax = document.getElementById('blinkFrequencyMax');
-  const blinkFrequencyValue = document.getElementById('blinkFrequencyValue');
-  const blinkThreshold = document.getElementById('blinkThreshold');
-  const blinkThresholdValue = document.getElementById('blinkThresholdValue');
-  const blinkIntensity = document.getElementById('blinkIntensity');
-  const blinkIntensityValue = document.getElementById('blinkIntensityValue');
-  const blinkDuration = document.getElementById('blinkDuration');
-  const blinkDurationValue = document.getElementById('blinkDurationValue');
-
-  // Blink debug mode controls
-  const blinkDebugModeEnabled = document.getElementById('blinkDebugModeEnabled');
-  const blinkDebugControls = document.getElementById('blinkDebugControls');
-  const blinkDebugAudioFile = document.getElementById('blinkDebugAudioFile');
-  const blinkDebugFileName = document.getElementById('blinkDebugFileName');
-  const blinkWaveformContainer = document.getElementById('blinkWaveformContainer');
-  const blinkWaveformCanvas = document.getElementById('blinkWaveformCanvas');
-  const blinkSelectionOverlay = document.getElementById('blinkSelectionOverlay');
-  const blinkIntervalDisplay = document.getElementById('blinkIntervalDisplay');
-  const blinkWaveformStart = document.getElementById('blinkWaveformStart');
-  const blinkWaveformEnd = document.getElementById('blinkWaveformEnd');
-  const blinkPlayIntervalBtn = document.getElementById('blinkPlayIntervalBtn');
-  const blinkClearIntervalBtn = document.getElementById('blinkClearIntervalBtn');
-  const blinkExtractedParams = document.getElementById('blinkExtractedParams');
-  const blinkExtractedFreq = document.getElementById('blinkExtractedFreq');
-  const blinkExtractedThreshold = document.getElementById('blinkExtractedThreshold');
-  const blinkManualControls = document.getElementById('blinkManualControls');
-
   // Presentation mode elements
   const presentationTab = document.getElementById('presentationTab');
   const togglePresentationBtn = document.getElementById('togglePresentationBtn');
@@ -183,20 +150,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     centerImageOffsetY: 0,
     barShape: 'rounded',
     particleShape: 'circle',
-    imageBlinkEnabled: false,
-    imageBlinkStyle: 'gradient-sweep',
-    imageBlinkTarget: 'background',
-    imageBlinkFrequencyMin: 60,
-    imageBlinkFrequencyMax: 250,
-    imageBlinkThreshold: 200,
-    imageBlinkIntensity: 80,
-    imageBlinkDuration: 150,
-    // Blink debug mode settings
-    blinkDebugModeEnabled: false,
-    blinkDebugAudioData: null, // base64 encoded audio data
-    blinkDebugAudioName: null, // original filename
-    blinkDebugIntervalStart: 0, // interval start time in seconds
-    blinkDebugIntervalEnd: 0, // interval end time in seconds
     // Presentation mode settings
     presentationWindowMode: 'alwaysOnTop',
     presentationWindowType: 'frameless',
@@ -294,18 +247,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   let currentBackgroundImageUrl = null;
   let currentCenterImageUrl = null;
 
-  // Blink debug mode state
-  let blinkDebugAudioBuffer = null;
-  let blinkDebugAudioContext = null;
-  let blinkDebugAudioSource = null;
-  let blinkDebugAudioDuration = 0;
-  let blinkDebugIntervalStartTime = 0;
-  let blinkDebugIntervalEndTime = 0;
-  let blinkDebugIsSelecting = false;
-  let blinkDebugSelectionStartX = 0;
-  let blinkDebugAudioDataUrl = null;
-  let blinkDebugAudioFileName = null;
-
   // Track presentation window position (null = auto-center)
   let currentPresentationX = null;
   let currentPresentationY = null;
@@ -346,20 +287,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       centerImageOffsetY: parseInt(centerImageOffsetY.value),
       barShape: barShapeSelect.value,
       particleShape: particleShapeSelect.value,
-      imageBlinkEnabled: imageBlinkEnabled.checked,
-      imageBlinkStyle: imageBlinkStyle.value,
-      imageBlinkTarget: imageBlinkTarget.value,
-      imageBlinkFrequencyMin: parseInt(blinkFrequencyMin.value),
-      imageBlinkFrequencyMax: parseInt(blinkFrequencyMax.value),
-      imageBlinkThreshold: parseInt(blinkThreshold.value),
-      imageBlinkIntensity: parseInt(blinkIntensity.value),
-      imageBlinkDuration: parseInt(blinkDuration.value),
-      // Blink debug mode settings
-      blinkDebugModeEnabled: blinkDebugModeEnabled.checked,
-      blinkDebugAudioData: blinkDebugAudioDataUrl,
-      blinkDebugAudioName: blinkDebugAudioFileName,
-      blinkDebugIntervalStart: blinkDebugIntervalStartTime,
-      blinkDebugIntervalEnd: blinkDebugIntervalEndTime,
       // Presentation mode settings
       presentationWindowMode: presentationWindowMode.value,
       presentationWindowType: presentationWindowType.value,
@@ -434,23 +361,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     centerImageOffsetY.value = settings.centerImageOffsetY || 0;
     centerImageOffsetYValue.textContent = (settings.centerImageOffsetY || 0) + 'px';
 
-    // Image blink settings
-    imageBlinkEnabled.checked = settings.imageBlinkEnabled || false;
-    imageBlinkStyle.value = settings.imageBlinkStyle || 'gradient-sweep';
-    imageBlinkTarget.value = settings.imageBlinkTarget || 'background';
-    blinkFrequencyMin.value = settings.imageBlinkFrequencyMin || 60;
-    blinkFrequencyMax.value = settings.imageBlinkFrequencyMax || 250;
-    blinkFrequencyValue.textContent = `${settings.imageBlinkFrequencyMin || 60} - ${settings.imageBlinkFrequencyMax || 250}`;
-    blinkThreshold.value = settings.imageBlinkThreshold || 200;
-    blinkThresholdValue.textContent = settings.imageBlinkThreshold || 200;
-    blinkIntensity.value = settings.imageBlinkIntensity || 80;
-    blinkIntensityValue.textContent = `${settings.imageBlinkIntensity || 80}%`;
-    blinkDuration.value = settings.imageBlinkDuration || 150;
-    blinkDurationValue.textContent = `${settings.imageBlinkDuration || 150}ms`;
-
-    // Show/hide image blink controls
-    imageBlinkControls.style.display = (settings.imageBlinkEnabled || false) ? 'grid' : 'none';
-
     // Restore background image if saved
     if (settings.backgroundImage) {
       currentBackgroundImageUrl = settings.backgroundImage;
@@ -473,22 +383,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     const isParticles = settings.visualizer === 'particles';
     barShapeControls.style.display = isBars ? 'grid' : 'none';
     particleShapeControls.style.display = isParticles ? 'grid' : 'none';
-
-    // Blink debug mode settings
-    blinkDebugModeEnabled.checked = settings.blinkDebugModeEnabled || false;
-    blinkDebugControls.style.display = settings.blinkDebugModeEnabled ? 'block' : 'none';
-    blinkManualControls.style.display = settings.blinkDebugModeEnabled ? 'none' : 'block';
-
-    // Restore debug audio data if saved
-    if (settings.blinkDebugAudioData) {
-      blinkDebugAudioDataUrl = settings.blinkDebugAudioData;
-      blinkDebugAudioFileName = settings.blinkDebugAudioName;
-      blinkDebugIntervalStartTime = settings.blinkDebugIntervalStart || 0;
-      blinkDebugIntervalEndTime = settings.blinkDebugIntervalEnd || 0;
-      if (blinkDebugAudioFileName) {
-        blinkDebugFileName.textContent = blinkDebugAudioFileName;
-      }
-    }
 
     // Apply presentation mode settings
     presentationWindowMode.value = settings.presentationWindowMode || 'alwaysOnTop';
@@ -585,20 +479,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Add particle shape if saved
   if (savedSettings.particleShape) {
     visualizerOptions.custom.particleShape = savedSettings.particleShape;
-  }
-
-  // Add image blink settings if enabled
-  if (savedSettings.imageBlinkEnabled) {
-    visualizerOptions.imageBlinkEnabled = true;
-    visualizerOptions.imageBlinkFrequencyRange = {
-      min: savedSettings.imageBlinkFrequencyMin || 60,
-      max: savedSettings.imageBlinkFrequencyMax || 250,
-    };
-    visualizerOptions.imageBlinkVolumeThreshold = savedSettings.imageBlinkThreshold || 200;
-    visualizerOptions.imageBlinkStyle = savedSettings.imageBlinkStyle || 'gradient-sweep';
-    visualizerOptions.imageBlinkIntensity = savedSettings.imageBlinkIntensity || 80;
-    visualizerOptions.imageBlinkTarget = savedSettings.imageBlinkTarget || 'background';
-    visualizerOptions.imageBlinkDuration = savedSettings.imageBlinkDuration || 150;
   }
 
   const recorder = new AudioRecorder({
@@ -896,21 +776,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     options.custom.barShape = barShapeSelect.value;
     // Include particle shape (for particles visualizer)
     options.custom.particleShape = particleShapeSelect.value;
-    // Include image blink settings if enabled
-    if (imageBlinkEnabled.checked) {
-      options.imageBlinkEnabled = true;
-      options.imageBlinkFrequencyRange = {
-        min: parseInt(blinkFrequencyMin.value),
-        max: parseInt(blinkFrequencyMax.value),
-      };
-      options.imageBlinkVolumeThreshold = parseInt(blinkThreshold.value);
-      options.imageBlinkStyle = imageBlinkStyle.value;
-      options.imageBlinkIntensity = parseInt(blinkIntensity.value);
-      options.imageBlinkTarget = imageBlinkTarget.value;
-      options.imageBlinkDuration = parseInt(blinkDuration.value);
-    } else {
-      options.imageBlinkEnabled = false;
-    }
     return options;
   }
 
@@ -971,27 +836,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     set currentPresentationX(val) { currentPresentationX = val; },
     get currentPresentationY() { return currentPresentationY; },
     set currentPresentationY(val) { currentPresentationY = val; },
-    // Blink debug state
-    get blinkDebugAudioBuffer() { return blinkDebugAudioBuffer; },
-    set blinkDebugAudioBuffer(val) { blinkDebugAudioBuffer = val; },
-    get blinkDebugAudioContext() { return blinkDebugAudioContext; },
-    set blinkDebugAudioContext(val) { blinkDebugAudioContext = val; },
-    get blinkDebugAudioSource() { return blinkDebugAudioSource; },
-    set blinkDebugAudioSource(val) { blinkDebugAudioSource = val; },
-    get blinkDebugAudioDuration() { return blinkDebugAudioDuration; },
-    set blinkDebugAudioDuration(val) { blinkDebugAudioDuration = val; },
-    get blinkDebugIntervalStartTime() { return blinkDebugIntervalStartTime; },
-    set blinkDebugIntervalStartTime(val) { blinkDebugIntervalStartTime = val; },
-    get blinkDebugIntervalEndTime() { return blinkDebugIntervalEndTime; },
-    set blinkDebugIntervalEndTime(val) { blinkDebugIntervalEndTime = val; },
-    get blinkDebugIsSelecting() { return blinkDebugIsSelecting; },
-    set blinkDebugIsSelecting(val) { blinkDebugIsSelecting = val; },
-    get blinkDebugSelectionStartX() { return blinkDebugSelectionStartX; },
-    set blinkDebugSelectionStartX(val) { blinkDebugSelectionStartX = val; },
-    get blinkDebugAudioDataUrl() { return blinkDebugAudioDataUrl; },
-    set blinkDebugAudioDataUrl(val) { blinkDebugAudioDataUrl = val; },
-    get blinkDebugAudioFileName() { return blinkDebugAudioFileName; },
-    set blinkDebugAudioFileName(val) { blinkDebugAudioFileName = val; },
     // Functions
     saveSettings,
     getCurrentSettings,
@@ -1062,35 +906,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       particleShapeControls,
       particleShapeSelect,
       videoFormat,
-      imageBlinkEnabled,
-      imageBlinkControls,
-      imageBlinkStyle,
-      imageBlinkTarget,
-      blinkFrequencyMin,
-      blinkFrequencyMax,
-      blinkFrequencyValue,
-      blinkThreshold,
-      blinkThresholdValue,
-      blinkIntensity,
-      blinkIntensityValue,
-      blinkDuration,
-      blinkDurationValue,
-      blinkDebugModeEnabled,
-      blinkDebugControls,
-      blinkDebugAudioFile,
-      blinkDebugFileName,
-      blinkWaveformContainer,
-      blinkWaveformCanvas,
-      blinkSelectionOverlay,
-      blinkIntervalDisplay,
-      blinkWaveformStart,
-      blinkWaveformEnd,
-      blinkPlayIntervalBtn,
-      blinkClearIntervalBtn,
-      blinkExtractedParams,
-      blinkExtractedFreq,
-      blinkExtractedThreshold,
-      blinkManualControls,
       togglePresentationBtn,
       togglePresentationBtnText,
       presentationWindowMode,
