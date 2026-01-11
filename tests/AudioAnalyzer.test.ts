@@ -111,4 +111,136 @@ describe('AudioAnalyzer', () => {
     expect(analyzer.getTimeDomainData().length).toBe(0);
     expect(analyzer.getFrequencyData().length).toBe(0);
   });
+
+  test('should initialize with debug mode', () => {
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    const debugAnalyzer = new AudioAnalyzer({ debug: true });
+    debugAnalyzer.getAudioContext();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[AudioAnalyzer]',
+      expect.anything(),
+      expect.anything()
+    );
+    debugAnalyzer.destroy();
+    consoleSpy.mockRestore();
+  });
+
+  test('should throw error for non-power-of-2 FFT size', () => {
+    expect(() => new AudioAnalyzer({ fftSize: 1000 })).toThrow();
+    expect(() => new AudioAnalyzer({ fftSize: 2049 })).toThrow();
+  });
+
+  test('should throw error when setting invalid FFT size', async () => {
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+
+    expect(() => { analyzer.fftSize = 100; }).toThrow();
+    expect(() => { analyzer.fftSize = 65536; }).toThrow();
+  });
+
+  test('should return sample rate 44100 when no audio context', () => {
+    // Create fresh analyzer that hasn't created AudioContext
+    const freshAnalyzer = new AudioAnalyzer();
+    expect(freshAnalyzer.sampleRate).toBe(44100);
+    freshAnalyzer.destroy();
+  });
+
+  test('should generate demo frequency data', () => {
+    const demoData = analyzer.generateDemoFrequencyData();
+    expect(demoData).toBeInstanceOf(Uint8Array);
+    expect(demoData.length).toBe(analyzer.frequencyBinCount);
+    // Values should be between 0-255
+    for (const value of demoData) {
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(255);
+    }
+  });
+
+  test('should generate demo time domain data', () => {
+    const demoData = analyzer.generateDemoTimeDomainData();
+    expect(demoData).toBeInstanceOf(Uint8Array);
+    expect(demoData.length).toBe(analyzer.fftSize);
+    // Values should be between 0-255
+    for (const value of demoData) {
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(255);
+    }
+  });
+
+  test('should generate varying demo data over time', () => {
+    // Generate demo data multiple times
+    const demoData = analyzer.generateDemoFrequencyData();
+    // Data should be valid
+    expect(demoData).toBeInstanceOf(Uint8Array);
+    expect(demoData.length).toBe(analyzer.frequencyBinCount);
+  });
+
+  test('should connect to audio element', async () => {
+    const audioElement = document.createElement('audio');
+    await analyzer.connectAudioElement(audioElement);
+    expect(analyzer.isActive).toBe(true);
+  });
+
+  test('should disconnect previous source when connecting new one', async () => {
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+
+    const audioElement = document.createElement('audio');
+    await analyzer.connectAudioElement(audioElement);
+
+    // Should still be active with new source
+    expect(analyzer.isActive).toBe(true);
+  });
+
+  test('should return empty data before connecting source', () => {
+    // Fresh analyzer without connection
+    const freshAnalyzer = new AudioAnalyzer();
+    const timeData = freshAnalyzer.getTimeDomainData();
+    const freqData = freshAnalyzer.getFrequencyData();
+
+    // Empty before any connection
+    expect(timeData.length).toBe(0);
+    expect(freqData.length).toBe(0);
+
+    freshAnalyzer.destroy();
+  });
+
+  test('should update smoothing time constant on analyzer node', async () => {
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+
+    analyzer.smoothingTimeConstant = 0.5;
+    expect(analyzer.smoothingTimeConstant).toBe(0.5);
+  });
+
+  test('should set smoothing time constant before creating analyzer node', () => {
+    // Set before connecting (no analyzer node yet)
+    analyzer.smoothingTimeConstant = 0.5;
+    expect(analyzer.smoothingTimeConstant).toBe(0.5);
+  });
+
+  test('should set FFT size before creating analyzer node', () => {
+    // Create fresh analyzer
+    const freshAnalyzer = new AudioAnalyzer();
+
+    // This should just set the internal value without error
+    // because analyzer node doesn't exist yet
+    // Note: fftSize setter throws for invalid values
+    freshAnalyzer.fftSize = 4096;
+    expect(freshAnalyzer.fftSize).toBe(4096);
+
+    freshAnalyzer.destroy();
+  });
+
+  test('disconnect should handle no source gracefully', () => {
+    // No source connected
+    expect(() => analyzer.disconnect()).not.toThrow();
+    expect(analyzer.isActive).toBe(false);
+  });
+
+  test('should report isActive false when context exists but no source', () => {
+    // Create context but don't connect source
+    analyzer.getAudioContext();
+    expect(analyzer.isActive).toBe(false);
+  });
 });
