@@ -3,6 +3,40 @@
  * Mock Web Audio API and other browser APIs for testing
  */
 
+// Mock AudioBuffer
+class MockAudioBuffer {
+  readonly numberOfChannels: number;
+  readonly length: number;
+  readonly sampleRate: number;
+  readonly duration: number;
+  private channelData: Float32Array[];
+
+  constructor(options: { numberOfChannels: number; length: number; sampleRate: number }) {
+    this.numberOfChannels = options.numberOfChannels;
+    this.length = options.length;
+    this.sampleRate = options.sampleRate;
+    this.duration = options.length / options.sampleRate;
+
+    // Create channel data with some test pattern
+    this.channelData = [];
+    for (let c = 0; c < options.numberOfChannels; c++) {
+      const data = new Float32Array(options.length);
+      // Fill with a simple sine wave pattern for testing
+      for (let i = 0; i < options.length; i++) {
+        data[i] = Math.sin((i / options.sampleRate) * 440 * 2 * Math.PI) * 0.5;
+      }
+      this.channelData.push(data);
+    }
+  }
+
+  getChannelData(channel: number): Float32Array {
+    return this.channelData[channel] || new Float32Array(0);
+  }
+
+  copyFromChannel(_destination: Float32Array, _channelNumber: number, _startInChannel?: number): void {}
+  copyToChannel(_source: Float32Array, _channelNumber: number, _startInChannel?: number): void {}
+}
+
 // Mock AudioContext
 class MockAudioContext {
   private _state: AudioContextState = 'running';
@@ -42,6 +76,21 @@ class MockAudioContext {
     return {
       stream: new MediaStream(),
     } as unknown as MediaStreamAudioDestinationNode;
+  }
+
+  // Mock decodeAudioData for offline audio analysis
+  async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+    // Create a mock audio buffer with predictable data
+    // Assume 1 second of audio at 44100 Hz, stereo
+    const sampleRate = 44100;
+    const duration = Math.max(1, arrayBuffer.byteLength / (sampleRate * 4)); // rough estimate
+    const length = Math.floor(duration * sampleRate);
+
+    return new MockAudioBuffer({
+      numberOfChannels: 2,
+      length,
+      sampleRate,
+    }) as unknown as AudioBuffer;
   }
 }
 
