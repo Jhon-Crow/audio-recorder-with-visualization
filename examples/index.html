@@ -3174,7 +3174,7 @@
         // Extract the interval data
         const intervalData = channelData.slice(startSample, Math.min(endSample, channelData.length));
 
-        // Calculate RMS volume
+        // Calculate RMS volume and peak amplitude
         let sumSquares = 0;
         let maxAmp = 0;
         for (let i = 0; i < intervalData.length; i++) {
@@ -3184,8 +3184,14 @@
         }
         const rms = Math.sqrt(sumSquares / intervalData.length);
 
-        // Convert RMS to 0-255 scale (approximate threshold)
-        const volumeThreshold = Math.round(maxAmp * 255);
+        // Convert RMS to 0-255 scale for threshold calculation.
+        // We use RMS instead of peak amplitude because checkBlinkTrigger compares against
+        // the AVERAGE of frequency bin values (not peak). Using RMS provides a better
+        // approximation of the average power level.
+        // The multiplier 255 * 0.7 accounts for the fact that frequency data from
+        // getByteFrequencyData() is mapped from decibels (-100dB to -30dB by default)
+        // and averages tend to be lower than peaks.
+        const volumeThreshold = Math.round(rms * 255 * 0.7);
 
         // Perform simple frequency analysis using zero crossing rate
         // This gives a rough estimate of the dominant frequency
@@ -3208,7 +3214,8 @@
         return {
           frequencyMin: freqMin,
           frequencyMax: freqMax,
-          volumeThreshold: Math.max(50, Math.min(255, volumeThreshold)),
+          // Lower minimum threshold (30) since RMS-based calculation produces lower values
+          volumeThreshold: Math.max(30, Math.min(255, volumeThreshold)),
         };
       }
 
