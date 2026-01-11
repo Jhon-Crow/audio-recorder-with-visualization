@@ -757,17 +757,58 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     videoEl.src = url;
     videoEl.width = 200;
 
-    // Enable fullscreen on double-click
-    videoEl.addEventListener('dblclick', () => {
+    // Helper function to toggle fullscreen on video element
+    function toggleFullscreen() {
+      // If already in fullscreen, exit
+      if (document.fullscreenElement || document.webkitFullscreenElement ||
+          document.mozFullScreenElement || document.msFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(err => {
+            console.warn('[Fullscreen] Exit error:', err.message);
+          });
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        return;
+      }
+
+      // Request fullscreen with proper error handling
+      let fullscreenPromise = null;
       if (videoEl.requestFullscreen) {
-        videoEl.requestFullscreen();
+        fullscreenPromise = videoEl.requestFullscreen();
       } else if (videoEl.webkitRequestFullscreen) {
+        // Safari - doesn't return a promise
         videoEl.webkitRequestFullscreen();
       } else if (videoEl.mozRequestFullScreen) {
-        videoEl.mozRequestFullScreen();
+        fullscreenPromise = videoEl.mozRequestFullScreen();
       } else if (videoEl.msRequestFullscreen) {
         videoEl.msRequestFullscreen();
+      } else {
+        console.warn('[Fullscreen] No fullscreen API available');
+        return;
       }
+
+      // Handle promise rejection if method returns a promise
+      if (fullscreenPromise && fullscreenPromise.catch) {
+        fullscreenPromise.catch(err => {
+          console.warn('[Fullscreen] Request rejected:', err.message);
+          // Show user-friendly message if in Electron
+          if (window.electronAPI && window.electronAPI.isElectron) {
+            console.log('[Fullscreen] Electron fullscreen may require different handling');
+          }
+        });
+      }
+    }
+
+    // Enable fullscreen on double-click
+    videoEl.addEventListener('dblclick', (e) => {
+      // Prevent double-click from affecting playback state
+      e.preventDefault();
+      toggleFullscreen();
     });
 
     // Add title attribute for hint
@@ -784,7 +825,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       infoDiv.innerHTML = `
         <p>Recording ${recordingCount}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-        <button class="btn-info" data-blob-index="${recordingCount}">Save and Show in Folder</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn-info" data-blob-index="${recordingCount}">Save and Show in Folder</button>
+          <button class="btn-secondary fullscreen-btn" title="Open video in fullscreen">Fullscreen</button>
+        </div>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
       `;
 
@@ -826,9 +870,18 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       infoDiv.innerHTML = `
         <p>Recording ${recordingCount}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-        <a href="${url}" download="${fileName}">Download</a>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <a href="${url}" download="${fileName}">Download</a>
+          <button class="btn-secondary fullscreen-btn" title="Open video in fullscreen">Fullscreen</button>
+        </div>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
       `;
+    }
+
+    // Add click handler for fullscreen button
+    const fullscreenBtn = infoDiv.querySelector('.fullscreen-btn');
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
     }
 
     item.appendChild(videoEl);
