@@ -757,6 +757,15 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     videoEl.src = url;
     videoEl.width = 200;
 
+    // Helper function to show fullscreen error to user
+    function showFullscreenError(message) {
+      updateStatus('Fullscreen error: ' + message, 'error');
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        updateStatus('Ready', 'ready');
+      }, 3000);
+    }
+
     // Helper function to toggle fullscreen on video element
     function toggleFullscreen() {
       // If already in fullscreen, exit
@@ -765,6 +774,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         if (document.exitFullscreen) {
           document.exitFullscreen().catch(err => {
             console.warn('[Fullscreen] Exit error:', err.message);
+            showFullscreenError(err.message);
           });
         } else if (document.webkitExitFullscreen) {
           document.webkitExitFullscreen();
@@ -773,6 +783,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         } else if (document.msExitFullscreen) {
           document.msExitFullscreen();
         }
+        return;
+      }
+
+      // Check if fullscreen is enabled in the browser
+      if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled) {
+        console.warn('[Fullscreen] Fullscreen is not enabled in this browser/context');
+        showFullscreenError('Fullscreen not available in this browser');
         return;
       }
 
@@ -789,18 +806,20 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         videoEl.msRequestFullscreen();
       } else {
         console.warn('[Fullscreen] No fullscreen API available');
+        showFullscreenError('No fullscreen API available');
         return;
       }
 
       // Handle promise rejection if method returns a promise
-      if (fullscreenPromise && fullscreenPromise.catch) {
-        fullscreenPromise.catch(err => {
-          console.warn('[Fullscreen] Request rejected:', err.message);
-          // Show user-friendly message if in Electron
-          if (window.electronAPI && window.electronAPI.isElectron) {
-            console.log('[Fullscreen] Electron fullscreen may require different handling');
-          }
-        });
+      if (fullscreenPromise) {
+        fullscreenPromise
+          .then(() => {
+            console.log('[Fullscreen] Entered fullscreen mode');
+          })
+          .catch(err => {
+            console.warn('[Fullscreen] Request rejected:', err.message);
+            showFullscreenError(err.message);
+          });
       }
     }
 
