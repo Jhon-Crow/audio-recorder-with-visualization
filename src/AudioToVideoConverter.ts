@@ -821,6 +821,10 @@ export class AudioToVideoConverter {
       offlineAnalyzer.destroy();
     };
 
+    // Track encoder error state to prevent encoding on closed codec
+    // Using 'unknown' type since DOMException can be thrown but isn't strictly an Error
+    let encoderError: Error | DOMException | unknown = null;
+
     try {
       // Find supported video codec
       const videoCodecInfo = await this.findSupportedVideoCodec(
@@ -868,24 +872,24 @@ export class AudioToVideoConverter {
         firstTimestampBehavior: 'offset',
       });
 
-      // Configure video encoder
+      // Configure video encoder with error tracking
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
         error: (e) => {
           this.log('VideoEncoder error:', e);
-          throw e;
+          encoderError = e;
         },
       });
 
       videoEncoder.configure(videoCodecInfo.config);
       this.log('Video encoder configured:', videoCodecInfo.config);
 
-      // Configure audio encoder
+      // Configure audio encoder with error tracking
       const audioEncoder = new AudioEncoder({
         output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
         error: (e) => {
           this.log('AudioEncoder error:', e);
-          throw e;
+          encoderError = e;
         },
       });
 
@@ -895,8 +899,20 @@ export class AudioToVideoConverter {
       const startTime = performance.now();
 
       // Encode video frames as fast as possible
+      // Process in batches to allow encoder queue flushing and prevent GPU memory exhaustion
+      const BATCH_SIZE = 60; // Process 60 frames then flush (2 seconds at 30fps)
       this.log('Encoding video frames...');
+
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+        // Check for encoder errors before each frame
+        if (encoderError !== null) {
+          this.log('Encoder error detected, aborting:', encoderError);
+          videoEncoder.close();
+          audioEncoder.close();
+          cleanup();
+          throw encoderError;
+        }
+
         if (this.isCancelled) {
           videoEncoder.close();
           audioEncoder.close();
@@ -931,10 +947,20 @@ export class AudioToVideoConverter {
           duration: Math.round(1_000_000 / fps),
         });
 
-        // Encode frame (keyframe every 2 seconds for good seeking)
-        const isKeyFrame = frameIndex % (fps * 2) === 0;
-        videoEncoder.encode(frame, { keyFrame: isKeyFrame });
-        frame.close();
+        // Check encoder state before encoding
+        if (videoEncoder.state === 'closed') {
+          frame.close();
+          throw new Error('VideoEncoder closed unexpectedly');
+        }
+
+        try {
+          // Encode frame (keyframe every 2 seconds for good seeking)
+          const isKeyFrame = frameIndex % (fps * 2) === 0;
+          videoEncoder.encode(frame, { keyFrame: isKeyFrame });
+        } finally {
+          // Always close the frame to prevent memory leaks and GPU resource exhaustion
+          frame.close();
+        }
 
         // Report progress (10-80% for video encoding)
         if (onProgress && frameIndex % 10 === 0) {
@@ -942,13 +968,25 @@ export class AudioToVideoConverter {
           onProgress(Math.min(progress, 0.8));
         }
 
-        // Yield to allow other tasks and prevent blocking
-        if (frameIndex % 30 === 0) {
+        // Periodically flush encoder and yield to prevent GPU memory exhaustion
+        // This is critical for long videos to prevent "Can't readback frame textures" error
+        if ((frameIndex + 1) % BATCH_SIZE === 0) {
+          // Flush encoder to process queued frames before adding more
+          await videoEncoder.flush();
+          // Yield to allow GPU resources to be freed
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
       }
 
-      // Flush video encoder
+      // Check for errors after video encoding loop
+      if (encoderError !== null) {
+        videoEncoder.close();
+        audioEncoder.close();
+        cleanup();
+        throw encoderError;
+      }
+
+      // Final flush of video encoder
       await videoEncoder.flush();
       this.log('Video encoding complete');
 
@@ -970,8 +1008,18 @@ export class AudioToVideoConverter {
       // Process audio in chunks to avoid memory issues
       const samplesPerChunk = 4096; // Process in 4096-sample chunks
       const totalChunks = Math.ceil(totalSamples / samplesPerChunk);
+      const AUDIO_FLUSH_INTERVAL = 100; // Flush every 100 chunks to prevent memory buildup
 
       for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        // Check for encoder errors
+        if (encoderError !== null) {
+          this.log('Encoder error detected during audio encoding:', encoderError);
+          videoEncoder.close();
+          audioEncoder.close();
+          cleanup();
+          throw encoderError;
+        }
+
         if (this.isCancelled) {
           videoEncoder.close();
           audioEncoder.close();
@@ -1005,6 +1053,12 @@ export class AudioToVideoConverter {
           data: planarData,
         });
 
+        // Check encoder state before encoding
+        if (audioEncoder.state === 'closed') {
+          audioData.close();
+          throw new Error('AudioEncoder closed unexpectedly');
+        }
+
         audioEncoder.encode(audioData);
         audioData.close();
 
@@ -1013,6 +1067,19 @@ export class AudioToVideoConverter {
           const progress = 0.85 + (chunkIndex / totalChunks) * 0.1;
           onProgress(Math.min(progress, 0.95));
         }
+
+        // Periodically flush audio encoder to prevent queue overflow
+        if ((chunkIndex + 1) % AUDIO_FLUSH_INTERVAL === 0) {
+          await audioEncoder.flush();
+        }
+      }
+
+      // Check for errors before final flush
+      if (encoderError !== null) {
+        videoEncoder.close();
+        audioEncoder.close();
+        cleanup();
+        throw encoderError;
       }
 
       // Flush audio encoder
