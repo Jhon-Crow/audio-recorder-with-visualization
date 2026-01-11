@@ -248,7 +248,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       animation: true,
       background: true,
       transform: true,
-      effects: true
+      effects: true,
+      imageBlink: true
     };
   }
 

@@ -450,104 +450,116 @@
 
         </div>
       </div>
-      <div class="option-group">
-        <h4 style="grid-column: 1 / -1; margin-bottom: 8px; font-size: 16px; color: var(--color-primary);">Image Blink Effects (Frequency-Based)</h4>
-        <label style="flex-direction: row; align-items: center;" data-tooltip="Enable image blinking based on audio frequency and volume">
-          <input type="checkbox" id="imageBlinkEnabled" aria-label="Enable image blink"> Enable Image Blink
-        </label>
-      </div>
-      <div class="option-group" id="imageBlinkControls" style="display: none;">
-        <label data-tooltip="Choose the visual effect style for image blinking">
-          Blink Style
-          <select id="imageBlinkStyle" aria-label="Select blink style">
-            <option value="gradient-sweep" selected>Gradient Sweep</option>
-            <option value="negative-flash">Negative Flash</option>
-            <option value="brightness-pulse">Brightness Pulse</option>
-            <option value="color-flash">Color Flash</option>
-          </select>
-        </label>
-        <label data-tooltip="Choose which image layer(s) to apply the blink effect">
-          Blink Target
-          <select id="imageBlinkTarget" aria-label="Select blink target">
-            <option value="background" selected>Background</option>
-            <option value="foreground">Foreground</option>
-            <option value="both">Both</option>
-          </select>
-        </label>
-        <!-- Debug Audio File Section -->
-        <div style="grid-column: 1 / -1; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: rgba(0, 0, 0, 0.2); margin-top: var(--spacing-sm);">
-          <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
-            <label style="flex-direction: row; align-items: center; margin: 0;" data-tooltip="Use a debug audio file to configure blink effect settings. The selected interval will determine frequency and volume thresholds.">
-              <input type="checkbox" id="blinkDebugModeEnabled" aria-label="Enable debug mode"> Use Debug Audio File
+      <!-- Image Blink Effects Section -->
+      <div class="settings-section" data-section="imageBlink">
+        <div class="settings-section-header">
+          <div class="settings-section-title">
+            <span class="settings-section-icon">💡</span>
+            <span>Image Blink Effects</span>
+          </div>
+          <span class="settings-section-toggle">▼</span>
+        </div>
+        <div class="settings-section-content">
+          <div class="option-group">
+            <label style="flex-direction: row; align-items: center;" data-tooltip="Enable image blinking based on audio frequency and volume">
+              <input type="checkbox" id="imageBlinkEnabled" aria-label="Enable image blink"> Enable Image Blink
             </label>
           </div>
-          <div id="blinkDebugControls" style="display: none;">
-            <div style="margin-bottom: var(--spacing-md);">
-              <label data-tooltip="Select an audio file to analyze for blink effect configuration">
-                Debug Audio File
-                <input type="file" id="blinkDebugAudioFile" accept="audio/*" aria-label="Select debug audio file">
+          <div class="option-group" id="imageBlinkControls" style="display: none;">
+            <label data-tooltip="Choose the visual effect style for image blinking">
+              Blink Style
+              <select id="imageBlinkStyle" aria-label="Select blink style">
+                <option value="gradient-sweep" selected>Gradient Sweep</option>
+                <option value="negative-flash">Negative Flash</option>
+                <option value="brightness-pulse">Brightness Pulse</option>
+                <option value="color-flash">Color Flash</option>
+              </select>
+            </label>
+            <label data-tooltip="Choose which image layer(s) to apply the blink effect">
+              Blink Target
+              <select id="imageBlinkTarget" aria-label="Select blink target">
+                <option value="background" selected>Background</option>
+                <option value="foreground">Foreground</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+            <!-- Debug Audio File Section -->
+            <div style="grid-column: 1 / -1; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: rgba(0, 0, 0, 0.2); margin-top: var(--spacing-sm);">
+              <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+                <label style="flex-direction: row; align-items: center; margin: 0;" data-tooltip="Use a debug audio file to configure blink effect settings. The selected interval will determine frequency and volume thresholds.">
+                  <input type="checkbox" id="blinkDebugModeEnabled" aria-label="Enable debug mode"> Use Debug Audio File
+                </label>
+              </div>
+              <div id="blinkDebugControls" style="display: none;">
+                <div style="margin-bottom: var(--spacing-md);">
+                  <label data-tooltip="Select an audio file to analyze for blink effect configuration">
+                    Debug Audio File
+                    <input type="file" id="blinkDebugAudioFile" accept="audio/*" aria-label="Select debug audio file">
+                  </label>
+                  <div id="blinkDebugFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;"></div>
+                </div>
+                <!-- Waveform Visualization Container -->
+                <div id="blinkWaveformContainer" style="display: none; margin-bottom: var(--spacing-md);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <span style="font-size: 13px; color: var(--color-text-secondary);">Select interval for blink trigger:</span>
+                    <span id="blinkIntervalDisplay" style="font-size: 12px; color: var(--color-primary);">0.00s - 0.00s</span>
+                  </div>
+                  <div style="position: relative; background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-sm); overflow: hidden; cursor: crosshair;">
+                    <canvas id="blinkWaveformCanvas" width="600" height="80" style="display: block; width: 100%; height: 80px;"></canvas>
+                    <div id="blinkSelectionOverlay" style="position: absolute; top: 0; bottom: 0; background: rgba(0, 255, 136, 0.2); border-left: 2px solid var(--color-primary); border-right: 2px solid var(--color-primary); pointer-events: none; display: none;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                    <span id="blinkWaveformStart" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+                    <span id="blinkWaveformEnd" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+                  </div>
+                  <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
+                    <button type="button" id="blinkPlayIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                      Play Interval
+                    </button>
+                    <button type="button" id="blinkClearIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                      Clear Selection
+                    </button>
+                  </div>
+                  <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
+                    Click and drag on the waveform to select an interval. The blink effect will trigger based on frequencies and volume in this interval.
+                  </p>
+                </div>
+                <!-- Extracted Parameters Display -->
+                <div id="blinkExtractedParams" style="display: none; padding: var(--spacing-sm); background: rgba(0, 255, 136, 0.1); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+                  <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px;">Extracted from interval:</div>
+                  <div style="display: flex; gap: var(--spacing-md); font-size: 13px;">
+                    <span>Frequency: <strong id="blinkExtractedFreq" style="color: var(--color-primary);">-</strong></span>
+                    <span>Threshold: <strong id="blinkExtractedThreshold" style="color: var(--color-primary);">-</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Manual Configuration (shown when debug mode is disabled) -->
+            <div id="blinkManualControls">
+              <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
+                Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
+                <div style="display: flex; gap: 8px;">
+                  <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
+                  <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
+                </div>
               </label>
-              <div id="blinkDebugFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;"></div>
+              <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
+                Volume Threshold: <span id="blinkThresholdValue">200</span>
+                <input type="range" id="blinkThreshold" min="50" max="255" value="200">
+              </label>
             </div>
-            <!-- Waveform Visualization Container -->
-            <div id="blinkWaveformContainer" style="display: none; margin-bottom: var(--spacing-md);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
-                <span style="font-size: 13px; color: var(--color-text-secondary);">Select interval for blink trigger:</span>
-                <span id="blinkIntervalDisplay" style="font-size: 12px; color: var(--color-primary);">0.00s - 0.00s</span>
-              </div>
-              <div style="position: relative; background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-sm); overflow: hidden; cursor: crosshair;">
-                <canvas id="blinkWaveformCanvas" width="600" height="80" style="display: block; width: 100%; height: 80px;"></canvas>
-                <div id="blinkSelectionOverlay" style="position: absolute; top: 0; bottom: 0; background: rgba(0, 255, 136, 0.2); border-left: 2px solid var(--color-primary); border-right: 2px solid var(--color-primary); pointer-events: none; display: none;"></div>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-                <span id="blinkWaveformStart" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
-                <span id="blinkWaveformEnd" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
-              </div>
-              <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
-                <button type="button" id="blinkPlayIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
-                  Play Interval
-                </button>
-                <button type="button" id="blinkClearIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
-                  Clear Selection
-                </button>
-              </div>
-              <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
-                Click and drag on the waveform to select an interval. The blink effect will trigger based on frequencies and volume in this interval.
-              </p>
-            </div>
-            <!-- Extracted Parameters Display -->
-            <div id="blinkExtractedParams" style="display: none; padding: var(--spacing-sm); background: rgba(0, 255, 136, 0.1); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
-              <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px;">Extracted from interval:</div>
-              <div style="display: flex; gap: var(--spacing-md); font-size: 13px;">
-                <span>Frequency: <strong id="blinkExtractedFreq" style="color: var(--color-primary);">-</strong></span>
-                <span>Threshold: <strong id="blinkExtractedThreshold" style="color: var(--color-primary);">-</strong></span>
-              </div>
-            </div>
+            <label data-tooltip="Intensity of the blink effect (0-100%)">
+              Blink Intensity: <span id="blinkIntensityValue">80%</span>
+              <input type="range" id="blinkIntensity" min="0" max="100" value="80">
+            </label>
+            <label data-tooltip="Duration of blink effect in milliseconds">
+              Blink Duration: <span id="blinkDurationValue">150ms</span>
+              <input type="range" id="blinkDuration" min="50" max="500" value="150" step="50">
+            </label>
           </div>
         </div>
-        <!-- Manual Configuration (shown when debug mode is disabled) -->
-        <div id="blinkManualControls">
-          <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
-            Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
-            <div style="display: flex; gap: 8px;">
-              <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
-              <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
-            </div>
-          </label>
-          <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
-            Volume Threshold: <span id="blinkThresholdValue">200</span>
-            <input type="range" id="blinkThreshold" min="50" max="255" value="200">
-          </label>
-        </div>
-        <label data-tooltip="Intensity of the blink effect (0-100%)">
-          Blink Intensity: <span id="blinkIntensityValue">80%</span>
-          <input type="range" id="blinkIntensity" min="0" max="100" value="80">
-        </label>
-        <label data-tooltip="Duration of blink effect in milliseconds">
-          Blink Duration: <span id="blinkDurationValue">150ms</span>
-          <input type="range" id="blinkDuration" min="50" max="500" value="150" step="50">
-        </label>
       </div>
+
       <div class="option-group" id="barShapeControls" style="display: none;">
         <label>
           Bar Shape
