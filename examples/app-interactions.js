@@ -314,6 +314,7 @@ function initInteractions() {
   // Audio file for conversion
   el.audioFile.addEventListener('change', () => {
     el.convertBtn.disabled = !el.audioFile.files.length || app.isRecording || app.isPreviewing;
+    el.quickConvertBtn.disabled = !el.audioFile.files.length || app.isRecording || app.isPreviewing;
     el.previewBtn.disabled = !el.audioFile.files.length || app.isRecording || app.isConverting || app.isPreviewing;
   });
 
@@ -452,6 +453,81 @@ function initInteractions() {
   el.cancelConvertBtn.addEventListener('click', () => {
     converter.cancel();
     updateStatus('Cancelling conversion...', 'ready');
+  });
+
+  // Quick Convert - Fast silent conversion without audio playback
+  el.quickConvertBtn.addEventListener('click', async () => {
+    const file = el.audioFile.files[0];
+    if (!file) return;
+
+    // Stop preview if running
+    if (app.isPreviewing) {
+      stopPreview();
+    }
+
+    app.isConverting = true;
+    el.convertBtn.disabled = true;
+    el.quickConvertBtn.disabled = true;
+    el.convertBtn.style.display = 'none';
+    el.quickConvertBtn.style.display = 'none';
+    el.cancelConvertBtn.style.display = 'inline-flex';
+    progressBar.style.display = 'block';
+    updateStatus('Quick converting (silent, no preview)...', 'recording');
+    updateButtonStates();
+
+    // Pause AudioRecorder visualization during conversion
+    const wasVisualizationActive = recorder.isVisualizationActive;
+    if (wasVisualizationActive) {
+      recorder.stopVisualization();
+    }
+
+    try {
+      // Get video dimensions based on quality setting
+      const qualityMap = {
+        '720p': { width: 1280, height: 720 },
+        '1080p': { width: 1920, height: 1080 },
+        '1440p': { width: 2560, height: 1440 },
+        '2160p': { width: 3840, height: 2160 },
+      };
+      const quality = qualityMap[el.videoQuality.value] || qualityMap['1080p'];
+
+      const blob = await converter.convertFast({
+        audioSource: file,
+        canvas,
+        visualizer: el.visualizerSelect.value,
+        visualizerOptions: getCurrentOptions(),
+        fps: 30,
+        videoWidth: quality.width,
+        videoHeight: quality.height,
+        format: el.videoFormat.value,
+        onProgress: updateProgress,
+      });
+
+      updateStatus('Quick conversion complete!', 'ready');
+      addRecording(blob);
+    } catch (error) {
+      if (error.message.includes('cancelled')) {
+        updateStatus('Conversion cancelled', 'ready');
+      } else {
+        updateStatus('Error: ' + error.message, 'error');
+      }
+      console.error(error);
+    } finally {
+      app.isConverting = false;
+      el.convertBtn.disabled = false;
+      el.quickConvertBtn.disabled = false;
+      el.convertBtn.style.display = 'inline-flex';
+      el.quickConvertBtn.style.display = 'inline-flex';
+      el.cancelConvertBtn.style.display = 'none';
+      progressBar.style.display = 'none';
+      updateProgress(0);
+      updateButtonStates();
+
+      // Resume AudioRecorder visualization if it was active before conversion
+      if (wasVisualizationActive && recorder.sourceType) {
+        recorder.resumeVisualization();
+      }
+    }
   });
 
   // ==================== CANVAS INTERACTION ====================

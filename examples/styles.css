@@ -252,6 +252,15 @@ button:focus-visible {
   box-shadow: 0 4px 16px rgba(0, 136, 255, 0.4);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+}
+
 .options {
   background: var(--color-surface);
   backdrop-filter: blur(10px);

@@ -66,6 +66,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const recordingsList = document.getElementById('recordingsList');
   const audioFile = document.getElementById('audioFile');
   const convertBtn = document.getElementById('convertBtn');
+  const quickConvertBtn = document.getElementById('quickConvertBtn');
   const cancelConvertBtn = document.getElementById('cancelConvertBtn');
   const previewBtn = document.getElementById('previewBtn');
   const stopPreviewBtn = document.getElementById('stopPreviewBtn');
@@ -1034,6 +1035,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       scaleValue,
       audioFile,
       convertBtn,
+      quickConvertBtn,
       cancelConvertBtn,
       previewBtn,
       stopPreviewBtn,
