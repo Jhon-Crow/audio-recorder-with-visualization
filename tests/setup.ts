@@ -235,6 +235,30 @@ class MockCanvasRenderingContext2D {
       addColorStop: jest.fn(),
     } as unknown as CanvasGradient;
   }
+
+  createPattern(_image: CanvasImageSource, _repetition: string | null): CanvasPattern | null {
+    return {
+      setTransform: jest.fn(),
+    } as unknown as CanvasPattern;
+  }
+
+  // Additional context properties and methods needed for tests
+  filter = 'none';
+  globalCompositeOperation: GlobalCompositeOperation = 'source-over';
+  textAlign: CanvasTextAlign = 'start';
+  font = '10px sans-serif';
+  setLineDash(_segments: number[]): void {}
+  lineDashOffset = 0;
+  getImageData(_sx: number, _sy: number, sw: number, sh: number): ImageData {
+    return new ImageData(sw || 1, sh || 1);
+  }
+  putImageData(): void {}
+  fillText(): void {}
+  measureText(): TextMetrics {
+    return { width: 0 } as TextMetrics;
+  }
+  clip(): void {}
+  resetTransform(): void {}
 }
 
 // Override getContext on HTMLCanvasElement prototype
@@ -254,14 +278,70 @@ global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   return setTimeout(() => callback(performance.now()), 16) as unknown as number;
 };
 
+// Mock HTMLMediaElement methods that jsdom doesn't implement
+Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
+  value: jest.fn(),
+  writable: true,
+  configurable: true,
+});
+
+Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+  value: jest.fn().mockResolvedValue(undefined),
+  writable: true,
+  configurable: true,
+});
+
 global.cancelAnimationFrame = (id: number): void => {
   clearTimeout(id);
 };
+
+// Mock ImageData
+class MockImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  colorSpace: PredefinedColorSpace = 'srgb';
+
+  constructor(sw: number, sh: number);
+  constructor(data: Uint8ClampedArray, sw: number, sh?: number);
+  constructor(dataOrWidth: Uint8ClampedArray | number, swOrHeight: number, sh?: number) {
+    if (dataOrWidth instanceof Uint8ClampedArray) {
+      this.data = dataOrWidth;
+      this.width = swOrHeight;
+      this.height = sh ?? Math.floor(dataOrWidth.length / (swOrHeight * 4));
+    } else {
+      this.width = dataOrWidth;
+      this.height = swOrHeight;
+      this.data = new Uint8ClampedArray(this.width * this.height * 4);
+    }
+  }
+}
 
 // Set up globals
 (global as Record<string, unknown>).AudioContext = MockAudioContext;
 (global as Record<string, unknown>).MediaRecorder = MockMediaRecorder;
 (global as Record<string, unknown>).MediaStream = MockMediaStream;
+(global as Record<string, unknown>).ImageData = MockImageData;
+
+// Mock URL.createObjectURL and URL.revokeObjectURL
+// Use Object.defineProperty to ensure the mock is properly applied
+if (!global.URL) {
+  (global as Record<string, unknown>).URL = class URL {
+    constructor(url: string) {
+      return new (globalThis.URL || window.URL)(url);
+    }
+  } as unknown as typeof URL;
+}
+Object.defineProperty(global.URL, 'createObjectURL', {
+  value: jest.fn().mockReturnValue('blob:mock-url'),
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(global.URL, 'revokeObjectURL', {
+  value: jest.fn(),
+  writable: true,
+  configurable: true,
+});
 
 // Mock navigator.mediaDevices
 Object.defineProperty(global.navigator, 'mediaDevices', {
