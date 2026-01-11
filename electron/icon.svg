@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#2563eb" stroke="#1e40af" stroke-width="8"/>
+
+  <!-- Microphone body -->
+  <g transform="translate(256, 180)">
+    <!-- Microphone capsule -->
+    <rect x="-40" y="-80" width="80" height="120" rx="40" fill="#ffffff" stroke="#1e3a8a" stroke-width="4"/>
+
+    <!-- Microphone grid lines -->
+    <line x1="-30" y1="-60" x2="30" y2="-60" stroke="#cbd5e1" stroke-width="3"/>
+    <line x1="-30" y1="-30" x2="30" y2="-30" stroke="#cbd5e1" stroke-width="3"/>
+    <line x1="-30" y1="0" x2="30" y2="0" stroke="#cbd5e1" stroke-width="3"/>
+    <line x1="-30" y1="30" x2="30" y2="30" stroke="#cbd5e1" stroke-width="3"/>
+
+    <!-- Microphone stand -->
+    <rect x="-6" y="40" width="12" height="60" fill="#ffffff" stroke="#1e3a8a" stroke-width="3"/>
+
+    <!-- Microphone base arc -->
+    <path d="M -60 100 Q -60 120 -40 120 L 40 120 Q 60 120 60 100"
+          fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Audio waves visualization -->
+  <g transform="translate(256, 380)">
+    <!-- Left waves -->
+    <path d="M -140 0 Q -130 -20 -120 0 T -100 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+    <path d="M -90 0 Q -80 -30 -70 0 T -50 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+    <path d="M -40 0 Q -30 -40 -20 0 T 0 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- Right waves -->
+    <path d="M 20 0 Q 30 -40 40 0 T 60 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 70 0 Q 80 -30 90 0 T 110 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 120 0 Q 130 -20 140 0 T 160 0"
+          fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- Frequency bars visualization at bottom -->
+  <g transform="translate(256, 440)">
+    <rect x="-80" y="-10" width="10" height="10" fill="#93c5fd" rx="2"/>
+    <rect x="-65" y="-15" width="10" height="15" fill="#93c5fd" rx="2"/>
+    <rect x="-50" y="-20" width="10" height="20" fill="#93c5fd" rx="2"/>
+    <rect x="-35" y="-25" width="10" height="25" fill="#93c5fd" rx="2"/>
+    <rect x="-20" y="-18" width="10" height="18" fill="#93c5fd" rx="2"/>
+    <rect x="-5" y="-12" width="10" height="12" fill="#93c5fd" rx="2"/>
+    <rect x="10" y="-12" width="10" height="12" fill="#93c5fd" rx="2"/>
+    <rect x="25" y="-18" width="10" height="18" fill="#93c5fd" rx="2"/>
+    <rect x="40" y="-25" width="10" height="25" fill="#93c5fd" rx="2"/>
+    <rect x="55" y="-20" width="10" height="20" fill="#93c5fd" rx="2"/>
+    <rect x="70" y="-15" width="10" height="15" fill="#93c5fd" rx="2"/>
+  </g>
+</svg>
