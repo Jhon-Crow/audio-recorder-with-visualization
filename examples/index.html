@@ -416,45 +416,131 @@
       border-radius: var(--radius-sm);
     }
 
+    /* Rotary Knob Styles */
+    .knob-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-sm);
+      user-select: none;
+    }
+
+    .knob {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      cursor: grab;
+      transition: transform var(--transition-fast);
+    }
+
+    .knob:active {
+      cursor: grabbing;
+    }
+
+    .knob:hover {
+      transform: scale(1.05);
+    }
+
+    .knob-body {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+      border: 2px solid var(--color-border);
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+      position: relative;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .knob:hover .knob-body {
+      border-color: var(--color-primary);
+      box-shadow:
+        0 4px 16px rgba(0, 255, 136, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .knob-track {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 135deg,
+        transparent var(--knob-percent),
+        rgba(255, 255, 255, 0.05) var(--knob-percent)
+      );
+      --knob-percent: 0%;
+    }
+
+    .knob-indicator {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      width: 3px;
+      height: 18px;
+      background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      border-radius: 2px;
+      transform-origin: center 22px;
+      transform: translateX(-50%) rotate(var(--knob-angle));
+      box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+      --knob-angle: -135deg;
+    }
+
+    .knob-value-display {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-primary);
+      text-align: center;
+      min-width: 50px;
+      padding: 2px 6px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+    }
+
+    .knob-ticks {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+    }
+
+    .knob-tick {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      width: 1px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      transform-origin: center 26px;
+    }
+
+    /* Legacy slider support (hidden by default, used as data storage) */
     .option-group input[type="range"] {
-      padding: 0;
-      height: 6px;
-      -webkit-appearance: none;
-      appearance: none;
-      background: linear-gradient(to right, var(--color-primary) 0%, var(--color-secondary) 100%);
-      border-radius: 3px;
-      cursor: pointer;
+      display: none;
     }
 
-    .option-group input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      background: #fff;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      transition: transform var(--transition-fast);
+    /* Hide old value displays - knobs have their own */
+    .option-group label span[id$="Value"] {
+      display: none;
     }
 
-    .option-group input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
+    /* Adjust label layout for knobs */
+    .option-group label {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
 
-    .option-group input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      background: #fff;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      transition: transform var(--transition-fast);
-    }
-
-    .option-group input[type="range"]::-moz-range-thumb:hover {
-      transform: scale(1.2);
+    /* Special layout for knob labels in settings sections */
+    .settings-section .option-group label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-sm);
     }
 
     .option-group input[type="checkbox"] {
@@ -2787,6 +2873,268 @@
 
       // Initialize slider colors on load
       updateSliderColors();
+
+      // ==================== ROTARY KNOB SYSTEM ====================
+
+      /**
+       * Creates a rotary knob element to replace a range input
+       * @param {HTMLInputElement} input - The range input element to replace
+       * @returns {HTMLElement} - The knob container element
+       */
+      function createKnob(input) {
+        const min = parseFloat(input.min);
+        const max = parseFloat(input.max);
+        const step = parseFloat(input.step) || 1;
+        const value = parseFloat(input.value);
+
+        // Create knob container
+        const container = document.createElement('div');
+        container.className = 'knob-container';
+        container.setAttribute('data-input-id', input.id);
+
+        // Create knob element
+        const knob = document.createElement('div');
+        knob.className = 'knob';
+        knob.setAttribute('role', 'slider');
+        knob.setAttribute('aria-valuemin', min);
+        knob.setAttribute('aria-valuemax', max);
+        knob.setAttribute('aria-valuenow', value);
+        knob.setAttribute('aria-label', input.getAttribute('aria-label') || 'Knob control');
+        knob.setAttribute('tabindex', '0');
+
+        // Create knob body
+        const body = document.createElement('div');
+        body.className = 'knob-body';
+
+        // Create knob track (visual feedback)
+        const track = document.createElement('div');
+        track.className = 'knob-track';
+
+        // Create ticks for visual reference
+        const ticks = document.createElement('div');
+        ticks.className = 'knob-ticks';
+        for (let i = 0; i <= 8; i++) {
+          const tick = document.createElement('div');
+          tick.className = 'knob-tick';
+          tick.style.transform = `translateX(-50%) rotate(${-135 + i * 33.75}deg)`;
+          ticks.appendChild(tick);
+        }
+
+        // Create knob indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'knob-indicator';
+
+        // Create value display
+        const valueDisplay = document.createElement('div');
+        valueDisplay.className = 'knob-value-display';
+
+        // Assemble knob
+        body.appendChild(track);
+        body.appendChild(ticks);
+        body.appendChild(indicator);
+        knob.appendChild(body);
+        container.appendChild(knob);
+        container.appendChild(valueDisplay);
+
+        // Update knob visual
+        function updateKnobVisual(val) {
+          const percent = ((val - min) / (max - min)) * 100;
+          const angle = -135 + (percent / 100) * 270; // -135deg to 135deg range
+
+          indicator.style.setProperty('--knob-angle', `${angle}deg`);
+          track.style.setProperty('--knob-percent', `${percent}%`);
+          knob.setAttribute('aria-valuenow', val);
+
+          // Format value display
+          let displayValue = val;
+          if (input.id.includes('Alpha') || input.id.includes('Opacity')) {
+            displayValue = Math.round(val * 100) + '%';
+          } else if (input.id.includes('Frequency') || input.id.includes('Width')) {
+            displayValue = Math.round(val) + '%';
+          } else if (input.id.includes('Offset') || input.id.includes('Threshold')) {
+            displayValue = Math.round(val) + 'px';
+          } else if (input.id.includes('Scale') || input.id.includes('Zoom') || input.id.includes('Intensity') || input.id.includes('adsr')) {
+            displayValue = Math.round(val) + '%';
+          } else if (input.id.includes('sensitivity')) {
+            displayValue = val.toFixed(1) + 'x';
+          } else if (input.id.includes('Duration')) {
+            displayValue = Math.round(val) + 'ms';
+          } else if (input.id.includes('Frequency')) {
+            displayValue = Math.round(val) + ' Hz';
+          } else {
+            displayValue = Math.round(val);
+          }
+
+          valueDisplay.textContent = displayValue;
+        }
+
+        // Initialize visual
+        updateKnobVisual(value);
+
+        // Mouse/touch interaction
+        let isDragging = false;
+        let startY = 0;
+        let startValue = 0;
+
+        function startDrag(e) {
+          isDragging = true;
+          startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+          startValue = parseFloat(input.value);
+          knob.style.cursor = 'grabbing';
+          e.preventDefault();
+        }
+
+        function drag(e) {
+          if (!isDragging) return;
+
+          const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+          const deltaY = startY - currentY; // Inverted: up = increase
+
+          // Sensitivity: 1px = 1 unit by default, adjusted by range
+          const range = max - min;
+          const sensitivity = range / 200; // 200px for full range
+          const delta = deltaY * sensitivity;
+
+          let newValue = startValue + delta;
+
+          // Snap to step
+          newValue = Math.round(newValue / step) * step;
+
+          // Clamp to range
+          newValue = Math.max(min, Math.min(max, newValue));
+
+          // Update input and visual
+          if (input.value !== newValue.toString()) {
+            input.value = newValue;
+            updateKnobVisual(newValue);
+
+            // Trigger input event to update the application
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+
+          e.preventDefault();
+        }
+
+        function stopDrag() {
+          if (!isDragging) return;
+          isDragging = false;
+          knob.style.cursor = 'grab';
+
+          // Trigger change event for settings persistence
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Mouse events
+        knob.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+
+        // Touch events
+        knob.addEventListener('touchstart', startDrag, { passive: false });
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', stopDrag);
+
+        // Keyboard support
+        knob.addEventListener('keydown', (e) => {
+          let newValue = parseFloat(input.value);
+          const bigStep = step * 10;
+
+          switch (e.key) {
+            case 'ArrowUp':
+            case 'ArrowRight':
+              newValue = Math.min(max, newValue + step);
+              break;
+            case 'ArrowDown':
+            case 'ArrowLeft':
+              newValue = Math.max(min, newValue - step);
+              break;
+            case 'PageUp':
+              newValue = Math.min(max, newValue + bigStep);
+              break;
+            case 'PageDown':
+              newValue = Math.max(min, newValue - bigStep);
+              break;
+            case 'Home':
+              newValue = min;
+              break;
+            case 'End':
+              newValue = max;
+              break;
+            default:
+              return; // Don't prevent default for other keys
+          }
+
+          e.preventDefault();
+          input.value = newValue;
+          updateKnobVisual(newValue);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        // Mouse wheel support
+        knob.addEventListener('wheel', (e) => {
+          e.preventDefault();
+
+          const delta = e.deltaY < 0 ? step : -step;
+          let newValue = parseFloat(input.value) + delta;
+          newValue = Math.max(min, Math.min(max, newValue));
+
+          input.value = newValue;
+          updateKnobVisual(newValue);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, { passive: false });
+
+        // Listen for external changes to the input (e.g., from settings restore)
+        const observer = new MutationObserver(() => {
+          updateKnobVisual(parseFloat(input.value));
+        });
+        observer.observe(input, { attributes: true, attributeFilter: ['value'] });
+
+        // Also listen for input events
+        input.addEventListener('input', () => {
+          updateKnobVisual(parseFloat(input.value));
+        });
+
+        return container;
+      }
+
+      /**
+       * Initialize all knobs by replacing range inputs
+       */
+      function initializeKnobs() {
+        const rangeInputs = document.querySelectorAll('input[type="range"]');
+
+        rangeInputs.forEach(input => {
+          // Skip if already initialized
+          if (input.parentElement.querySelector('.knob-container')) {
+            return;
+          }
+
+          // Create knob
+          const knob = createKnob(input);
+
+          // Insert knob after the label text but before the value span
+          const label = input.closest('label');
+          if (label) {
+            // Find the value span (if it exists)
+            const valueSpan = label.querySelector('span[id$="Value"]');
+
+            if (valueSpan) {
+              // Insert knob before the value span
+              valueSpan.parentElement.insertBefore(knob, valueSpan);
+            } else {
+              // Just append to label
+              label.appendChild(knob);
+            }
+          } else {
+            // No label, insert after input
+            input.parentElement.insertBefore(knob, input.nextSibling);
+          }
+        });
+      }
+
+      // Initialize knobs after a short delay to ensure DOM is ready
+      setTimeout(initializeKnobs, 100);
 
       // Swap colors button handler
       swapColorsBtn.addEventListener('click', () => {
