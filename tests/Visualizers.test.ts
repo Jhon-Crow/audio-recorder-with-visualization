@@ -1,4 +1,5 @@
 import { WaveformVisualizer } from '../src/visualizers/WaveformVisualizer';
+import { GlowWaveformVisualizer } from '../src/visualizers/GlowWaveformVisualizer';
 import { BarVisualizer } from '../src/visualizers/BarVisualizer';
 import { CircularVisualizer } from '../src/visualizers/CircularVisualizer';
 import { ParticleVisualizer } from '../src/visualizers/ParticleVisualizer';
@@ -62,6 +63,68 @@ describe('Visualizers', () => {
       mirroredVisualizer.init(canvas);
       expect(() => mirroredVisualizer.draw(ctx, mockData)).not.toThrow();
       mirroredVisualizer.destroy();
+    });
+
+    test('should handle ADSR smoothing between frames', () => {
+      visualizer.draw(ctx, mockData);
+
+      // Second frame with different data should use smoothed values
+      mockData.timeDomainData = new Uint8Array(2048).fill(255);
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should apply ADSR envelope parameters', () => {
+      const adsrVisualizer = new WaveformVisualizer({
+        adsrAttack: 50,
+        adsrDecay: 50,
+        adsrSustain: 30,
+        adsrRelease: 70,
+      });
+      adsrVisualizer.init(canvas);
+      expect(() => adsrVisualizer.draw(ctx, mockData)).not.toThrow();
+      adsrVisualizer.destroy();
+    });
+  });
+
+  describe('GlowWaveformVisualizer', () => {
+    let visualizer: GlowWaveformVisualizer;
+
+    beforeEach(() => {
+      visualizer = new GlowWaveformVisualizer();
+      visualizer.init(canvas);
+    });
+
+    afterEach(() => {
+      visualizer.destroy();
+    });
+
+    test('should have correct id and name', () => {
+      expect(visualizer.id).toBe('glow-waveform');
+      expect(visualizer.name).toBe('Glow Waveform');
+    });
+
+    test('should draw without errors', () => {
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should handle ADSR smoothing between frames', () => {
+      visualizer.draw(ctx, mockData);
+
+      // Second frame with different data should use smoothed values
+      mockData.timeDomainData = new Uint8Array(2048).fill(255);
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should apply ADSR envelope parameters', () => {
+      const adsrVisualizer = new GlowWaveformVisualizer({
+        adsrAttack: 50,
+        adsrDecay: 50,
+        adsrSustain: 30,
+        adsrRelease: 70,
+      });
+      adsrVisualizer.init(canvas);
+      expect(() => adsrVisualizer.draw(ctx, mockData)).not.toThrow();
+      adsrVisualizer.destroy();
     });
   });
 

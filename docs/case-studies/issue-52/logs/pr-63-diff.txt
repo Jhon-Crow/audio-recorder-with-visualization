@@ -1,0 +1,125 @@
+diff --git a/electron/main.js b/electron/main.js
+index a1604b2..1e6c510 100644
+--- a/electron/main.js
++++ b/electron/main.js
+@@ -106,18 +106,21 @@ function createPresentationWindow(settings) {
+     presentationWindow.center();
+   }
+ 
++  // ALWAYS make presentation window sticky (always on top) regardless of mode
++  // This ensures the presentation window stays on top of the main application window
++  if (process.platform === 'darwin') {
++    // For truly sticky behavior, use 'screen-saver' level on macOS
++    presentationWindow.setAlwaysOnTop(true, 'screen-saver');
++  } else {
++    // On Windows and Linux, the default alwaysOnTop is sufficient
++    presentationWindow.setAlwaysOnTop(true);
++  }
++
+   // Enable click-through (mouse events pass through)
+   if (settings.clickThrough) {
+     presentationWindow.setIgnoreMouseEvents(true, { forward: true });
+   }
+ 
+-  // Set window level for always on bottom (Windows only workaround)
+-  if (settings.windowMode === 'alwaysOnBottom' && process.platform === 'win32') {
+-    // On Windows, use a workaround for "always on bottom"
+-    // The window will stay at the back
+-    presentationWindow.setAlwaysOnTop(false);
+-  }
+-
+   // Load the presentation page
+   presentationWindow.loadFile(path.join(__dirname, '..', 'examples', 'presentation.html'));
+ 
+@@ -263,13 +266,13 @@ ipcMain.handle('presentation-update', async (event, settings) => {
+     presentationSettings = { ...presentationSettings, ...settings };
+ 
+     if (presentationWindow && !presentationWindow.isDestroyed()) {
+-      // Update window mode (alwaysOnTop)
+-      if (settings.windowMode !== undefined) {
+-        if (settings.windowMode === 'alwaysOnTop') {
+-          presentationWindow.setAlwaysOnTop(true);
+-        } else {
+-          presentationWindow.setAlwaysOnTop(false);
+-        }
++      // ALWAYS keep presentation window sticky (always on top) regardless of mode
++      // The windowMode setting is stored but doesn't affect the sticky behavior
++      // This ensures the presentation window stays on top of the main application window
++      if (process.platform === 'darwin') {
++        presentationWindow.setAlwaysOnTop(true, 'screen-saver');
++      } else {
++        presentationWindow.setAlwaysOnTop(true);
+       }
+ 
+       // Update window size
+diff --git a/experiments/test-presentation-sticky.html b/experiments/test-presentation-sticky.html
+new file mode 100644
+index 0000000..c134719
+--- /dev/null
++++ b/experiments/test-presentation-sticky.html
+@@ -0,0 +1,65 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1.0">
++  <title>Test Presentation Sticky</title>
++  <style>
++    body {
++      font-family: Arial, sans-serif;
++      padding: 20px;
++      background: #1a1a2e;
++      color: #fff;
++    }
++    .info {
++      background: #16213e;
++      padding: 15px;
++      border-radius: 5px;
++      margin-bottom: 20px;
++    }
++  </style>
++</head>
++<body>
++  <h1>Presentation Window Sticky Test</h1>
++  <div class="info">
++    <h2>Current Implementation Analysis</h2>
++    <p><strong>Issue #52:</strong> "Окно превью должно быть стики - всегда оставаться наверху экрана приложения."</p>
++    <p><strong>Translation:</strong> "The preview window should be sticky - always stay on top of the application screen."</p>
++
++    <h3>Current State:</h3>
++    <ul>
++      <li>✅ Default selected option in UI: "Always on Top"</li>
++      <li>✅ Default setting in code: <code>presentationWindowMode: 'alwaysOnTop'</code></li>
++      <li>✅ Electron implementation: Sets <code>alwaysOnTop: true</code> when mode is 'alwaysOnTop'</li>
++    </ul>
++
++    <h3>Behavior:</h3>
++    <p>The presentation window <strong>already has</strong> "Always on Top" as the default behavior.</p>
++    <p>When users open presentation mode, it will stay on top of other windows by default.</p>
++
++    <h3>Possible Interpretations:</h3>
++    <ol>
++      <li><strong>Feature is already implemented</strong> - Just needs verification</li>
++      <li><strong>User wants it always sticky</strong> - Remove the option to change it</li>
++      <li><strong>Bug exists</strong> - Default isn't being applied correctly</li>
++    </ol>
++  </div>
++
++  <div class="info">
++    <h2>Testing Recommendations</h2>
++    <ol>
++      <li>Launch the Electron app</li>
++      <li>Go to "Presentation Mode" tab</li>
++      <li>Verify "Always on Top" is selected by default</li>
++      <li>Click "Start Presentation"</li>
++      <li>Try clicking on other windows</li>
++      <li>Verify presentation window stays on top</li>
++    </ol>
++  </div>
++
++  <script>
++    console.log('Presentation sticky test page loaded');
++    console.log('This is an analysis and testing guide for issue #52');
++  </script>
++</body>
++</html>

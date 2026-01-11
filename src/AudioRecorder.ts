@@ -70,6 +70,9 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private debug: boolean;
   private _readyPromise: Promise<void>;
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
+  private debugVisualActive = false;
+  private debugVisualAnimationId: number | null = null;
+  private debugVisualStartTime = 0;
 
   constructor(config: AudioRecorderConfig) {
     super();
@@ -601,12 +604,130 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
+   * Show debug visual boundaries with blink effect
+   * Displays a blinking boundary around the canvas to indicate active parameter changes
+   */
+  showDebugVisual(): void {
+    if (this.debugVisualActive) {
+      return;
+    }
+
+    this.debugVisualActive = true;
+    this.debugVisualStartTime = performance.now();
+    this.log('Debug visual activated');
+
+    // Start the animation loop for the debug visual
+    const animateDebugVisual = (timestamp: number): void => {
+      if (!this.debugVisualActive) {
+        return;
+      }
+
+      // Draw the debug visual boundaries
+      this.drawDebugBoundaries(timestamp);
+
+      // Continue animation
+      this.debugVisualAnimationId = requestAnimationFrame(animateDebugVisual);
+    };
+
+    this.debugVisualAnimationId = requestAnimationFrame(animateDebugVisual);
+  }
+
+  /**
+   * Hide debug visual boundaries
+   */
+  hideDebugVisual(): void {
+    if (!this.debugVisualActive) {
+      return;
+    }
+
+    this.debugVisualActive = false;
+
+    if (this.debugVisualAnimationId !== null) {
+      cancelAnimationFrame(this.debugVisualAnimationId);
+      this.debugVisualAnimationId = null;
+    }
+
+    this.log('Debug visual deactivated');
+  }
+
+  /**
+   * Draw debug boundaries with blink effect
+   */
+  private drawDebugBoundaries(timestamp: number): void {
+    const ctx = this.ctx;
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    // Calculate blink effect using sine wave for smooth pulsing
+    // Period: 800ms for complete blink cycle
+    const blinkPeriod = 800;
+    const phase = ((timestamp - this.debugVisualStartTime) % blinkPeriod) / blinkPeriod;
+    const opacity = 0.3 + 0.5 * Math.abs(Math.sin(phase * Math.PI * 2));
+
+    // Save current context state
+    ctx.save();
+
+    // Draw outer boundary (main canvas boundary)
+    ctx.strokeStyle = `rgba(255, 100, 100, ${opacity})`;
+    ctx.lineWidth = 8;
+    ctx.setLineDash([20, 10]);
+    ctx.lineDashOffset = -(timestamp / 20);
+    ctx.strokeRect(4, 4, width - 8, height - 8);
+
+    // Draw inner boundary (visualization area indicator)
+    ctx.strokeStyle = `rgba(100, 200, 255, ${opacity * 0.7})`;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([15, 8]);
+    ctx.lineDashOffset = timestamp / 15;
+    ctx.strokeRect(20, 20, width - 40, height - 40);
+
+    // Draw corner markers for better visibility
+    const markerSize = 30;
+    const markerColor = `rgba(255, 200, 50, ${opacity})`;
+    ctx.strokeStyle = markerColor;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+
+    // Top-left corner
+    ctx.beginPath();
+    ctx.moveTo(10, 10 + markerSize);
+    ctx.lineTo(10, 10);
+    ctx.lineTo(10 + markerSize, 10);
+    ctx.stroke();
+
+    // Top-right corner
+    ctx.beginPath();
+    ctx.moveTo(width - 10 - markerSize, 10);
+    ctx.lineTo(width - 10, 10);
+    ctx.lineTo(width - 10, 10 + markerSize);
+    ctx.stroke();
+
+    // Bottom-left corner
+    ctx.beginPath();
+    ctx.moveTo(10, height - 10 - markerSize);
+    ctx.lineTo(10, height - 10);
+    ctx.lineTo(10 + markerSize, height - 10);
+    ctx.stroke();
+
+    // Bottom-right corner
+    ctx.beginPath();
+    ctx.moveTo(width - 10 - markerSize, height - 10);
+    ctx.lineTo(width - 10, height - 10);
+    ctx.lineTo(width - 10, height - 10 - markerSize);
+    ctx.stroke();
+
+    // Restore context state
+    ctx.restore();
+  }
+
+  /**
    * Clean up all resources
    */
   destroy(): void {
     // Remove visibility change listener
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
+    this.hideDebugVisual();
     this.stopVisualization();
     this.stopMicrophone();
     this.cancelRecording();

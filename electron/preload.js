@@ -55,4 +55,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('presentation-closed', callback);
     return () => ipcRenderer.removeListener('presentation-closed', callback);
   },
+
+  // Listen for presentation window position changes (for saving to settings)
+  onPresentationPositionChanged: (callback) => {
+    ipcRenderer.on('presentation-position-changed', (event, position) => callback(position));
+    return () => ipcRenderer.removeListener('presentation-position-changed', callback);
+  },
 });

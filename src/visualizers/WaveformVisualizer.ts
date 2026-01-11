@@ -9,6 +9,8 @@ export class WaveformVisualizer extends BaseVisualizer {
   readonly id = 'waveform';
   readonly name = 'Waveform';
 
+  private previousAmplitudes: number[] = [];
+
   constructor(options: VisualizerOptions = {}) {
     super({
       lineWidth: 2,
@@ -47,6 +49,11 @@ export class WaveformVisualizer extends BaseVisualizer {
     // When mirror mode is enabled, each half uses half the height to stay centered
     const amplitudeScale = this.options.mirror ? 0.5 : 1;
 
+    // Initialize previous amplitudes if needed
+    if (this.previousAmplitudes.length !== timeDomainData.length) {
+      this.previousAmplitudes = new Array(timeDomainData.length).fill(0);
+    }
+
     // Draw waveform
     ctx.beginPath();
 
@@ -57,7 +64,12 @@ export class WaveformVisualizer extends BaseVisualizer {
       const v = timeDomainData[i] / 128.0 - 1.0; // Normalize to -1 to 1
       const sensitivity = this.options.sensitivity ?? 1.0;
       const sensitiveV = Math.max(-1, Math.min(1, v * sensitivity)); // Apply sensitivity and clamp
-      const y = height / 2 + (sensitiveV * height * amplitudeScale) / 2; // Center around height/2
+
+      // Apply ADSR envelope smoothing to the amplitude
+      const smoothedV = this.applyADSRSmoothing(this.previousAmplitudes[i], sensitiveV);
+      this.previousAmplitudes[i] = smoothedV;
+
+      const y = height / 2 + (smoothedV * height * amplitudeScale) / 2; // Center around height/2
 
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -76,10 +88,9 @@ export class WaveformVisualizer extends BaseVisualizer {
       x = 0;
 
       for (let i = 0; i < timeDomainData.length; i++) {
-        const v = timeDomainData[i] / 128.0 - 1.0; // Normalize to -1 to 1
-        const sensitivity = this.options.sensitivity ?? 1.0;
-        const sensitiveV = Math.max(-1, Math.min(1, v * sensitivity)); // Apply sensitivity and clamp
-        const y = height / 2 - (sensitiveV * height * amplitudeScale) / 2; // Mirror around height/2
+        // Use already smoothed values from previousAmplitudes
+        const smoothedV = this.previousAmplitudes[i];
+        const y = height / 2 - (smoothedV * height * amplitudeScale) / 2; // Mirror around height/2
 
         if (i === 0) {
           ctx.moveTo(x, y);

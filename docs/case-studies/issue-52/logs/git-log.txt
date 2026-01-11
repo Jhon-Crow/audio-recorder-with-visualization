@@ -1,0 +1,30 @@
+5d9d7f7 Merge remote-tracking branch 'origin/main' into issue-52-551ed1e707d5
+c3322e5 feat: Make presentation window always sticky in all modes
+320e97b Merge pull request #65 from konard/issue-54-86cce440e518
+31382c3 Revert "Initial commit with task details"
+ef3edcd feat: Add debug visual boundaries during slider dragging
+19cd60c Initial commit with task details
+8eef771 Revert "Initial commit with task details"
+a9bbd3e feat: Enhance sticky behavior for presentation window
+5bbed00 Initial commit with task details
+363f576 Merge pull request #45 from konard/issue-44-72678a5863e9
+b92e7bb Merge pull request #55 from konard/issue-36-b42d9532e22f
+3ba85f4 Merge main into issue-44 branch
+f05af17 feat: Add UI controls for shape and format settings
+89ee915 Revert "Initial commit with task details"
+fd87d49 feat: Add visualization sensitivity slider control
+d4f946f Merge pull request #34 from konard/issue-16-4e7c9411cf5c
+ddea6e1 Initial commit with task details
+2ae3e3b fix: Mirror main window canvas to presentation window
+b8a1736 Merge upstream/main into issue-16 branch
+702e905 Merge pull request #48 from konard/issue-43-d48eb4a752e4
+e49d3c1 feat: Add tooltips to blink style and target controls
+2e6e8c6 Merge branch 'main' into issue-43-d48eb4a752e4
+372266f Merge pull request #50 from konard/issue-49-388cafd6a6ac
+14ec2bf Revert "Initial commit with task details"
+2b5dd5c refactor: Organize settings UI into sections with two-column layout
+ebffa97 Initial commit with task details
+33b9302 Merge pull request #46 from konard/issue-40-48a44f06baa9
+f455b11 fix: Prevent division by zero when frequency width slider is at minimum
+dd0bd48 Merge main branch preserving all functionality
+36fb991 Merge pull request #42 from konard/issue-37-4b4d20ee341d

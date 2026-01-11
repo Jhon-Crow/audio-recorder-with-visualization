@@ -13,7 +13,10 @@ let presentationSettings = {
   windowType: 'frameless', // 'frameless', 'fullscreen', 'custom'
   width: 800,
   height: 600,
+  x: null, // null = auto-center, otherwise use saved position
+  y: null,
   backgroundOpacity: 0, // 0 = fully transparent
+  visualizationOpacity: 1, // 1 = fully opaque
   clickThrough: true,
 };
 
@@ -99,10 +102,18 @@ function createPresentationWindow(settings) {
     windowOptions.alwaysOnTop = false;
   }
 
+  // Set window position if saved, otherwise will be centered after creation
+  if (settings.x !== null && settings.x !== undefined &&
+      settings.y !== null && settings.y !== undefined) {
+    windowOptions.x = settings.x;
+    windowOptions.y = settings.y;
+  }
+
   presentationWindow = new BrowserWindow(windowOptions);
 
-  // Center window
-  if (!isFullScreen) {
+  // Center window only if no saved position
+  if (!isFullScreen && (settings.x === null || settings.x === undefined ||
+      settings.y === null || settings.y === undefined)) {
     presentationWindow.center();
   }
 
@@ -328,5 +339,32 @@ ipcMain.on('presentation-visualizer-options', (event, options) => {
 ipcMain.on('presentation-visualizer-type', (event, type) => {
   if (presentationWindow && !presentationWindow.isDestroyed()) {
     presentationWindow.webContents.send('presentation-visualizer-type', type);
+  }
+});
+
+// Handle window movement for Alt+MMB dragging
+ipcMain.on('presentation-move-window', (event, { deltaX, deltaY }) => {
+  if (presentationWindow && !presentationWindow.isDestroyed()) {
+    const [currentX, currentY] = presentationWindow.getPosition();
+    presentationWindow.setPosition(currentX + deltaX, currentY + deltaY);
+  }
+});
+
+// Report current window position to main window (for saving to settings)
+ipcMain.on('presentation-report-position', () => {
+  if (presentationWindow && !presentationWindow.isDestroyed() && mainWindow && !mainWindow.isDestroyed()) {
+    const [x, y] = presentationWindow.getPosition();
+    // Update internal settings
+    presentationSettings.x = x;
+    presentationSettings.y = y;
+    // Notify main window to save position
+    mainWindow.webContents.send('presentation-position-changed', { x, y });
+  }
+});
+
+// Toggle click-through when Alt key state changes
+ipcMain.on('presentation-set-click-through', (event, clickThrough) => {
+  if (presentationWindow && !presentationWindow.isDestroyed()) {
+    presentationWindow.setIgnoreMouseEvents(clickThrough, { forward: true });
   }
 });

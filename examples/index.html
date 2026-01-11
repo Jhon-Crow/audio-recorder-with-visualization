@@ -115,7 +115,11 @@
       display: flex;
       justify-content: center;
       margin-bottom: var(--spacing-lg);
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--color-bg-primary);
+      padding: var(--spacing-md) 0;
       animation: scaleIn var(--transition-slow) ease-out 0.1s both;
     }
 
@@ -281,24 +285,56 @@
     .settings-section {
       background: rgba(0, 0, 0, 0.2);
       border-radius: var(--radius-md);
-      padding: var(--spacing-md);
       border: 1px solid var(--color-border);
+      overflow: hidden;
     }
 
     .settings-section-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: var(--spacing-sm);
-      margin-bottom: var(--spacing-md);
-      padding-bottom: var(--spacing-sm);
-      border-bottom: 1px solid var(--color-border);
+      padding: var(--spacing-md);
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.2);
+      transition: background var(--transition-fast);
+      user-select: none;
       color: var(--color-text-primary);
       font-size: 14px;
       font-weight: 600;
     }
 
+    .settings-section-header:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .settings-section-title {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
     .settings-section-icon {
       font-size: 16px;
+    }
+
+    .settings-section-toggle {
+      font-size: 12px;
+      transition: transform var(--transition-fast);
+    }
+
+    .settings-section.expanded .settings-section-toggle {
+      transform: rotate(180deg);
+    }
+
+    .settings-section-content {
+      display: none;
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--color-border);
+    }
+
+    .settings-section.expanded .settings-section-content {
+      display: block;
     }
 
     @media (max-width: 900px) {
@@ -1104,6 +1140,12 @@
           </label>
         </div>
         <div class="controls">
+          <button id="previewBtn" class="btn-primary" disabled data-tooltip="Preview audio with live visualization (loop mode for adjusting settings)" aria-label="Preview audio with visualization">
+            <span>Preview</span>
+          </button>
+          <button id="stopPreviewBtn" class="btn-secondary" style="display: none;" data-tooltip="Stop preview playback" aria-label="Stop preview">
+            <span>Stop Preview</span>
+          </button>
           <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio file to video with visualization" aria-label="Convert audio to video">
             <span>Convert to Video</span>
           </button>
@@ -1111,6 +1153,14 @@
             <span>Cancel Conversion</span>
           </button>
         </div>
+        <div class="option-group" style="margin-top: var(--spacing-md);">
+          <label style="flex-direction: row; align-items: center;" data-tooltip="When enabled, audio will loop continuously during preview so you can adjust visualization settings in real-time.">
+            <input type="checkbox" id="loopPreview" checked aria-label="Loop preview playback"> Loop Preview
+          </label>
+        </div>
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
+          Use Preview to test visualization settings with your audio file. Changes to settings will be reflected in real-time.
+        </p>
         <div class="progress-bar" style="display: none;" role="progressbar" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-bar-fill" id="progressFill"></div>
         </div>
@@ -1159,6 +1209,13 @@
             <input type="range" id="presentationBgOpacity" min="0" max="1" step="0.01" value="0" aria-label="Presentation background opacity">
             <span id="presentationBgOpacityValue">0% (Transparent)</span>
           </label>
+          <label>
+            Visualization Opacity
+            <input type="range" id="presentationVisualizationOpacity" min="0" max="1" step="0.01" value="1" aria-label="Presentation visualization opacity">
+            <span id="presentationVisualizationOpacityValue">100%</span>
+          </label>
+        </div>
+        <div class="option-group">
           <label style="flex-direction: row; align-items: center;">
             <input type="checkbox" id="presentationClickThrough" checked aria-label="Enable click-through"> Click-Through (Mouse passes through window)
           </label>
@@ -1181,12 +1238,16 @@
         <div class="settings-column">
 
           <!-- Visualizer Section -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="visualizer">
             <div class="settings-section-header">
-              <span class="settings-section-icon">📊</span>
-              <span>Visualizer</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">📊</span>
+                <span>Visualizer</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <label data-tooltip="Choose the animation style for your audio visualization. Each type reacts differently to sound frequencies.">
                 Visualizer Type
                 <select id="visualizerSelect" aria-label="Select visualizer type">
@@ -1215,16 +1276,21 @@
                 Sensitivity: <span id="sensitivityValue">1.0x</span>
                 <input type="range" id="sensitivity" min="0.1" max="5.0" step="0.1" value="1.0" aria-label="Adjust sensitivity">
               </label>
+              </div>
             </div>
           </div>
 
           <!-- Colors Section -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="colors">
             <div class="settings-section-header">
-              <span class="settings-section-icon">🎨</span>
-              <span>Colors</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🎨</span>
+                <span>Colors</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <label data-tooltip="Main color used for visualization elements like bars, waveforms, and particles.">
                 Primary Color
                 <input type="color" id="primaryColor" value="#00ff88" aria-label="Select primary color">
@@ -1245,16 +1311,21 @@
               <label style="flex-direction: row; align-items: center;" data-tooltip="When enabled, visualizers will use your primary/secondary colors instead of their default color schemes.">
                 <input type="checkbox" id="useCustomColors" aria-label="Use custom colors"> Use Custom Colors
               </label>
+              </div>
             </div>
           </div>
 
           <!-- Animation Section (ADSR) -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="animation">
             <div class="settings-section-header">
-              <span class="settings-section-icon">⚡</span>
-              <span>Animation</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">⚡</span>
+                <span>Animation</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <div class="adsr-accordion" id="adsrAccordion">
                 <div class="adsr-accordion-header" id="adsrAccordionHeader" aria-expanded="false" aria-controls="adsrAccordionContent" data-tooltip="ADSR (Attack, Decay, Sustain, Release) controls how the visualization responds to audio dynamics over time.">
                   <span class="adsr-accordion-title">
@@ -1300,6 +1371,7 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
 
@@ -1309,12 +1381,16 @@
         <div class="settings-column">
 
           <!-- Background Section -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="background">
             <div class="settings-section-header">
-              <span class="settings-section-icon">🖼️</span>
-              <span>Background</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🖼️</span>
+                <span>Background</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <label data-tooltip="Upload an image or GIF to use as the visualization background. Supports PNG, JPG, GIF, and WebP formats.">
                 Background Image (optional)
                 <input type="file" id="bgImage" accept="image/*" aria-label="Upload background image">
@@ -1368,15 +1444,20 @@
                 Tip: Hold Shift and drag on canvas to move center image. Scroll over center image to zoom.
               </p>
             </div>
+            </div>
           </div>
 
           <!-- Transform Section -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="transform">
             <div class="settings-section-header">
-              <span class="settings-section-icon">📐</span>
-              <span>Transform</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">📐</span>
+                <span>Transform</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <label data-tooltip="Move the visualization horizontally. Negative values shift left, positive shift right. Drag on canvas also works.">
                 Offset X (Horizontal Position)
                 <input type="range" id="offsetX" min="-200" max="200" value="0">
@@ -1406,15 +1487,20 @@
                 <input type="checkbox" id="mirrorHorizontal" aria-label="Enable horizontal mirror"> Mirror Horizontal (Center Flip)
               </label>
             </div>
+            </div>
           </div>
 
           <!-- Effects Section -->
-          <div class="settings-section">
+          <div class="settings-section" data-section="effects">
             <div class="settings-section-header">
-              <span class="settings-section-icon">✨</span>
-              <span>Effects</span>
+              <div class="settings-section-title">
+                <span class="settings-section-icon">✨</span>
+                <span>Effects</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
             </div>
-            <div class="option-group">
+            <div class="settings-section-content">
+              <div class="option-group">
               <label data-tooltip="Apply a filter effect to the background layer. Effects are applied between the background and the visualization.">
                 Layer Effect
                 <select id="layerEffect" aria-label="Select layer effect">
@@ -1434,6 +1520,7 @@
                 <input type="range" id="layerEffectIntensity" min="0" max="100" value="50">
                 <span id="layerEffectIntensityValue">50%</span>
               </label>
+              </div>
             </div>
           </div>
 
@@ -1463,17 +1550,71 @@
             <option value="both">Both</option>
           </select>
         </label>
-        <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
-          Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
-          <div style="display: flex; gap: 8px;">
-            <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
-            <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
+        <!-- Debug Audio File Section -->
+        <div style="grid-column: 1 / -1; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: rgba(0, 0, 0, 0.2); margin-top: var(--spacing-sm);">
+          <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+            <label style="flex-direction: row; align-items: center; margin: 0;" data-tooltip="Use a debug audio file to configure blink effect settings. The selected interval will determine frequency and volume thresholds.">
+              <input type="checkbox" id="blinkDebugModeEnabled" aria-label="Enable debug mode"> Use Debug Audio File
+            </label>
           </div>
-        </label>
-        <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
-          Volume Threshold: <span id="blinkThresholdValue">200</span>
-          <input type="range" id="blinkThreshold" min="50" max="255" value="200">
-        </label>
+          <div id="blinkDebugControls" style="display: none;">
+            <div style="margin-bottom: var(--spacing-md);">
+              <label data-tooltip="Select an audio file to analyze for blink effect configuration">
+                Debug Audio File
+                <input type="file" id="blinkDebugAudioFile" accept="audio/*" aria-label="Select debug audio file">
+              </label>
+              <div id="blinkDebugFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;"></div>
+            </div>
+            <!-- Waveform Visualization Container -->
+            <div id="blinkWaveformContainer" style="display: none; margin-bottom: var(--spacing-md);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                <span style="font-size: 13px; color: var(--color-text-secondary);">Select interval for blink trigger:</span>
+                <span id="blinkIntervalDisplay" style="font-size: 12px; color: var(--color-primary);">0.00s - 0.00s</span>
+              </div>
+              <div style="position: relative; background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-sm); overflow: hidden; cursor: crosshair;">
+                <canvas id="blinkWaveformCanvas" width="600" height="80" style="display: block; width: 100%; height: 80px;"></canvas>
+                <div id="blinkSelectionOverlay" style="position: absolute; top: 0; bottom: 0; background: rgba(0, 255, 136, 0.2); border-left: 2px solid var(--color-primary); border-right: 2px solid var(--color-primary); pointer-events: none; display: none;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                <span id="blinkWaveformStart" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+                <span id="blinkWaveformEnd" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+              </div>
+              <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
+                <button type="button" id="blinkPlayIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                  Play Interval
+                </button>
+                <button type="button" id="blinkClearIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                  Clear Selection
+                </button>
+              </div>
+              <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
+                Click and drag on the waveform to select an interval. The blink effect will trigger based on frequencies and volume in this interval.
+              </p>
+            </div>
+            <!-- Extracted Parameters Display -->
+            <div id="blinkExtractedParams" style="display: none; padding: var(--spacing-sm); background: rgba(0, 255, 136, 0.1); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+              <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px;">Extracted from interval:</div>
+              <div style="display: flex; gap: var(--spacing-md); font-size: 13px;">
+                <span>Frequency: <strong id="blinkExtractedFreq" style="color: var(--color-primary);">-</strong></span>
+                <span>Threshold: <strong id="blinkExtractedThreshold" style="color: var(--color-primary);">-</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Manual Configuration (shown when debug mode is disabled) -->
+        <div id="blinkManualControls">
+          <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
+            Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
+            <div style="display: flex; gap: 8px;">
+              <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
+              <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
+            </div>
+          </label>
+          <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
+            Volume Threshold: <span id="blinkThresholdValue">200</span>
+            <input type="range" id="blinkThreshold" min="50" max="255" value="200">
+          </label>
+        </div>
         <label data-tooltip="Intensity of the blink effect (0-100%)">
           Blink Intensity: <span id="blinkIntensityValue">80%</span>
           <input type="range" id="blinkIntensity" min="0" max="100" value="80">
@@ -1687,6 +1828,9 @@
       const audioFile = document.getElementById('audioFile');
       const convertBtn = document.getElementById('convertBtn');
       const cancelConvertBtn = document.getElementById('cancelConvertBtn');
+      const previewBtn = document.getElementById('previewBtn');
+      const stopPreviewBtn = document.getElementById('stopPreviewBtn');
+      const loopPreviewCheckbox = document.getElementById('loopPreview');
       const progressFill = document.getElementById('progressFill');
       const videoQuality = document.getElementById('videoQuality');
       const bgSizeMode = document.getElementById('bgSizeMode');
@@ -1730,6 +1874,24 @@
       // Flag to prevent recursive event handling for dual range sliders
       let isUpdatingBlinkFrequencyProgrammatically = false;
 
+      // Blink debug mode controls
+      const blinkDebugModeEnabled = document.getElementById('blinkDebugModeEnabled');
+      const blinkDebugControls = document.getElementById('blinkDebugControls');
+      const blinkDebugAudioFile = document.getElementById('blinkDebugAudioFile');
+      const blinkDebugFileName = document.getElementById('blinkDebugFileName');
+      const blinkWaveformContainer = document.getElementById('blinkWaveformContainer');
+      const blinkWaveformCanvas = document.getElementById('blinkWaveformCanvas');
+      const blinkSelectionOverlay = document.getElementById('blinkSelectionOverlay');
+      const blinkIntervalDisplay = document.getElementById('blinkIntervalDisplay');
+      const blinkWaveformStart = document.getElementById('blinkWaveformStart');
+      const blinkWaveformEnd = document.getElementById('blinkWaveformEnd');
+      const blinkPlayIntervalBtn = document.getElementById('blinkPlayIntervalBtn');
+      const blinkClearIntervalBtn = document.getElementById('blinkClearIntervalBtn');
+      const blinkExtractedParams = document.getElementById('blinkExtractedParams');
+      const blinkExtractedFreq = document.getElementById('blinkExtractedFreq');
+      const blinkExtractedThreshold = document.getElementById('blinkExtractedThreshold');
+      const blinkManualControls = document.getElementById('blinkManualControls');
+
       // Presentation mode elements
       const presentationTab = document.getElementById('presentationTab');
       const togglePresentationBtn = document.getElementById('togglePresentationBtn');
@@ -1741,11 +1903,14 @@
       const presentationHeight = document.getElementById('presentationHeight');
       const presentationBgOpacity = document.getElementById('presentationBgOpacity');
       const presentationBgOpacityValue = document.getElementById('presentationBgOpacityValue');
+      const presentationVisualizationOpacity = document.getElementById('presentationVisualizationOpacity');
+      const presentationVisualizationOpacityValue = document.getElementById('presentationVisualizationOpacityValue');
       const presentationClickThrough = document.getElementById('presentationClickThrough');
       const presentationElectronOnly = document.getElementById('presentationElectronOnly');
 
       // Settings persistence
       const SETTINGS_KEY = 'audio-recorder-settings';
+      const ACCORDION_STATE_KEY = 'audio-recorder-accordion-states';
 
       // Default settings
       const defaultSettings = {
@@ -1790,12 +1955,21 @@
         imageBlinkThreshold: 200,
         imageBlinkIntensity: 80,
         imageBlinkDuration: 150,
+        // Blink debug mode settings
+        blinkDebugModeEnabled: false,
+        blinkDebugAudioData: null, // base64 encoded audio data
+        blinkDebugAudioName: null, // original filename
+        blinkDebugIntervalStart: 0, // interval start time in seconds
+        blinkDebugIntervalEnd: 0, // interval end time in seconds
         // Presentation mode settings
         presentationWindowMode: 'alwaysOnTop',
         presentationWindowType: 'frameless',
         presentationWidth: 800,
         presentationHeight: 600,
+        presentationX: null, // null = auto-center, otherwise use saved position
+        presentationY: null,
         presentationBgOpacity: 0,
+        presentationVisualizationOpacity: 1,
         presentationClickThrough: true,
       };
 
@@ -1821,9 +1995,80 @@
         }
       }
 
+      // Accordion state management
+      function loadAccordionStates() {
+        try {
+          const saved = localStorage.getItem(ACCORDION_STATE_KEY);
+          if (saved) {
+            return JSON.parse(saved);
+          }
+        } catch (error) {
+          console.warn('Failed to load accordion states:', error);
+        }
+        // Default: all sections expanded
+        return {
+          visualizer: true,
+          colors: true,
+          animation: true,
+          background: true,
+          transform: true,
+          effects: true
+        };
+      }
+
+      function saveAccordionStates(states) {
+        try {
+          localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(states));
+        } catch (error) {
+          console.warn('Failed to save accordion states:', error);
+        }
+      }
+
+      // Initialize accordions
+      function initializeAccordions() {
+        const sections = document.querySelectorAll('.settings-section[data-section]');
+        const accordionStates = loadAccordionStates();
+
+        sections.forEach(section => {
+          const sectionName = section.getAttribute('data-section');
+          const header = section.querySelector('.settings-section-header');
+          const isExpanded = accordionStates[sectionName] !== false; // Default to true
+
+          // Set initial state
+          if (isExpanded) {
+            section.classList.add('expanded');
+            header.setAttribute('aria-expanded', 'true');
+          } else {
+            header.setAttribute('aria-expanded', 'false');
+          }
+
+          // Add click handler
+          header.addEventListener('click', () => {
+            const wasExpanded = section.classList.toggle('expanded');
+            header.setAttribute('aria-expanded', wasExpanded);
+
+            // Save state
+            accordionStates[sectionName] = wasExpanded;
+            saveAccordionStates(accordionStates);
+          });
+        });
+      }
+
       // Track background image URL
       let currentBackgroundImageUrl = null;
       let currentCenterImageUrl = null;
+
+      // Blink debug mode state
+      let blinkDebugAudioBuffer = null;
+      let blinkDebugAudioContext = null;
+      let blinkDebugAudioSource = null;
+      let blinkDebugAudioDuration = 0;
+      let blinkDebugIntervalStartTime = 0;
+      let blinkDebugIntervalEndTime = 0;
+      let blinkDebugIsSelecting = false;
+      let blinkDebugSelectionStartX = 0;
+      let blinkDebugAudioDataUrl = null;
+      let blinkDebugAudioFileName = null;
 
       // Get current settings from UI
       function getCurrentSettings() {
@@ -1869,12 +2114,21 @@
           imageBlinkThreshold: parseInt(blinkThreshold.value),
           imageBlinkIntensity: parseInt(blinkIntensity.value),
           imageBlinkDuration: parseInt(blinkDuration.value),
+          // Blink debug mode settings
+          blinkDebugModeEnabled: blinkDebugModeEnabled.checked,
+          blinkDebugAudioData: blinkDebugAudioDataUrl,
+          blinkDebugAudioName: blinkDebugAudioFileName,
+          blinkDebugIntervalStart: blinkDebugIntervalStartTime,
+          blinkDebugIntervalEnd: blinkDebugIntervalEndTime,
           // Presentation mode settings
           presentationWindowMode: presentationWindowMode.value,
           presentationWindowType: presentationWindowType.value,
           presentationWidth: parseInt(presentationWidth.value),
           presentationHeight: parseInt(presentationHeight.value),
+          presentationX: currentPresentationX,
+          presentationY: currentPresentationY,
           presentationBgOpacity: parseFloat(presentationBgOpacity.value),
+          presentationVisualizationOpacity: parseFloat(presentationVisualizationOpacity.value),
           presentationClickThrough: presentationClickThrough.checked,
         };
       }
@@ -1980,6 +2234,22 @@
         barShapeControls.style.display = isBars ? 'grid' : 'none';
         particleShapeControls.style.display = isParticles ? 'grid' : 'none';
 
+        // Blink debug mode settings
+        blinkDebugModeEnabled.checked = settings.blinkDebugModeEnabled || false;
+        blinkDebugControls.style.display = settings.blinkDebugModeEnabled ? 'block' : 'none';
+        blinkManualControls.style.display = settings.blinkDebugModeEnabled ? 'none' : 'block';
+
+        // Restore debug audio data if saved
+        if (settings.blinkDebugAudioData) {
+          blinkDebugAudioDataUrl = settings.blinkDebugAudioData;
+          blinkDebugAudioFileName = settings.blinkDebugAudioName;
+          blinkDebugIntervalStartTime = settings.blinkDebugIntervalStart || 0;
+          blinkDebugIntervalEndTime = settings.blinkDebugIntervalEnd || 0;
+          if (blinkDebugAudioFileName) {
+            blinkDebugFileName.textContent = blinkDebugAudioFileName;
+          }
+        }
+
         // Apply presentation mode settings
         presentationWindowMode.value = settings.presentationWindowMode || 'alwaysOnTop';
         presentationWindowType.value = settings.presentationWindowType || 'frameless';
@@ -1990,10 +2260,16 @@
         presentationBgOpacityValue.textContent = bgOpacityPercent === 0
           ? '0% (Transparent)'
           : bgOpacityPercent === 100 ? '100% (Solid)' : bgOpacityPercent + '%';
+        presentationVisualizationOpacity.value = settings.presentationVisualizationOpacity !== undefined ? settings.presentationVisualizationOpacity : 1;
+        const vizOpacityPercent = Math.round((settings.presentationVisualizationOpacity !== undefined ? settings.presentationVisualizationOpacity : 1) * 100);
+        presentationVisualizationOpacityValue.textContent = vizOpacityPercent + '%';
         presentationClickThrough.checked = settings.presentationClickThrough !== false;
         // Show/hide size controls based on window type
         presentationSizeControls.style.display = settings.presentationWindowType === 'fullscreen' ? 'none' : 'grid';
       }
+
+      // Initialize accordions
+      initializeAccordions();
 
       // Load and apply saved settings on startup
       const savedSettings = loadSettings();
@@ -2105,6 +2381,8 @@
       // Track recording state for UI safety
       let isRecording = false;
       let isConverting = false;
+      let isPreviewing = false;
+      let previewAudioElement = null;
 
       // Update status
       function updateStatus(message, type = 'ready') {
@@ -2149,7 +2427,17 @@
 
         // Conversion controls
         if (!isConverting) {
-          convertBtn.disabled = !audioFile.files.length || isRecording;
+          convertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
+        }
+
+        // Preview controls
+        previewBtn.disabled = !audioFile.files.length || isRecording || isConverting || isPreviewing;
+        if (isPreviewing) {
+          stopPreviewBtn.style.display = 'inline-flex';
+          previewBtn.style.display = 'none';
+        } else {
+          stopPreviewBtn.style.display = 'none';
+          previewBtn.style.display = 'inline-flex';
         }
 
         // Visualizer settings - disable during recording to prevent issues
@@ -2801,6 +3089,368 @@
         updatePreview();
       });
 
+      // ============================================================
+      // Blink Debug Mode Functionality
+      // ============================================================
+
+      // Helper function to format time as m:ss or mm:ss
+      function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      // Helper function to format time with decimals
+      function formatTimeWithDecimals(seconds) {
+        return seconds.toFixed(2) + 's';
+      }
+
+      // Draw waveform on canvas
+      function drawBlinkWaveform(audioBuffer) {
+        const canvas = blinkWaveformCanvas;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Get audio data (use first channel)
+        const channelData = audioBuffer.getChannelData(0);
+        const samplesPerPixel = Math.floor(channelData.length / width);
+
+        // Draw waveform
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.8)';
+        const centerY = height / 2;
+
+        for (let x = 0; x < width; x++) {
+          const startSample = x * samplesPerPixel;
+          let min = 1;
+          let max = -1;
+
+          // Find min and max in this segment
+          for (let i = 0; i < samplesPerPixel && startSample + i < channelData.length; i++) {
+            const sample = channelData[startSample + i];
+            if (sample < min) min = sample;
+            if (sample > max) max = sample;
+          }
+
+          // Draw vertical line representing the amplitude range
+          const minY = centerY + min * (height / 2);
+          const maxY = centerY + max * (height / 2);
+          ctx.fillRect(x, maxY, 1, minY - maxY || 1);
+        }
+
+        // Draw center line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+      }
+
+      // Update selection overlay position
+      function updateSelectionOverlay() {
+        if (blinkDebugAudioDuration <= 0) return;
+
+        const canvas = blinkWaveformCanvas;
+        const width = canvas.offsetWidth;
+
+        if (blinkDebugIntervalStartTime > 0 || blinkDebugIntervalEndTime > 0) {
+          const startX = (blinkDebugIntervalStartTime / blinkDebugAudioDuration) * width;
+          const endX = (blinkDebugIntervalEndTime / blinkDebugAudioDuration) * width;
+
+          blinkSelectionOverlay.style.display = 'block';
+          blinkSelectionOverlay.style.left = startX + 'px';
+          blinkSelectionOverlay.style.width = (endX - startX) + 'px';
+
+          blinkIntervalDisplay.textContent = `${formatTimeWithDecimals(blinkDebugIntervalStartTime)} - ${formatTimeWithDecimals(blinkDebugIntervalEndTime)}`;
+          blinkPlayIntervalBtn.disabled = false;
+          blinkClearIntervalBtn.disabled = false;
+        } else {
+          blinkSelectionOverlay.style.display = 'none';
+          blinkIntervalDisplay.textContent = '0.00s - 0.00s';
+          blinkPlayIntervalBtn.disabled = true;
+          blinkClearIntervalBtn.disabled = true;
+        }
+      }
+
+      // Analyze audio interval to extract frequency and volume parameters
+      async function analyzeAudioInterval(audioBuffer, startTime, endTime) {
+        if (!audioBuffer || startTime >= endTime) return null;
+
+        const sampleRate = audioBuffer.sampleRate;
+        const channelData = audioBuffer.getChannelData(0);
+
+        // Calculate sample indices
+        const startSample = Math.floor(startTime * sampleRate);
+        const endSample = Math.floor(endTime * sampleRate);
+
+        if (startSample >= channelData.length) return null;
+
+        // Extract the interval data
+        const intervalData = channelData.slice(startSample, Math.min(endSample, channelData.length));
+
+        // Calculate RMS volume
+        let sumSquares = 0;
+        let maxAmp = 0;
+        for (let i = 0; i < intervalData.length; i++) {
+          const amp = Math.abs(intervalData[i]);
+          sumSquares += amp * amp;
+          if (amp > maxAmp) maxAmp = amp;
+        }
+        const rms = Math.sqrt(sumSquares / intervalData.length);
+
+        // Convert RMS to 0-255 scale (approximate threshold)
+        const volumeThreshold = Math.round(maxAmp * 255);
+
+        // Perform simple frequency analysis using zero crossing rate
+        // This gives a rough estimate of the dominant frequency
+        let zeroCrossings = 0;
+        for (let i = 1; i < intervalData.length; i++) {
+          if ((intervalData[i] >= 0 && intervalData[i - 1] < 0) ||
+              (intervalData[i] < 0 && intervalData[i - 1] >= 0)) {
+            zeroCrossings++;
+          }
+        }
+
+        // Estimate frequency from zero crossing rate
+        const durationSecs = (endTime - startTime);
+        const estimatedFreq = (zeroCrossings / 2) / durationSecs;
+
+        // Create a reasonable frequency range around the estimated frequency
+        const freqMin = Math.max(20, Math.round(estimatedFreq * 0.5));
+        const freqMax = Math.min(2000, Math.round(estimatedFreq * 1.5));
+
+        return {
+          frequencyMin: freqMin,
+          frequencyMax: freqMax,
+          volumeThreshold: Math.max(50, Math.min(255, volumeThreshold)),
+        };
+      }
+
+      // Update extracted parameters display and apply to visualizer
+      async function updateExtractedParams() {
+        if (!blinkDebugAudioBuffer || blinkDebugIntervalStartTime >= blinkDebugIntervalEndTime) {
+          blinkExtractedParams.style.display = 'none';
+          return;
+        }
+
+        const params = await analyzeAudioInterval(
+          blinkDebugAudioBuffer,
+          blinkDebugIntervalStartTime,
+          blinkDebugIntervalEndTime
+        );
+
+        if (params) {
+          blinkExtractedParams.style.display = 'block';
+          blinkExtractedFreq.textContent = `${params.frequencyMin} - ${params.frequencyMax} Hz`;
+          blinkExtractedThreshold.textContent = params.volumeThreshold;
+
+          // Apply the extracted parameters to the visualizer
+          blinkFrequencyMin.value = params.frequencyMin;
+          blinkFrequencyMax.value = params.frequencyMax;
+          blinkThreshold.value = params.volumeThreshold;
+          blinkFrequencyValue.textContent = `${params.frequencyMin} - ${params.frequencyMax}`;
+          blinkThresholdValue.textContent = params.volumeThreshold;
+
+          recorder.setVisualizerOptions(getCurrentOptions());
+          saveSettings(getCurrentSettings());
+        }
+      }
+
+      // Load audio file and create waveform visualization
+      async function loadBlinkDebugAudio(dataUrl) {
+        try {
+          // Create audio context if needed
+          if (!blinkDebugAudioContext) {
+            blinkDebugAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+
+          // Decode audio data
+          const response = await fetch(dataUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          blinkDebugAudioBuffer = await blinkDebugAudioContext.decodeAudioData(arrayBuffer);
+          blinkDebugAudioDuration = blinkDebugAudioBuffer.duration;
+
+          // Draw waveform
+          drawBlinkWaveform(blinkDebugAudioBuffer);
+
+          // Update time labels
+          blinkWaveformStart.textContent = '0:00';
+          blinkWaveformEnd.textContent = formatTime(blinkDebugAudioDuration);
+
+          // Show waveform container
+          blinkWaveformContainer.style.display = 'block';
+
+          // Update selection overlay
+          updateSelectionOverlay();
+
+          // Update extracted params if interval is set
+          if (blinkDebugIntervalStartTime > 0 || blinkDebugIntervalEndTime > 0) {
+            await updateExtractedParams();
+          }
+        } catch (error) {
+          console.error('Error loading debug audio:', error);
+          blinkWaveformContainer.style.display = 'none';
+        }
+      }
+
+      // Debug mode enable/disable handler
+      blinkDebugModeEnabled.addEventListener('change', () => {
+        const enabled = blinkDebugModeEnabled.checked;
+        blinkDebugControls.style.display = enabled ? 'block' : 'none';
+        blinkManualControls.style.display = enabled ? 'none' : 'block';
+
+        // If enabling and we have saved audio data, load it
+        if (enabled && blinkDebugAudioDataUrl) {
+          loadBlinkDebugAudio(blinkDebugAudioDataUrl);
+        }
+
+        saveSettings(getCurrentSettings());
+      });
+
+      // Debug audio file input handler
+      blinkDebugAudioFile.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        blinkDebugAudioFileName = file.name;
+        blinkDebugFileName.textContent = file.name;
+
+        // Convert to data URL for persistence
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          blinkDebugAudioDataUrl = event.target.result;
+
+          // Reset interval selection
+          blinkDebugIntervalStartTime = 0;
+          blinkDebugIntervalEndTime = 0;
+
+          // Load and display waveform
+          await loadBlinkDebugAudio(blinkDebugAudioDataUrl);
+
+          saveSettings(getCurrentSettings());
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Waveform canvas mouse events for interval selection
+      blinkWaveformCanvas.addEventListener('mousedown', (e) => {
+        if (!blinkDebugAudioBuffer) return;
+
+        blinkDebugIsSelecting = true;
+        const rect = blinkWaveformCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        blinkDebugSelectionStartX = x;
+
+        // Calculate time from x position
+        const width = rect.width;
+        blinkDebugIntervalStartTime = (x / width) * blinkDebugAudioDuration;
+        blinkDebugIntervalEndTime = blinkDebugIntervalStartTime;
+
+        updateSelectionOverlay();
+      });
+
+      blinkWaveformCanvas.addEventListener('mousemove', (e) => {
+        if (!blinkDebugIsSelecting) return;
+
+        const rect = blinkWaveformCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+
+        // Calculate time from x position
+        const currentTime = (x / width) * blinkDebugAudioDuration;
+
+        // Update start and end times based on drag direction
+        if (x >= blinkDebugSelectionStartX) {
+          blinkDebugIntervalStartTime = (blinkDebugSelectionStartX / width) * blinkDebugAudioDuration;
+          blinkDebugIntervalEndTime = currentTime;
+        } else {
+          blinkDebugIntervalStartTime = currentTime;
+          blinkDebugIntervalEndTime = (blinkDebugSelectionStartX / width) * blinkDebugAudioDuration;
+        }
+
+        // Clamp values
+        blinkDebugIntervalStartTime = Math.max(0, blinkDebugIntervalStartTime);
+        blinkDebugIntervalEndTime = Math.min(blinkDebugAudioDuration, blinkDebugIntervalEndTime);
+
+        updateSelectionOverlay();
+      });
+
+      blinkWaveformCanvas.addEventListener('mouseup', async () => {
+        if (blinkDebugIsSelecting) {
+          blinkDebugIsSelecting = false;
+
+          // Analyze the selected interval
+          await updateExtractedParams();
+          saveSettings(getCurrentSettings());
+        }
+      });
+
+      blinkWaveformCanvas.addEventListener('mouseleave', async () => {
+        if (blinkDebugIsSelecting) {
+          blinkDebugIsSelecting = false;
+
+          // Analyze the selected interval
+          await updateExtractedParams();
+          saveSettings(getCurrentSettings());
+        }
+      });
+
+      // Play interval button handler
+      blinkPlayIntervalBtn.addEventListener('click', () => {
+        if (!blinkDebugAudioBuffer || !blinkDebugAudioContext) return;
+        if (blinkDebugIntervalStartTime >= blinkDebugIntervalEndTime) return;
+
+        // Stop any existing playback
+        if (blinkDebugAudioSource) {
+          try {
+            blinkDebugAudioSource.stop();
+          } catch (e) {
+            // Ignore if already stopped
+          }
+        }
+
+        // Create new source and play the interval
+        blinkDebugAudioSource = blinkDebugAudioContext.createBufferSource();
+        blinkDebugAudioSource.buffer = blinkDebugAudioBuffer;
+        blinkDebugAudioSource.connect(blinkDebugAudioContext.destination);
+
+        const duration = blinkDebugIntervalEndTime - blinkDebugIntervalStartTime;
+        blinkDebugAudioSource.start(0, blinkDebugIntervalStartTime, duration);
+
+        // Update button text during playback
+        blinkPlayIntervalBtn.textContent = 'Playing...';
+        blinkPlayIntervalBtn.disabled = true;
+
+        setTimeout(() => {
+          blinkPlayIntervalBtn.textContent = 'Play Interval';
+          blinkPlayIntervalBtn.disabled = false;
+        }, duration * 1000);
+      });
+
+      // Clear interval button handler
+      blinkClearIntervalBtn.addEventListener('click', () => {
+        blinkDebugIntervalStartTime = 0;
+        blinkDebugIntervalEndTime = 0;
+        blinkExtractedParams.style.display = 'none';
+        updateSelectionOverlay();
+        saveSettings(getCurrentSettings());
+      });
+
+      // Initialize debug mode from saved settings after page load
+      if (savedSettings.blinkDebugModeEnabled && savedSettings.blinkDebugAudioData) {
+        // Defer loading to allow page to fully initialize
+        setTimeout(() => {
+          loadBlinkDebugAudio(savedSettings.blinkDebugAudioData);
+        }, 500);
+      }
+
+      // ============================================================
+      // End Blink Debug Mode Functionality
+      // ============================================================
+
       // Image Cropper functionality
       const cropperModal = document.getElementById('imageCropperModal');
       const cropperCanvas = document.getElementById('cropperCanvas');
@@ -3085,13 +3735,79 @@
 
       // Audio file for conversion
       audioFile.addEventListener('change', () => {
-        convertBtn.disabled = !audioFile.files.length || isRecording;
+        convertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
+        previewBtn.disabled = !audioFile.files.length || isRecording || isConverting || isPreviewing;
+      });
+
+      // Stop preview function
+      function stopPreview() {
+        if (previewAudioElement) {
+          previewAudioElement.pause();
+          previewAudioElement.currentTime = 0;
+          previewAudioElement = null;
+        }
+        isPreviewing = false;
+        updateStatus('Ready - Select an audio file to preview or convert', 'ready');
+        updateButtonStates();
+      }
+
+      // Preview audio with live visualization
+      previewBtn.addEventListener('click', async () => {
+        const file = audioFile.files[0];
+        if (!file) return;
+
+        isPreviewing = true;
+        updateStatus('Previewing audio with visualization (adjust settings in real-time)...', 'recording');
+        updateButtonStates();
+
+        try {
+          // Stop microphone if active to avoid conflicts
+          if (recorder.sourceType === 'microphone') {
+            recorder.stopMicrophone();
+          }
+
+          // Connect the audio file to the recorder for live visualization
+          previewAudioElement = await recorder.connectAudioFile(file);
+
+          // Set loop mode based on checkbox
+          previewAudioElement.loop = loopPreviewCheckbox.checked;
+
+          // Start playback
+          await previewAudioElement.play();
+
+          // Listen for audio end (if not looping)
+          previewAudioElement.addEventListener('ended', () => {
+            if (!previewAudioElement.loop) {
+              stopPreview();
+            }
+          });
+        } catch (error) {
+          isPreviewing = false;
+          updateStatus('Error: ' + error.message, 'error');
+          updateButtonStates();
+          console.error(error);
+        }
+      });
+
+      // Stop preview button
+      stopPreviewBtn.addEventListener('click', stopPreview);
+
+      // Update loop setting when checkbox changes during preview
+      loopPreviewCheckbox.addEventListener('change', () => {
+        if (previewAudioElement) {
+          previewAudioElement.loop = loopPreviewCheckbox.checked;
+        }
       });
 
       // Convert audio to video
       convertBtn.addEventListener('click', async () => {
         const file = audioFile.files[0];
         if (!file) return;
+
+        // Stop preview if running
+        if (isPreviewing) {
+          stopPreview();
+        }
 
         isConverting = true;
         convertBtn.disabled = true;
@@ -3385,6 +4101,40 @@
         }, { passive: false });
       });
 
+      // Debug visual feature: Show boundaries during slider dragging
+      // This helps visualize which parameters are being changed
+      rangeInputs.forEach(slider => {
+        let debugVisualTimeout = null;
+
+        // Show debug visual when slider is being dragged
+        slider.addEventListener('input', () => {
+          recorder.showDebugVisual();
+
+          // Clear any existing timeout
+          if (debugVisualTimeout) {
+            clearTimeout(debugVisualTimeout);
+          }
+
+          // Hide debug visual after a short delay when dragging stops
+          debugVisualTimeout = setTimeout(() => {
+            recorder.hideDebugVisual();
+          }, 500);
+        });
+
+        // Hide debug visual immediately when mouse is released
+        slider.addEventListener('change', () => {
+          if (debugVisualTimeout) {
+            clearTimeout(debugVisualTimeout);
+          }
+          recorder.hideDebugVisual();
+        });
+      });
+
+      // Hide debug visual when recording starts
+      recorder.on('recording:start', () => {
+        recorder.hideDebugVisual();
+      });
+
       // Keyboard shortcuts for better UX
       document.addEventListener('keydown', (e) => {
         // Prevent shortcuts when typing in inputs
@@ -3475,6 +4225,9 @@ Drag on canvas - Move visualization position`);
       // Track presentation mode state
       let isPresentationActive = false;
       let presentationFrameInterval = null;
+      // Track presentation window position (null = auto-center)
+      let currentPresentationX = savedSettings.presentationX;
+      let currentPresentationY = savedSettings.presentationY;
 
       // Hide presentation tab warning if in Electron
       if (isElectron && presentationElectronOnly) {
@@ -3490,6 +4243,7 @@ Drag on canvas - Move visualization position`);
         presentationWidth.disabled = true;
         presentationHeight.disabled = true;
         presentationBgOpacity.disabled = true;
+        presentationVisualizationOpacity.disabled = true;
         presentationClickThrough.disabled = true;
       }
 
@@ -3500,7 +4254,10 @@ Drag on canvas - Move visualization position`);
           windowType: presentationWindowType.value,
           width: parseInt(presentationWidth.value),
           height: parseInt(presentationHeight.value),
+          x: currentPresentationX,
+          y: currentPresentationY,
           backgroundOpacity: parseFloat(presentationBgOpacity.value),
+          visualizationOpacity: parseFloat(presentationVisualizationOpacity.value),
           clickThrough: presentationClickThrough.checked,
         };
       }
@@ -3597,6 +4354,14 @@ Drag on canvas - Move visualization position`);
           stopPresentationFrames();
           updatePresentationButton(false);
         });
+
+        // Event: Listen for presentation window position changes (after dragging)
+        window.electronAPI.onPresentationPositionChanged(({ x, y }) => {
+          currentPresentationX = x;
+          currentPresentationY = y;
+          // Persist position to settings
+          saveSettings(getCurrentSettings());
+        });
       }
 
       // Event: Window mode change
@@ -3655,6 +4420,22 @@ Drag on canvas - Move visualization position`);
         if (isPresentationActive && isElectron) {
           await window.electronAPI.presentationUpdate({
             backgroundOpacity: parseFloat(presentationBgOpacity.value),
+          });
+        }
+      });
+
+      // Event: Visualization opacity change
+      presentationVisualizationOpacity.addEventListener('input', async () => {
+        const opacity = parseFloat(presentationVisualizationOpacity.value);
+        const percent = Math.round(opacity * 100);
+        presentationVisualizationOpacityValue.textContent = percent + '%';
+      });
+
+      presentationVisualizationOpacity.addEventListener('change', async () => {
+        saveSettings(getCurrentSettings());
+        if (isPresentationActive && isElectron) {
+          await window.electronAPI.presentationUpdate({
+            visualizationOpacity: parseFloat(presentationVisualizationOpacity.value),
           });
         }
       });
