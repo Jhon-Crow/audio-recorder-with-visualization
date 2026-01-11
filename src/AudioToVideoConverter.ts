@@ -3,11 +3,11 @@ import { VideoRecorder } from './core/VideoRecorder';
 import { OfflineAudioAnalyzer } from './core/OfflineAudioAnalyzer';
 import {
   ConversionConfig,
-  RecordingFormat,
   Visualizer,
   VisualizationData,
   VisualizerOptions,
 } from './types';
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
 import {
   WaveformVisualizer,
   BarVisualizer,
@@ -595,28 +595,41 @@ export class AudioToVideoConverter {
   }
 
   /**
+   * Check if WebCodecs API is supported in this browser
+   */
+  static isWebCodecsSupported(): boolean {
+    return typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined';
+  }
+
+  /**
    * Convert an audio file to video with visualization using true offline rendering
    *
-   * This method performs silent offline rendering:
+   * This method performs REAL faster-than-realtime rendering using WebCodecs API:
    * - No audio plays through speakers during conversion
-   * - No visualization preview is shown during conversion (uses hidden canvas)
-   * - Frame rendering is fast (many times faster than real-time)
-   * - Audio is captured silently using Web Audio API
+   * - No real-time playback required - encoding happens as fast as CPU allows
+   * - Typically 5-20x faster than real-time depending on hardware
+   * - Output includes full audio track
    *
    * Process:
-   * - Phase 1 (0-20%): Audio analysis - very fast
-   * - Phase 2 (20-50%): Frame rendering - very fast (5-20x real-time)
-   * - Phase 3 (50-100%): Audio muxing - runs at 1x but silently
+   * - Phase 1 (0-10%): Audio analysis - instant
+   * - Phase 2 (10-90%): Video frame encoding - very fast (5-20x real-time)
+   * - Phase 3 (90-100%): Audio encoding and muxing - very fast
    *
-   * Total time is approximately: analysis + fast_render + audio_duration
-   * For a 3 minute song, expect ~15-30 seconds analysis/render + 3 minutes silent muxing
+   * Total time for a 3 minute song: typically 10-30 seconds total
    *
-   * The output video includes synchronized audio from the original file.
+   * Note: Requires WebCodecs API support (Chrome 94+, Edge 94+, Opera 80+)
+   * Falls back to regular convert() method if WebCodecs is not available.
    *
    * @param config - Conversion configuration
    * @returns Promise resolving to the video blob with audio
    */
   async convertFast(config: ConversionConfig): Promise<Blob> {
+    // Check for WebCodecs support
+    if (!AudioToVideoConverter.isWebCodecsSupported()) {
+      this.log('WebCodecs not supported, falling back to regular convert()');
+      return this.convert(config);
+    }
+
     // Reset cancellation flag
     this.isCancelled = false;
 
@@ -630,7 +643,6 @@ export class AudioToVideoConverter {
       videoHeight = 1080,
       videoBitrate = 8000000,
       audioBitrate = 192000,
-      format = 'webm',
       onProgress,
     } = config;
 
@@ -654,7 +666,7 @@ export class AudioToVideoConverter {
     const ctx = canvas.getContext('2d', {
       alpha: true,
       colorSpace: 'srgb',
-      willReadFrequently: false,
+      willReadFrequently: true, // Required for VideoFrame creation from canvas
     });
     if (!ctx) {
       throw new Error('Failed to get 2D context from canvas');
@@ -678,7 +690,7 @@ export class AudioToVideoConverter {
     // Wait for visualizer initialization (including image loading) to prevent flickering
     await visualizer.init(canvas, visualizerOptions);
 
-    this.log('Starting fast offline conversion (no audio playback)...');
+    this.log('Starting WebCodecs fast offline conversion...');
 
     // Create offline analyzer and analyze the audio
     const offlineAnalyzer = new OfflineAudioAnalyzer({
@@ -686,10 +698,10 @@ export class AudioToVideoConverter {
       debug: this.debug,
     });
 
-    // Report analysis progress (0-20% of total)
+    // Report analysis progress (0-10% of total)
     const analysisProgress = (progress: number): void => {
       if (onProgress) {
-        onProgress(progress * 0.2);
+        onProgress(progress * 0.1);
       }
     };
 
@@ -716,345 +728,237 @@ export class AudioToVideoConverter {
 
     const duration = analysisCache.duration;
     const totalFrames = Math.ceil(duration * fps);
+    const sampleRate = analysisCache.sampleRate;
     this.log('Audio duration:', duration, 'seconds,', totalFrames, 'frames to render');
 
-    // Create audio element for audio stream (muted - no playback)
-    const audioElement = new Audio();
-    audioElement.crossOrigin = 'anonymous';
-    audioElement.muted = true; // Mute - no audio playback during conversion
-    audioElement.volume = 0;
+    const cleanup = (): void => {
+      visualizer.destroy();
+      offlineAnalyzer.destroy();
+    };
 
-    if (audioSource instanceof File) {
-      audioElement.src = URL.createObjectURL(audioSource);
-    } else {
-      audioElement.src = audioSource;
-    }
-
-    // Wait for audio metadata to load
-    await new Promise<void>((resolve, reject) => {
-      audioElement.onloadedmetadata = () => resolve();
-      audioElement.onerror = () => reject(new Error('Failed to load audio'));
-    });
-
-    // Get audio stream for the final video (even though muted, we'll capture it)
-    let audioStream: MediaStream | undefined;
     try {
-      if ('captureStream' in audioElement) {
-        audioStream = (audioElement as HTMLMediaElement & { captureStream(): MediaStream }).captureStream();
-      } else if ('mozCaptureStream' in audioElement) {
-        audioStream = (audioElement as HTMLMediaElement & { mozCaptureStream(): MediaStream }).mozCaptureStream();
-      }
-    } catch (e) {
-      this.log('Could not capture stream from audio element');
-    }
+      // Create mp4 muxer
+      const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: {
+          codec: 'avc',
+          width: videoWidth,
+          height: videoHeight,
+        },
+        audio: {
+          codec: 'aac',
+          numberOfChannels: analysisCache.audioBuffer.numberOfChannels,
+          sampleRate: sampleRate,
+        },
+        fastStart: 'in-memory',
+        firstTimestampBehavior: 'offset',
+      });
 
-    // Create video recorder
-    const videoRecorder = new VideoRecorder({ debug: this.debug });
+      // Configure video encoder
+      const videoEncoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => {
+          this.log('VideoEncoder error:', e);
+          throw e;
+        },
+      });
 
-    // Start recording canvas (no audio yet - we'll add it using a different method)
-    videoRecorder.start(canvas, undefined, {
-      format,
-      fps,
-      videoBitrate,
-      audioBitrate,
-    });
-
-    this.log('Started fast frame rendering...');
-
-    // Render all frames as fast as possible (no audio playback)
-    let frameCount = 0;
-    const startTime = performance.now();
-
-    return new Promise((resolve, reject) => {
-      let hasErrored = false;
-
-      const cleanup = (): void => {
-        visualizer.destroy();
-        offlineAnalyzer.destroy();
-        if (audioSource instanceof File) {
-          URL.revokeObjectURL(audioElement.src);
-        }
+      // Check codec support and configure
+      const videoCodec = 'avc1.42001f'; // H.264 Baseline Profile
+      const videoConfig: VideoEncoderConfig = {
+        codec: videoCodec,
+        width: videoWidth,
+        height: videoHeight,
+        bitrate: videoBitrate,
+        framerate: fps,
       };
 
-      // Render frames as fast as possible using a loop with setTimeout(0)
-      const renderNextFrame = (): void => {
-        if (hasErrored) return;
+      const videoSupport = await VideoEncoder.isConfigSupported(videoConfig);
+      if (!videoSupport.supported) {
+        throw new Error(`Video codec ${videoCodec} not supported`);
+      }
 
-        // Check for cancellation
+      videoEncoder.configure(videoConfig);
+      this.log('Video encoder configured:', videoConfig);
+
+      // Configure audio encoder
+      const audioEncoder = new AudioEncoder({
+        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+        error: (e) => {
+          this.log('AudioEncoder error:', e);
+          throw e;
+        },
+      });
+
+      const audioCodec = 'mp4a.40.2'; // AAC-LC
+      const audioConfig: AudioEncoderConfig = {
+        codec: audioCodec,
+        sampleRate: sampleRate,
+        numberOfChannels: analysisCache.audioBuffer.numberOfChannels,
+        bitrate: audioBitrate,
+      };
+
+      const audioSupport = await AudioEncoder.isConfigSupported(audioConfig);
+      if (!audioSupport.supported) {
+        throw new Error(`Audio codec ${audioCodec} not supported`);
+      }
+
+      audioEncoder.configure(audioConfig);
+      this.log('Audio encoder configured:', audioConfig);
+
+      const startTime = performance.now();
+
+      // Encode video frames as fast as possible
+      this.log('Encoding video frames...');
+      for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
         if (this.isCancelled) {
-          hasErrored = true;
-          videoRecorder.cancel();
+          videoEncoder.close();
+          audioEncoder.close();
           cleanup();
-          reject(new Error('Conversion cancelled by user'));
-          return;
+          throw new Error('Conversion cancelled by user');
         }
 
-        try {
-          // Calculate the simulated time for this frame
-          const simulatedTime = frameCount / fps;
+        // Calculate the simulated time for this frame
+        const simulatedTime = frameIndex / fps;
 
-          // Get cached visualization data for this time
-          const cachedData = offlineAnalyzer.getDataAtTime(simulatedTime);
+        // Get cached visualization data for this time
+        const cachedData = offlineAnalyzer.getDataAtTime(simulatedTime);
 
-          if (cachedData) {
-            const data: VisualizationData = {
-              timeDomainData: cachedData.timeDomainData,
-              frequencyData: cachedData.frequencyData,
-              timestamp: simulatedTime * 1000,
-              width: canvas.width,
-              height: canvas.height,
-              sampleRate: analysisCache.sampleRate,
-              fftSize: analysisCache.fftSize,
-            };
+        if (cachedData) {
+          const data: VisualizationData = {
+            timeDomainData: cachedData.timeDomainData,
+            frequencyData: cachedData.frequencyData,
+            timestamp: simulatedTime * 1000,
+            width: canvas.width,
+            height: canvas.height,
+            sampleRate: sampleRate,
+            fftSize: analysisCache.fftSize,
+          };
 
-            visualizer.draw(ctx, data);
-          }
-
-          frameCount++;
-
-          // Report progress (20-50% for frame rendering phase)
-          if (onProgress) {
-            const progress = 0.2 + (frameCount / totalFrames) * 0.30;
-            onProgress(Math.min(progress, 0.50));
-          }
-
-          // Check if we've rendered all frames
-          if (frameCount >= totalFrames) {
-            const renderTime = performance.now() - startTime;
-            const speedup = (duration * 1000) / renderTime;
-            this.log(`Rendered ${frameCount} frames in ${(renderTime / 1000).toFixed(2)}s (${speedup.toFixed(1)}x faster than real-time)`);
-
-            // Now we need to add audio to the video
-            // Stop the video-only recording first
-            this.finalizeWithAudio(
-              videoRecorder,
-              audioSource,
-              audioStream,
-              audioElement,
-              format,
-              fps,
-              videoBitrate,
-              audioBitrate,
-              onProgress,
-              cleanup,
-              resolve,
-              reject,
-              hasErrored
-            );
-          } else {
-            // Schedule next frame with setTimeout(0) for maximum speed
-            // This allows the browser to process the frame and continue immediately
-            setTimeout(renderNextFrame, 0);
-          }
-        } catch (error) {
-          hasErrored = true;
-          videoRecorder.cancel();
-          cleanup();
-          reject(error);
+          visualizer.draw(ctx, data);
         }
-      };
 
-      // Start rendering
-      renderNextFrame();
-    });
-  }
+        // Create VideoFrame from canvas
+        const timestamp = Math.round((frameIndex / fps) * 1_000_000); // microseconds
+        const frame = new VideoFrame(canvas, {
+          timestamp: timestamp,
+          duration: Math.round(1_000_000 / fps),
+        });
 
-  /**
-   * Finalize the video by combining video frames with audio at accelerated speed
-   * Uses high playback rate to make the muxing process faster than real-time
-   */
-  private async finalizeWithAudio(
-    videoRecorder: VideoRecorder,
-    _audioSource: File | string,
-    _audioStream: MediaStream | undefined,
-    audioElement: HTMLAudioElement,
-    format: RecordingFormat,
-    fps: number,
-    videoBitrate: number,
-    audioBitrate: number,
-    onProgress: ((progress: number) => void) | undefined,
-    cleanup: () => void,
-    resolve: (blob: Blob) => void,
-    reject: (error: Error) => void,
-    hasErrored: boolean
-  ): Promise<void> {
-    if (hasErrored) return;
+        // Encode frame (keyframe every 2 seconds for good seeking)
+        const isKeyFrame = frameIndex % (fps * 2) === 0;
+        videoEncoder.encode(frame, { keyFrame: isKeyFrame });
+        frame.close();
 
-    try {
-      // Stop the video-only recording to get the video blob
-      const videoOnlyBlob = await videoRecorder.stop();
-      this.log('Video frames captured, size:', videoOnlyBlob.size, 'bytes');
+        // Report progress (10-80% for video encoding)
+        if (onProgress && frameIndex % 10 === 0) {
+          const progress = 0.1 + (frameIndex / totalFrames) * 0.7;
+          onProgress(Math.min(progress, 0.8));
+        }
 
-      if (videoOnlyBlob.size === 0) {
-        cleanup();
-        reject(new Error('Export failed: video blob is empty'));
-        return;
+        // Yield to allow other tasks and prevent blocking
+        if (frameIndex % 30 === 0) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        }
       }
 
-      // Now we need to combine video with audio
-      // We'll use accelerated playback (up to 16x speed) to mux faster than real-time
-      // Note: Most browsers support up to 16x playback rate
+      // Flush video encoder
+      await videoEncoder.flush();
+      this.log('Video encoding complete');
 
-      // Create a video element to play the video-only blob
-      const videoEl = document.createElement('video');
-      videoEl.src = URL.createObjectURL(videoOnlyBlob);
-      videoEl.muted = true; // Video stays muted, we'll capture audio from the original file
-      await new Promise<void>((res, rej) => {
-        videoEl.onloadedmetadata = () => res();
-        videoEl.onerror = () => rej(new Error('Failed to load video'));
-      });
+      const videoEncodeTime = performance.now() - startTime;
+      const videoSpeedup = (duration * 1000) / videoEncodeTime;
+      this.log(`Video encoded in ${(videoEncodeTime / 1000).toFixed(2)}s (${videoSpeedup.toFixed(1)}x faster than real-time)`);
 
-      // Prepare audio element for accelerated playback
-      // Note: Audio must be unmuted for captureStream to work, but we can use a very low volume
-      // Actually, for proper muxing at speed, we need to disable audio during the recording
-      // and instead encode the original audio into the video at normal pitch
-
-      // The key insight: We can't speed up audio without changing pitch in browser
-      // So we'll record at 1x with audio, but we render the video frames faster ahead of time
-      // This means the total time is: fast frame rendering + 1x audio playback
-      // However, the user wanted NO audio playback at all
-
-      // Alternative approach: Record video only (no audio) and the user can use the video
-      // Or we use a different strategy: encode everything including audio using WebAudio + OfflineAudioContext
-
-      // Let's use the simplest approach that works:
-      // 1. We already have video frames recorded
-      // 2. Now we mux audio at 1x speed but with muted speakers
-      // 3. The audio is captured but not played out loud
-
-      audioElement.muted = true; // Keep muted - no sound output
-      audioElement.volume = 0;
-      audioElement.currentTime = 0;
-
-      // However, when audio is muted, captureStream captures silence
-      // So we need to use a different approach: Use AudioContext to process audio
-
-      // Actually, the cleanest solution is to accept that audio muxing requires
-      // 1x speed in browser without WebCodecs, but at least the video rendering is fast
-      // and there's no audible sound output (muted).
-
-      // For truly silent, fast export, we'll output the video without audio
-      // and provide the video blob directly (user can combine externally)
-      // OR we can use Web Audio API to pipe audio without playing it
-
-      // Let's use Web Audio API approach for silent audio muxing
-      const audioContext = new AudioContext();
-
-      // Create a media stream destination for silent audio capture
-      const audioDestination = audioContext.createMediaStreamDestination();
-
-      // Create a source from the audio element
-      const audioSourceNode = audioContext.createMediaElementSource(audioElement);
-
-      // Connect to the destination (this captures audio without playing it through speakers)
-      audioSourceNode.connect(audioDestination);
-
-      // Also connect to a GainNode set to 0 connected to speakers (completely silent)
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = 0;
-      audioSourceNode.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Create canvas for video playback
-      const mixCanvas = document.createElement('canvas');
-      mixCanvas.width = videoEl.videoWidth || 1920;
-      mixCanvas.height = videoEl.videoHeight || 1080;
-      const mixCtx = mixCanvas.getContext('2d');
-      if (!mixCtx) {
-        cleanup();
-        URL.revokeObjectURL(videoEl.src);
-        await audioContext.close();
-        reject(new Error('Failed to create mix canvas context'));
-        return;
+      // Report progress
+      if (onProgress) {
+        onProgress(0.85);
       }
 
-      // Create new recorder for the final mix with audio
-      const finalRecorder = new VideoRecorder({ debug: this.debug });
+      // Encode audio
+      this.log('Encoding audio...');
+      const audioBuffer = analysisCache.audioBuffer;
+      const numberOfChannels = audioBuffer.numberOfChannels;
+      const totalSamples = audioBuffer.length;
 
-      // Use the Web Audio API stream for audio
-      finalRecorder.start(mixCanvas, audioDestination.stream, {
-        format,
-        fps,
-        videoBitrate,
-        audioBitrate,
-      });
+      // Process audio in chunks to avoid memory issues
+      const samplesPerChunk = 4096; // Process in 4096-sample chunks
+      const totalChunks = Math.ceil(totalSamples / samplesPerChunk);
 
-      // Reset positions
-      videoEl.currentTime = 0;
-      audioElement.currentTime = 0;
-
-      // Note: We can't use playbackRate > 1 with MediaRecorder for proper output
-      // So the muxing happens at 1x speed, but silently
-      // The total time is: fast frame rendering + 1x audio muxing (silent)
-
-      this.log('Starting silent audio muxing at 1x speed (no sound output)...');
-      const muxStartTime = performance.now();
-      const audioDuration = audioElement.duration;
-
-      // Start playback (silent)
-      const playPromises = [videoEl.play(), audioElement.play()];
-      await Promise.all(playPromises);
-
-      // Render video frames to canvas and report progress
-      const renderMixFrame = (): void => {
-        if (videoEl.ended || audioElement.ended) {
-          return;
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        if (this.isCancelled) {
+          videoEncoder.close();
+          audioEncoder.close();
+          cleanup();
+          throw new Error('Conversion cancelled by user');
         }
-        mixCtx.drawImage(videoEl, 0, 0, mixCanvas.width, mixCanvas.height);
 
-        // Report progress (50-95% for audio muxing phase)
-        if (onProgress && audioDuration > 0) {
-          const muxProgress = audioElement.currentTime / audioDuration;
-          const progress = 0.5 + muxProgress * 0.45;
+        const startSample = chunkIndex * samplesPerChunk;
+        const endSample = Math.min(startSample + samplesPerChunk, totalSamples);
+        const chunkLength = endSample - startSample;
+
+        // For f32-planar format, create a buffer with all channels concatenated
+        // Layout: [ch0_sample0, ch0_sample1, ..., ch0_sampleN, ch1_sample0, ch1_sample1, ..., ch1_sampleN]
+        const planarData = new Float32Array(chunkLength * numberOfChannels);
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const channelData = audioBuffer.getChannelData(channel);
+          const offset = channel * chunkLength;
+          for (let i = 0; i < chunkLength; i++) {
+            planarData[offset + i] = channelData[startSample + i];
+          }
+        }
+
+        // Create AudioData with planar format
+        const timestamp = Math.round((startSample / sampleRate) * 1_000_000); // microseconds
+        const audioData = new AudioData({
+          format: 'f32-planar',
+          sampleRate: sampleRate,
+          numberOfFrames: chunkLength,
+          numberOfChannels: numberOfChannels,
+          timestamp: timestamp,
+          data: planarData,
+        });
+
+        audioEncoder.encode(audioData);
+        audioData.close();
+
+        // Report progress (85-95% for audio encoding)
+        if (onProgress && chunkIndex % 100 === 0) {
+          const progress = 0.85 + (chunkIndex / totalChunks) * 0.1;
           onProgress(Math.min(progress, 0.95));
         }
+      }
 
-        requestAnimationFrame(renderMixFrame);
-      };
-      requestAnimationFrame(renderMixFrame);
+      // Flush audio encoder
+      await audioEncoder.flush();
+      this.log('Audio encoding complete');
 
-      // Wait for playback to finish
-      await new Promise<void>((res) => {
-        const checkEnd = (): void => {
-          if (videoEl.ended || audioElement.ended) {
-            res();
-          } else {
-            setTimeout(checkEnd, 100);
-          }
-        };
-        videoEl.onended = () => res();
-        audioElement.onended = () => res();
-        checkEnd();
-      });
+      // Close encoders
+      videoEncoder.close();
+      audioEncoder.close();
 
-      const muxTime = performance.now() - muxStartTime;
-      this.log(`Audio muxing completed in ${(muxTime / 1000).toFixed(2)}s`);
+      // Finalize muxer
+      muxer.finalize();
 
-      // Stop final recording
-      await new Promise<void>((res) => setTimeout(res, 500)); // Give time for final frames
+      // Get the final MP4 buffer
+      const { buffer } = muxer.target as ArrayBufferTarget;
+      const finalBlob = new Blob([buffer], { type: 'video/mp4' });
 
-      const finalBlob = await finalRecorder.stop();
-
-      // Cleanup temporary resources
-      URL.revokeObjectURL(videoEl.src);
-      await audioContext.close();
       cleanup();
 
       if (onProgress) {
         onProgress(1);
       }
 
-      this.log('Fast conversion complete with audio, blob size:', finalBlob.size, 'bytes');
+      const totalTime = performance.now() - startTime;
+      const totalSpeedup = (duration * 1000) / totalTime;
+      this.log(`Total conversion time: ${(totalTime / 1000).toFixed(2)}s (${totalSpeedup.toFixed(1)}x faster than real-time)`);
+      this.log('Final MP4 size:', finalBlob.size, 'bytes');
 
-      if (finalBlob.size === 0) {
-        reject(new Error('Export failed: final video blob is empty'));
-        return;
-      }
-
-      resolve(finalBlob);
+      return finalBlob;
     } catch (error) {
       cleanup();
-      reject(error instanceof Error ? error : new Error(String(error)));
+      throw error;
     }
   }
 

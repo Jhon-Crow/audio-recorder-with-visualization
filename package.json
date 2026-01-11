@@ -45,6 +45,9 @@
   ],
   "author": "",
   "license": "Unlicense",
+  "dependencies": {
+    "mp4-muxer": "^5.1.3"
+  },
   "devDependencies": {
     "@cypress/webpack-dev-server": "^5.4.1",
     "@rollup/plugin-commonjs": "^25.0.0",
