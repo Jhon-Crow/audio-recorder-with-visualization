@@ -257,6 +257,15 @@
       box-shadow: 0 4px 16px rgba(0, 136, 255, 0.4);
     }
 
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #1e7e34);
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+    }
+
     .options {
       background: var(--color-surface);
       backdrop-filter: blur(10px);
@@ -1149,6 +1158,9 @@
           <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio file to video with visualization" aria-label="Convert audio to video">
             <span>Convert to Video</span>
           </button>
+          <button id="quickConvertBtn" class="btn-success" disabled data-tooltip="Quick conversion: pre-analyzes audio for faster rendering with progress feedback" aria-label="Quick convert audio to video">
+            <span>Quick Convert</span>
+          </button>
           <button id="cancelConvertBtn" class="btn-danger" style="display: none;" data-tooltip="Cancel video conversion" aria-label="Cancel conversion">
             <span>Cancel Conversion</span>
           </button>
@@ -1827,6 +1839,7 @@
       const recordingsList = document.getElementById('recordingsList');
       const audioFile = document.getElementById('audioFile');
       const convertBtn = document.getElementById('convertBtn');
+      const quickConvertBtn = document.getElementById('quickConvertBtn');
       const cancelConvertBtn = document.getElementById('cancelConvertBtn');
       const previewBtn = document.getElementById('previewBtn');
       const stopPreviewBtn = document.getElementById('stopPreviewBtn');
@@ -2425,6 +2438,7 @@
         // Conversion controls
         if (!isConverting) {
           convertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
+          quickConvertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
         }
 
         // Preview controls
@@ -3719,6 +3733,7 @@
       // Audio file for conversion
       audioFile.addEventListener('change', () => {
         convertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
+        quickConvertBtn.disabled = !audioFile.files.length || isRecording || isPreviewing;
         previewBtn.disabled = !audioFile.files.length || isRecording || isConverting || isPreviewing;
       });
 
@@ -3858,6 +3873,89 @@
       cancelConvertBtn.addEventListener('click', () => {
         converter.cancel();
         updateStatus('Cancelling conversion...', 'ready');
+      });
+
+      // Quick convert - uses offline analysis for faster progress feedback
+      quickConvertBtn.addEventListener('click', async () => {
+        const file = audioFile.files[0];
+        if (!file) return;
+
+        // Stop preview if running
+        if (isPreviewing) {
+          stopPreview();
+        }
+
+        isConverting = true;
+        convertBtn.disabled = true;
+        quickConvertBtn.disabled = true;
+        convertBtn.style.display = 'none';
+        quickConvertBtn.style.display = 'none';
+        cancelConvertBtn.style.display = 'inline-flex';
+        progressBar.style.display = 'block';
+        updateStatus('Analyzing audio...', 'recording');
+        updateButtonStates();
+
+        // Pause AudioRecorder visualization during conversion to prevent flickering
+        const wasVisualizationActive = recorder.isVisualizationActive;
+        if (wasVisualizationActive) {
+          recorder.stopVisualization();
+        }
+
+        try {
+          // Get video dimensions based on quality setting
+          const qualityMap = {
+            '720p': { width: 1280, height: 720 },
+            '1080p': { width: 1920, height: 1080 },
+            '1440p': { width: 2560, height: 1440 },
+            '2160p': { width: 3840, height: 2160 },
+          };
+          const quality = qualityMap[videoQuality.value] || qualityMap['1080p'];
+
+          // Update status when analysis is done
+          const onProgressWithStatus = (progress) => {
+            updateProgress(progress);
+            if (progress > 0.3 && progress < 0.31) {
+              updateStatus('Encoding video...', 'recording');
+            }
+          };
+
+          const blob = await converter.convertOffline({
+            audioSource: file,
+            canvas,
+            visualizer: visualizerSelect.value,
+            visualizerOptions: getCurrentOptions(),
+            fps: 30,
+            videoWidth: quality.width,
+            videoHeight: quality.height,
+            format: videoFormat.value,
+            onProgress: onProgressWithStatus,
+          });
+
+          updateStatus('Conversion complete!', 'ready');
+          addRecording(blob);
+        } catch (error) {
+          if (error.message.includes('cancelled')) {
+            updateStatus('Conversion cancelled', 'ready');
+          } else {
+            updateStatus('Error: ' + error.message, 'error');
+          }
+          console.error(error);
+        } finally {
+          isConverting = false;
+          convertBtn.disabled = false;
+          quickConvertBtn.disabled = false;
+          convertBtn.style.display = 'inline-flex';
+          quickConvertBtn.style.display = 'inline-flex';
+          cancelConvertBtn.style.display = 'none';
+          progressBar.style.display = 'none';
+          updateProgress(0);
+          updateButtonStates();
+
+          // Resume AudioRecorder visualization if it was active before conversion
+          if (wasVisualizationActive && recorder.sourceType) {
+            recorder.resumeVisualization();
+          }
+        }
       });
 
       // Canvas drag support for adjusting visualization position
