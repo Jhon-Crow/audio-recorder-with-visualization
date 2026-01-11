@@ -3,6 +3,7 @@ import { VideoRecorder } from './core/VideoRecorder';
 import { OfflineAudioAnalyzer } from './core/OfflineAudioAnalyzer';
 import {
   ConversionConfig,
+  RecordingFormat,
   Visualizer,
   VisualizationData,
   VisualizerOptions,
@@ -761,7 +762,6 @@ export class AudioToVideoConverter {
     this.log('Started fast frame rendering...');
 
     // Render all frames as fast as possible (no audio playback)
-    const frameInterval = 1000 / fps; // Time between frames in ms
     let frameCount = 0;
     const startTime = performance.now();
 
@@ -865,7 +865,7 @@ export class AudioToVideoConverter {
    */
   private async finalizeWithAudio(
     videoRecorder: VideoRecorder,
-    audioSource: File | string,
+    _audioSource: File | string,
     _audioStream: MediaStream | undefined,
     audioElement: HTMLAudioElement,
     format: RecordingFormat,
