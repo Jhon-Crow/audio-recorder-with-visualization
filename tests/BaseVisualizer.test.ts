@@ -51,18 +51,6 @@ class TestVisualizer extends BaseVisualizer {
     return this.applyADSRSmoothing(previousValue, targetValue);
   }
 
-  public testCheckBlinkTrigger(data: VisualizationData): boolean {
-    return this.checkBlinkTrigger(data);
-  }
-
-  public testUpdateBlinkState(triggered: boolean, timestamp: number): void {
-    this.updateBlinkState(triggered, timestamp);
-  }
-
-  public testApplyImageBlinkEffect(ctx: CanvasRenderingContext2D, width: number, height: number, phase: number): void {
-    this.applyImageBlinkEffect(ctx, width, height, phase);
-  }
-
   public getBackgroundImageElement(): HTMLImageElement | null {
     return this.backgroundImageElement;
   }
@@ -370,103 +358,6 @@ describe('BaseVisualizer', () => {
     });
   });
 
-  describe('Image blink effects', () => {
-    beforeEach(async () => {
-      await visualizer.init(canvas);
-    });
-
-    test('should not trigger blink when disabled', async () => {
-      const v = new TestVisualizer({ imageBlinkEnabled: false });
-      await v.init(canvas);
-      expect(v.testCheckBlinkTrigger(mockData)).toBe(false);
-      v.destroy();
-    });
-
-    test('should trigger blink when threshold exceeded', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkFrequencyRange: { min: 60, max: 250 },
-        imageBlinkVolumeThreshold: 100,
-      });
-      await v.init(canvas);
-      // High frequency data to exceed threshold
-      mockData.frequencyData = new Uint8Array(1024).fill(200);
-      expect(v.testCheckBlinkTrigger(mockData)).toBe(true);
-      v.destroy();
-    });
-
-    test('should not trigger blink when below threshold', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkFrequencyRange: { min: 60, max: 250 },
-        imageBlinkVolumeThreshold: 200,
-      });
-      await v.init(canvas);
-      mockData.frequencyData = new Uint8Array(1024).fill(50);
-      expect(v.testCheckBlinkTrigger(mockData)).toBe(false);
-      v.destroy();
-    });
-
-    test('should update blink state correctly', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkDuration: 100,
-      });
-      await v.init(canvas);
-      // Trigger blink
-      v.testUpdateBlinkState(true, 1000);
-      // Should not throw
-      expect(v).toBeDefined();
-      v.destroy();
-    });
-
-    test('should apply gradient-sweep blink effect', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkStyle: 'gradient-sweep',
-        imageBlinkIntensity: 80,
-      });
-      await v.init(canvas);
-      expect(() => v.testApplyImageBlinkEffect(ctx, 800, 600, 0.5)).not.toThrow();
-      v.destroy();
-    });
-
-    test('should apply negative-flash blink effect', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkStyle: 'negative-flash',
-      });
-      await v.init(canvas);
-      expect(() => v.testApplyImageBlinkEffect(ctx, 800, 600, 0.5)).not.toThrow();
-      v.destroy();
-    });
-
-    test('should apply brightness-pulse blink effect', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkStyle: 'brightness-pulse',
-      });
-      await v.init(canvas);
-      expect(() => v.testApplyImageBlinkEffect(ctx, 800, 600, 0.5)).not.toThrow();
-      v.destroy();
-    });
-
-    test('should apply color-flash blink effect', async () => {
-      const v = new TestVisualizer({
-        imageBlinkEnabled: true,
-        imageBlinkStyle: 'color-flash',
-      });
-      await v.init(canvas);
-      expect(() => v.testApplyImageBlinkEffect(ctx, 800, 600, 0.5)).not.toThrow();
-      v.destroy();
-    });
-
-    test('should not apply effect when phase is 0', async () => {
-      await visualizer.init(canvas);
-      expect(() => visualizer.testApplyImageBlinkEffect(ctx, 800, 600, 0)).not.toThrow();
-    });
-  });
-
   describe('Layer effects', () => {
     beforeEach(async () => {
       await visualizer.init(canvas);
@@ -613,19 +504,6 @@ describe('BaseVisualizer', () => {
       v.destroy();
     });
 
-    test('should apply blink effect to background', async () => {
-      const v = new TestVisualizer({
-        backgroundImage: validPng,
-        imageBlinkEnabled: true,
-        imageBlinkTarget: 'background',
-        imageBlinkVolumeThreshold: 0,
-      });
-      await v.init(canvas);
-      mockData.frequencyData = new Uint8Array(1024).fill(200);
-      // Draw multiple times to trigger blink
-      expect(() => v.testDrawBackground(ctx, mockData)).not.toThrow();
-      v.destroy();
-    });
   });
 
   describe('Foreground drawing', () => {
@@ -648,21 +526,6 @@ describe('BaseVisualizer', () => {
       v.destroy();
     });
 
-    test('should apply blink effect to foreground', async () => {
-      const v = new TestVisualizer({
-        foregroundImage: validPng,
-        imageBlinkEnabled: true,
-        imageBlinkTarget: 'foreground',
-        imageBlinkVolumeThreshold: 0,
-      });
-      await v.init(canvas);
-      mockData.frequencyData = new Uint8Array(1024).fill(200);
-      // Need to trigger blink first
-      v.testCheckBlinkTrigger(mockData);
-      v.testUpdateBlinkState(true, mockData.timestamp);
-      expect(() => v.testDrawForeground(ctx, mockData)).not.toThrow();
-      v.destroy();
-    });
   });
 
   describe('Transform methods', () => {
