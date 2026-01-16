@@ -191,18 +191,6 @@ export class AudioToVideoConverter {
       this.log('Could not capture stream from audio element, video will have no audio');
     }
 
-    // Start recording
-    videoRecorder.start(canvas, audioStream, {
-      format,
-      fps,
-      videoBitrate,
-      audioBitrate,
-    });
-
-    // Start playback
-    audioElement.play();
-    this.log('Started playback and recording');
-
     // Render loop with improved timing and reliability
     const frameInterval = 1000 / fps;
     let lastFrameTime = 0;
@@ -210,6 +198,37 @@ export class AudioToVideoConverter {
 
     return new Promise((resolve, reject) => {
       let hasErrored = false;
+
+      // Set up error handler for encoder errors before starting
+      videoRecorder.onError((error) => {
+        if (hasErrored) return;
+        hasErrored = true;
+        this.log('Encoder error during conversion:', error.message);
+        audioElement.pause();
+        videoRecorder.cancel();
+        visualizer.destroy();
+        analyzer.destroy();
+        if (audioSource instanceof File) {
+          URL.revokeObjectURL(audioElement.src);
+        }
+        // Provide helpful error message with format recommendation
+        const helpfulMessage = format === 'mp4'
+          ? `${error.message}. Try using WebM format instead for better compatibility.`
+          : error.message;
+        reject(new Error(`Encoding failed: ${helpfulMessage}`));
+      });
+
+      // Start recording
+      videoRecorder.start(canvas, audioStream, {
+        format,
+        fps,
+        videoBitrate,
+        audioBitrate,
+      });
+
+      // Start playback
+      audioElement.play();
+      this.log('Started playback and recording');
 
       const cleanup = (): void => {
         visualizer.destroy();
