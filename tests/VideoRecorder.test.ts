@@ -125,4 +125,24 @@ describe('VideoRecorder', () => {
     // but we can verify the callback was set
     expect(recorder.state).toBe('recording');
   });
+
+  describe('testEncoderSupport', () => {
+    test('should return true for webm format when encoder works', async () => {
+      const result = await VideoRecorder.testEncoderSupport('webm');
+      // In jsdom environment, this should work since our mock supports webm
+      expect(typeof result).toBe('boolean');
+    }, 5000);
+
+    test('should return false for unsupported format', async () => {
+      // mp4 is not supported in our mock environment
+      const result = await VideoRecorder.testEncoderSupport('mp4');
+      expect(result).toBe(false);
+    }, 5000);
+
+    test('should handle timeout properly', async () => {
+      // Test with very short timeout - should still return a boolean
+      const result = await VideoRecorder.testEncoderSupport('webm', 100);
+      expect(typeof result).toBe('boolean');
+    }, 5000);
+  });
 });

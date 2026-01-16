@@ -2,73 +2,63 @@
 
 ## Problem Description
 
-The audio-to-video conversion process fails with an `EncodingError` when converting long audio files to video format. The error message states: "The given encoder configuration is not supported by the encoder."
+The audio-to-video conversion process fails with an `EncodingError` when converting audio files to MP4 video format. The error message states: "The given encoder configuration is not supported by the encoder."
 
-## Environment
+## Error Reports
 
-- Audio file duration: ~33 minutes (1994.7 seconds)
-- Target format: MP4 with H.264 video (avc1) and AAC audio (mp4a.40.2)
-- Frames processed before failure: 47,323 frames (~26 minutes at 30 fps)
-- Resolution: 1920x1080
+### Error Report #1 (Initial Report)
 
-## Error Analysis
+- **Audio file duration**: ~33 minutes (1994.7 seconds)
+- **Target format**: MP4 with H.264 video (avc1) and AAC audio (mp4a.40.2)
+- **Frames processed before failure**: 47,323 frames (~26 minutes at 30 fps)
+- **Resolution**: 1920x1080
+- **Codec used**: `avc1.424028` (non-standard profile)
+- **Error timing**: Failed after ~26 minutes of encoding
+- **Log file**: `error-logs/error-log-initial.txt`
 
-### Log Evidence
+### Error Report #2 (After Initial Fix Attempt)
+
+- **Audio file duration**: ~33 minutes (1994.7 seconds)
+- **Target format**: MP4 with H.264 video (avc1) and AAC audio (mp4a.40.2)
+- **Frames processed before failure**: 0 frames (immediate failure)
+- **Resolution**: 1920x1080
+- **Codec used**: `avc1.42E01E` (Constrained Baseline Profile, Level 3.0)
+- **Error timing**: Failed immediately on start
+- **Log file**: `error-logs/error-log-1768604501014.txt`
 
 ```
-[VideoRecorder] Started recording with mimeType: video/mp4;codecs=avc1.424028,mp4a.40.2
-...
-error: EncodingError: The given encoder configuration is not supported by the encoder.
-  MediaRecorder {mimeType: 'video/mp4;codecs=avc1.420028,mp4a.40.2', ...}
+[VideoRecorder] Started recording with mimeType: video/mp4;codecs=avc1.42E01E,mp4a.40.2
+[VideoRecorder] Encoder error: EncodingError The given encoder configuration is not supported by the encoder.
+Error: Encoding failed: The given encoder configuration is not supported by the encoder.. Try using WebM format instead for better compatibility.
 ```
-
-### Key Observation: Codec Profile Mismatch
-
-The log shows a **codec profile change** between what was requested and what the error reports:
-- **Requested**: `avc1.424028` (Baseline profile, Level 4.0, constraint_set1_flag set)
-- **Error shows**: `avc1.420028` (Baseline profile, Level 4.0, constraint_set0_flag set)
-
-This indicates that the browser/encoder internally modified the codec profile during the recording process.
 
 ## Root Cause Analysis
 
-### 1. H.264 Codec String Format
+### Key Finding: `isTypeSupported()` is Unreliable
 
-The AVC codec string `avc1.XXYYZZ` encodes:
-- **XX** (profile_idc): Profile identifier (42 = Baseline, 66 decimal)
-- **YY** (profile-iop): Constraint flags
-- **ZZ** (level_idc): Level (28 = Level 4.0, 40 decimal)
+The Chrome browser's `MediaRecorder.isTypeSupported()` method returns `true` for codecs that may not actually be encodable. This is a known limitation documented in Chromium:
 
-### 2. Typo in SUPPORTED_MIME_TYPES
+> "Even if `isTypeSupported()` returns `true`, it doesn't necessarily mean that recording can be carried out. For example, if the recording resolution during actual recording is greater than the maximum resolution supported by the hardware encoder, then the `onerror` callback will be triggered."
 
-There is a **typo** in `src/types.ts` line 276:
-```typescript
-'video/mp4;codecs=avc1.424028,mp4a.40.2',
-```
+### H.264 Encoder Availability Issues
 
-Should be:
-```typescript
-'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-```
+1. **Hardware Encoder Dependency**: Chrome's MediaRecorder relies on platform hardware H.264 encoders when available
+2. **OpenH264 Software Encoder Limitations**: The fallback software encoder (OpenH264) only fully supports Constrained Baseline Profile, and may not be available on all platforms
+3. **No Automatic Fallback**: When hardware encoder fails, Chrome does NOT automatically fall back to VP8/VP9 encoding
+4. **Platform Variations**:
+   - Windows: May have hardware H.264 via Intel QuickSync or NVIDIA NVENC
+   - macOS: Uses VideoToolbox
+   - Linux: Limited hardware encoder support, may rely on software encoding
+   - Android: No software H.264 encoder in Chrome
 
-The codec string `avc1.424028` is **not standard**:
-- `avc1.42E01E` = Constrained Baseline Profile, Level 3.0 (widely supported)
-- `avc1.424028` = Baseline Profile with unusual constraint flags and Level 4.0
+### Why Even `avc1.42E01E` Fails
 
-### 3. Hardware Encoder Limitations
+The Constrained Baseline Profile (`avc1.42E01E`) is the most compatible H.264 profile, but it can still fail because:
 
-The Chrome MediaRecorder API uses hardware-accelerated H.264 encoding when available. Known issues include:
-- Hardware encoders may have resolution limits (some Intel GPUs only support 1080p)
-- Profile compatibility issues between hardware and software encoders
-- When hardware encoder fails, fallback to software encoder may not support the same profile
-- Long recordings can exhaust encoder resources
-
-### 4. Platform-Specific Behavior
-
-According to Chromium documentation:
-- Hardware encoder selection happens automatically
-- `isTypeSupported()` returning `true` doesn't guarantee encoding will succeed
-- Different platforms have different encoder capabilities
+1. **No hardware encoder available**: User's system may lack hardware H.264 encoding capability
+2. **Software encoder not installed**: OpenH264 plugin may not be available
+3. **Browser/platform limitations**: Some Electron or browser configurations disable hardware acceleration
+4. **Resolution too high**: Some encoders have maximum resolution limits
 
 ## Research Sources
 
@@ -76,55 +66,86 @@ According to Chromium documentation:
 2. [Chrome Status - MP4 container support for MediaRecorder](https://chromestatus.com/feature/5163469011943424)
 3. [Chromium Bug 601636 - MediaRecorder: support H264](https://bugs.chromium.org/p/chromium/issues/detail?id=601636)
 4. [MDN - isTypeSupported](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/isTypeSupported_static)
-5. [Chromium Issue 348923066 - MP4 video recorded in Chrome cannot be played](https://issues.chromium.org/issues/348923066)
-6. [Media MIME Support](https://cconcolato.github.io/media-mime-support/)
-7. [media-codecs library](https://github.com/dmnsgn/media-codecs)
+5. [OpenH264 Supported Profiles - GitHub Issue #2450](https://github.com/cisco/openh264/issues/2450)
+6. [OpenH264 - GitHub](https://github.com/cisco/openh264)
+7. [WebCodecs H.264 Issues - Issue #394](https://github.com/w3c/webcodecs/issues/394)
+8. [Google Chrome Community - H264 Hardware Acceleration Issues](https://support.google.com/chrome/thread/208757216)
+9. [Chromium HEVC/H.264 Hardware Encoding Guide](https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding)
 
-## Proposed Solutions
+## Solutions
 
-### Solution 1: Fix Codec Strings (Primary)
+### Solution 1: Automatic Format Fallback (Implemented)
 
-Update `SUPPORTED_MIME_TYPES` in `src/types.ts` to use widely-supported codec profiles:
-
-```typescript
-mp4: [
-  'video/mp4;codecs=avc1.42E01E,mp4a.40.2', // Constrained Baseline, Level 3.0
-  'video/mp4;codecs=avc1.4D401F,mp4a.40.2', // Main Profile, Level 3.1
-  'video/mp4;codecs=avc1.64001F,mp4a.40.2', // High Profile, Level 3.1
-  'video/mp4',
-],
-```
-
-### Solution 2: Add Error Recovery in VideoRecorder
-
-Implement encoder error recovery with fallback to WebM format:
+When MP4 encoding fails, automatically retry with WebM format which uses VP8/VP9 codecs with broader software support:
 
 ```typescript
-this.mediaRecorder.onerror = (event) => {
-  console.error('[VideoRecorder] Error:', event);
-  // Emit error event for caller to handle or retry with different format
-};
+// In AudioToVideoConverter.ts
+if (format === 'mp4') {
+  try {
+    return await this.attemptConversion(config);
+  } catch (error) {
+    if (isEncoderError(error)) {
+      this.log('MP4 encoding failed, falling back to WebM...');
+      return await this.attemptConversion({ ...config, format: 'webm' });
+    }
+    throw error;
+  }
+}
 ```
 
-### Solution 3: Default to WebM for Long Recordings
+### Solution 2: Runtime Codec Validation
 
-WebM (VP8/VP9) has better cross-platform support and doesn't rely on hardware H.264 encoders:
+Perform a real encoding test before starting the main conversion:
 
 ```typescript
-// Recommend WebM for recordings > 10 minutes
-const recommendedFormat = duration > 600 ? 'webm' : format;
+static async testEncoderSupport(format: RecordingFormat): Promise<boolean> {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const stream = canvas.captureStream(1);
+
+  const mimeType = VideoRecorder.getSupportedMimeType(format);
+  if (!mimeType) return false;
+
+  return new Promise((resolve) => {
+    try {
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorder.onerror = () => resolve(false);
+      recorder.ondataavailable = () => {
+        recorder.stop();
+        resolve(true);
+      };
+      recorder.start(100);
+      setTimeout(() => {
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        }
+      }, 200);
+    } catch {
+      resolve(false);
+    }
+  });
+}
 ```
+
+### Solution 3: User-Facing Format Selection
+
+Provide clear guidance to users about format compatibility:
+
+- **WebM (Recommended)**: Works on all platforms with VP8/VP9 software encoders
+- **MP4**: Requires H.264 hardware encoder support, may not work on all systems
 
 ## Recommended Implementation
 
-1. **Fix the codec strings** to use standard, widely-supported profiles
-2. **Add better error handling** in VideoRecorder with format fallback capability
-3. **Document format recommendations** for different use cases
+1. **Add runtime codec validation** to detect encoder failures before starting conversion
+2. **Implement automatic WebM fallback** when MP4 encoding fails
+3. **Provide user notification** about format fallback with explanation
+4. **Default to WebM** format for maximum compatibility
 
 ## Testing
 
-1. Test with short audio files (< 1 minute)
-2. Test with medium audio files (5-10 minutes)
-3. Test with long audio files (30+ minutes)
-4. Test on different platforms (Windows, macOS, Linux)
-5. Test with both MP4 and WebM formats
+1. Test MP4 encoding on systems with hardware H.264 support
+2. Test MP4 encoding on systems without hardware H.264 support (should auto-fallback)
+3. Test WebM encoding on all platforms
+4. Test with various audio durations (1 minute, 10 minutes, 30+ minutes)
+5. Test with different resolutions (720p, 1080p, 4K)

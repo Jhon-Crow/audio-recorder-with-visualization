@@ -2,6 +2,7 @@ import { AudioAnalyzer } from './core/AudioAnalyzer';
 import { VideoRecorder } from './core/VideoRecorder';
 import {
   ConversionConfig,
+  RecordingFormat,
   Visualizer,
   VisualizationData,
   VisualizerOptions,
@@ -36,6 +37,20 @@ const BUILT_IN_VISUALIZERS: Record<string, new (options?: VisualizerOptions) => 
   'radial-bars': RadialBarsVisualizer,
   'frequency-rings': FrequencyRingsVisualizer,
 };
+
+/**
+ * Result of a conversion operation
+ */
+export interface ConversionResult {
+  /** The video blob */
+  blob: Blob;
+  /** The format that was actually used (may differ from requested if fallback occurred) */
+  format: RecordingFormat;
+  /** Whether a fallback to a different format occurred */
+  usedFallback: boolean;
+  /** Message explaining any fallback that occurred */
+  fallbackMessage?: string;
+}
 
 /**
  * Converts audio files to video with visualization
@@ -76,6 +91,42 @@ export class AudioToVideoConverter {
       );
     }
     return new VisualizerClass(options);
+  }
+
+  /**
+   * Convert an audio file to video with visualization.
+   * If the requested format fails (e.g., MP4 without hardware encoder),
+   * automatically falls back to WebM format.
+   * @param config - Conversion configuration
+   * @returns Promise resolving to conversion result with blob and format info
+   */
+  async convertWithFallback(config: ConversionConfig): Promise<ConversionResult> {
+    const requestedFormat = config.format ?? 'webm';
+
+    // For MP4, test encoder support first and fall back to WebM if needed
+    if (requestedFormat === 'mp4') {
+      this.log('Testing MP4 encoder support...');
+      const mp4Supported = await VideoRecorder.testEncoderSupport('mp4');
+
+      if (!mp4Supported) {
+        this.log('MP4 encoder not available, falling back to WebM');
+        const blob = await this.convert({ ...config, format: 'webm' });
+        return {
+          blob,
+          format: 'webm',
+          usedFallback: true,
+          fallbackMessage: 'MP4 encoding is not supported on this system. Your video was saved as WebM format instead, which is compatible with most modern browsers and video players.',
+        };
+      }
+    }
+
+    // Proceed with requested format
+    const blob = await this.convert(config);
+    return {
+      blob,
+      format: requestedFormat,
+      usedFallback: false,
+    };
   }
 
   /**

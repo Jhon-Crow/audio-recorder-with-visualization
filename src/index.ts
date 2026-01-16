@@ -1,6 +1,6 @@
 // Main exports
 export { AudioRecorder } from './AudioRecorder';
-export { AudioToVideoConverter } from './AudioToVideoConverter';
+export { AudioToVideoConverter, type ConversionResult } from './AudioToVideoConverter';
 
 // Core exports
 export { AudioAnalyzer } from './core/AudioAnalyzer';
