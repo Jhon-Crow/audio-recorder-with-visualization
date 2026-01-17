@@ -273,8 +273,13 @@ export const SUPPORTED_MIME_TYPES = {
     'video/webm',
   ],
   mp4: [
-    'video/mp4;codecs=avc1.424028,mp4a.40.2',
+    // Constrained Baseline Profile, Level 3.0 - widely supported, good for mobile
     'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    // Main Profile, Level 3.1 - better compression, good compatibility
+    'video/mp4;codecs=avc1.4D401F,mp4a.40.2',
+    // High Profile, Level 3.1 - best compression, may need hardware support
+    'video/mp4;codecs=avc1.64001F,mp4a.40.2',
+    // Fallback without specific codec
     'video/mp4',
   ],
 } as const;

@@ -1,0 +1,34 @@
+AudioRecorder.ts:238 [AudioRecorder] AudioRecorder initialized
+app-core.js:1116 Available visualizers: (16) ['waveform', 'bars', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram', 'spiral-waveform', 'radial-bars', 'frequency-rings', 'double-spiral', 'pulse', 'waterfall-bars', 'grid', 'lissajous']
+app-core.js:1117 Supported formats: (2) ['mp4', 'webm']
+app-core.js:1118 Keyboard shortcuts: Press ? or / for help
+AudioRecorder.ts:238 [AudioRecorder] Stopped visualization
+AudioRecorder.ts:238 [AudioRecorder] Started demo visualization for 100 ms
+app-features.js:722 Features module initialized
+app-interactions.js:1042 Interactions module initialized. Presentation mode Electron: true
+AudioToVideoConverter.ts:76 [AudioToVideoConverter] Audio duration: 1994.7 seconds
+AudioAnalyzer.ts:36 [AudioAnalyzer] Created AudioContext, sample rate: 44100
+AudioAnalyzer.ts:36 [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+AudioAnalyzer.ts:36 [AudioAnalyzer] Connected AudioElement source
+VideoRecorder.ts:28 [VideoRecorder] Got canvas stream at 30 fps
+VideoRecorder.ts:28 [VideoRecorder] Added 1 audio tracks
+VideoRecorder.ts:28 [VideoRecorder] Started recording with mimeType: video/mp4;codecs=avc1.42E01E,mp4a.40.2
+AudioToVideoConverter.ts:76 [AudioToVideoConverter] Started playback and recording
+VideoRecorder.ts:221 [VideoRecorder] Encoder error: EncodingError The given encoder configuration is not supported by the encoder.
+mediaRecorder.onerror @ VideoRecorder.ts:221
+error
+start @ VideoRecorder.ts:217
+(anonymous) @ AudioToVideoConverter.ts:273
+convert @ AudioToVideoConverter.ts:250
+await in convert
+(anonymous) @ app-interactions.js:414
+VideoRecorder.ts:28 [VideoRecorder] Encoder error details: {name: 'EncodingError', message: 'The given encoder configuration is not supported by the encoder.', mimeType: 'video/mp4;codecs=avc1.42002a,mp4a.40.2', state: 'inactive'}
+AudioToVideoConverter.ts:76 [AudioToVideoConverter] Encoder error during conversion: The given encoder configuration is not supported by the encoder.
+VideoRecorder.ts:28 [VideoRecorder] Recording cancelled
+AudioAnalyzer.ts:36 [AudioAnalyzer] Disconnected source
+AudioAnalyzer.ts:36 [AudioAnalyzer] Closed AudioContext
+app-interactions.js:434 Error: Encoding failed: The given encoder configuration is not supported by the encoder.. Try using WebM format instead for better compatibility.
+    at VideoRecorder.onErrorCallback (AudioToVideoConverter.ts:269:16)
+    at mediaRecorder.onerror (VideoRecorder.ts:229:14)
+(anonymous) @ app-interactions.js:434
+VideoRecorder.ts:28 [VideoRecorder] Received chunk: 51532 bytes

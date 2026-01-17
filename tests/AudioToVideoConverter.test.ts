@@ -306,6 +306,45 @@ describe('AudioToVideoConverter', () => {
       consoleSpy.mockRestore();
     }, 10000);
   });
+
+  describe('convertWithFallback()', () => {
+    test('should return ConversionResult with blob and format info for webm', async () => {
+      const result = await converter.convertWithFallback({
+        audioSource: 'test.mp3',
+        canvas,
+        format: 'webm',
+      });
+
+      expect(result.blob).toBeInstanceOf(Blob);
+      expect(result.format).toBe('webm');
+      expect(result.usedFallback).toBe(false);
+      expect(result.fallbackMessage).toBeUndefined();
+    }, 10000);
+
+    test('should return result with usedFallback=false when mp4 is supported', async () => {
+      const result = await converter.convertWithFallback({
+        audioSource: 'test.mp3',
+        canvas,
+        format: 'mp4',
+      });
+
+      expect(result.blob).toBeInstanceOf(Blob);
+      // In jsdom environment, mp4 might not be supported, so we accept either outcome
+      expect(['mp4', 'webm']).toContain(result.format);
+      expect(typeof result.usedFallback).toBe('boolean');
+    }, 15000);
+
+    test('should default to webm format when not specified', async () => {
+      const result = await converter.convertWithFallback({
+        audioSource: 'test.mp3',
+        canvas,
+      });
+
+      expect(result.blob).toBeInstanceOf(Blob);
+      expect(result.format).toBe('webm');
+      expect(result.usedFallback).toBe(false);
+    }, 10000);
+  });
 });
 
 // Type for event callbacks

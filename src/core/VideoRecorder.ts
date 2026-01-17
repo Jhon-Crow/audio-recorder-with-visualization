@@ -9,9 +9,18 @@ export class VideoRecorder {
   private stream: MediaStream | null = null;
   private _state: RecordingState = 'inactive';
   private debug: boolean;
+  private onErrorCallback: ((error: Error) => void) | null = null;
 
   constructor(options: { debug?: boolean } = {}) {
     this.debug = options.debug ?? false;
+  }
+
+  /**
+   * Set error callback for encoder errors
+   * @param callback - Function to call when an encoder error occurs
+   */
+  onError(callback: (error: Error) => void): void {
+    this.onErrorCallback = callback;
   }
 
   private log(...args: unknown[]): void {
@@ -52,6 +61,94 @@ export class VideoRecorder {
       formats.push('webm');
     }
     return formats;
+  }
+
+  /**
+   * Test if the encoder actually works for a given format.
+   * This performs a real encoding test because isTypeSupported() can return true
+   * even when the encoder will fail at runtime (e.g., missing hardware encoder).
+   * @param format - The recording format to test
+   * @param timeoutMs - Timeout in milliseconds (default: 2000)
+   * @returns Promise resolving to true if encoder works, false otherwise
+   */
+  static async testEncoderSupport(format: RecordingFormat, timeoutMs = 2000): Promise<boolean> {
+    const mimeType = VideoRecorder.getSupportedMimeType(format);
+    if (!mimeType) {
+      return false;
+    }
+
+    // Create a small test canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return false;
+    }
+
+    // Draw something to the canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 64, 64);
+
+    const stream = canvas.captureStream(1);
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const cleanup = (): void => {
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType });
+
+        recorder.onerror = () => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(false);
+          }
+        };
+
+        recorder.ondataavailable = (event) => {
+          if (!resolved && event.data.size > 0) {
+            resolved = true;
+            if (recorder.state !== 'inactive') {
+              recorder.stop();
+            }
+            cleanup();
+            resolve(true);
+          }
+        };
+
+        recorder.onstop = () => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            // If we got here without data and without error, consider it failed
+            resolve(false);
+          }
+        };
+
+        // Start recording with a short timeslice
+        recorder.start(100);
+
+        // Timeout fallback
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            if (recorder.state !== 'inactive') {
+              recorder.stop();
+            }
+            cleanup();
+            resolve(false);
+          }
+        }, timeoutMs);
+
+      } catch {
+        cleanup();
+        resolve(false);
+      }
+    });
   }
 
   /**
@@ -118,7 +215,19 @@ export class VideoRecorder {
     };
 
     this.mediaRecorder.onerror = (event) => {
-      console.error('[VideoRecorder] Error:', event);
+      // MediaRecorder error event contains an error property with DOMException
+      const errorEvent = event as Event & { error?: DOMException };
+      const error = errorEvent.error || new Error('Unknown MediaRecorder error');
+      console.error('[VideoRecorder] Encoder error:', error.name, error.message);
+      this.log('Encoder error details:', {
+        name: error.name,
+        message: error.message,
+        mimeType: this.mediaRecorder?.mimeType,
+        state: this.mediaRecorder?.state,
+      });
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error);
+      }
     };
 
     // Request data every second for better memory management

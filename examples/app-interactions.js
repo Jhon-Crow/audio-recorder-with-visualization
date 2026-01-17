@@ -411,7 +411,7 @@ function initInteractions() {
       };
       const quality = qualityMap[el.videoQuality.value] || qualityMap['1080p'];
 
-      const blob = await converter.convert({
+      const result = await converter.convertWithFallback({
         audioSource: file,
         canvas,
         visualizer: el.visualizerSelect.value,
@@ -423,8 +423,13 @@ function initInteractions() {
         onProgress: updateProgress,
       });
 
-      updateStatus('Conversion complete!', 'ready');
-      addRecording(blob);
+      // Check if fallback to WebM occurred
+      if (result.usedFallback) {
+        updateStatus('Conversion complete! ' + result.fallbackMessage, 'ready');
+      } else {
+        updateStatus('Conversion complete!', 'ready');
+      }
+      addRecording(result.blob);
     } catch (error) {
       if (error.message.includes('cancelled')) {
         updateStatus('Conversion cancelled', 'ready');
