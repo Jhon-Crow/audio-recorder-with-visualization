@@ -102,20 +102,26 @@ export class AudioToVideoConverter {
    */
   async convertWithFallback(config: ConversionConfig): Promise<ConversionResult> {
     const requestedFormat = config.format ?? 'webm';
+    // Get target resolution for encoder testing
+    // This is important because hardware encoders may support low resolutions
+    // but fail at higher ones (e.g., 1080p or 4K)
+    const videoWidth = config.videoWidth ?? 1920;
+    const videoHeight = config.videoHeight ?? 1080;
 
     // For MP4, test encoder support first and fall back to WebM if needed
     if (requestedFormat === 'mp4') {
-      this.log('Testing MP4 encoder support...');
-      const mp4Supported = await VideoRecorder.testEncoderSupport('mp4');
+      this.log('Testing MP4 encoder support at', videoWidth, 'x', videoHeight, '...');
+      // Test at target resolution to catch hardware encoder limitations
+      const mp4Supported = await VideoRecorder.testEncoderSupport('mp4', 2000, videoWidth, videoHeight);
 
       if (!mp4Supported) {
-        this.log('MP4 encoder not available, falling back to WebM');
+        this.log('MP4 encoder not available at target resolution, falling back to WebM');
         const blob = await this.convert({ ...config, format: 'webm' });
         return {
           blob,
           format: 'webm',
           usedFallback: true,
-          fallbackMessage: 'MP4 encoding is not supported on this system. Your video was saved as WebM format instead, which is compatible with most modern browsers and video players.',
+          fallbackMessage: 'MP4 encoding is not supported on this system at the requested resolution. Your video was saved as WebM format instead, which is compatible with most modern browsers and video players.',
         };
       }
     }
