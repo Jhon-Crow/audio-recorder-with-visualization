@@ -67,20 +67,34 @@ export class VideoRecorder {
    * Test if the encoder actually works for a given format.
    * This performs a real encoding test because isTypeSupported() can return true
    * even when the encoder will fail at runtime (e.g., missing hardware encoder).
+   *
+   * IMPORTANT: The test should be performed at the target resolution because
+   * some hardware encoders support encoding at low resolutions but fail at
+   * higher resolutions (e.g., 1080p or 4K).
+   *
    * @param format - The recording format to test
    * @param timeoutMs - Timeout in milliseconds (default: 2000)
+   * @param testWidth - Width of test canvas (default: 64, but should match target resolution)
+   * @param testHeight - Height of test canvas (default: 64, but should match target resolution)
    * @returns Promise resolving to true if encoder works, false otherwise
    */
-  static async testEncoderSupport(format: RecordingFormat, timeoutMs = 2000): Promise<boolean> {
+  static async testEncoderSupport(
+    format: RecordingFormat,
+    timeoutMs = 2000,
+    testWidth = 64,
+    testHeight = 64
+  ): Promise<boolean> {
     const mimeType = VideoRecorder.getSupportedMimeType(format);
     if (!mimeType) {
       return false;
     }
 
-    // Create a small test canvas
+    // Create a test canvas at the specified resolution
+    // Testing at target resolution is important because hardware encoders
+    // may support low resolutions but fail at higher ones
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = testWidth;
+    canvas.height = testHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       return false;
@@ -88,7 +102,7 @@ export class VideoRecorder {
 
     // Draw something to the canvas
     ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, 64, 64);
+    ctx.fillRect(0, 0, testWidth, testHeight);
 
     const stream = canvas.captureStream(1);
 
