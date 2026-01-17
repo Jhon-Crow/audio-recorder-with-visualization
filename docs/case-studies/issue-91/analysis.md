@@ -32,6 +32,27 @@ The audio-to-video conversion process fails with an `EncodingError` when convert
 Error: Encoding failed: The given encoder configuration is not supported by the encoder.. Try using WebM format instead for better compatibility.
 ```
 
+### Error Report #3 (WAV File with App Not Using Fallback)
+
+- **Audio file type**: WAV (uncompressed audio)
+- **Audio file duration**: ~33 minutes (1994.7 seconds)
+- **Target format**: MP4 with H.264 video (avc1) and AAC audio (mp4a.40.2)
+- **Frames processed before failure**: 0 frames (immediate failure)
+- **Resolution**: 1920x1080
+- **First codec attempted**: `avc1.42E01E` (Constrained Baseline Profile, Level 3.0)
+- **Second codec attempted**: `avc1.42002a` (attempt logged in error details)
+- **Error timing**: Failed immediately on start
+- **Log file**: `error-logs/error-log-1768676060797.txt`
+
+```
+[VideoRecorder] Started recording with mimeType: video/mp4;codecs=avc1.42E01E,mp4a.40.2
+[VideoRecorder] Encoder error: EncodingError The given encoder configuration is not supported by the encoder.
+[VideoRecorder] Encoder error details: {name: 'EncodingError', message: 'The given encoder configuration is not supported by the encoder.', mimeType: 'video/mp4;codecs=avc1.42002a,mp4a.40.2', state: 'inactive'}
+Error: Encoding failed: The given encoder configuration is not supported by the encoder.. Try using WebM format instead for better compatibility.
+```
+
+**Analysis**: This error shows that the example app was not using the `convertWithFallback()` method, which was implemented in the previous fix. The app was still calling `convert()` directly, bypassing the automatic WebM fallback functionality. The user's system lacks H.264 encoder support regardless of the codec profile used.
+
 ## Root Cause Analysis
 
 ### Key Finding: `isTypeSupported()` is Unreliable
