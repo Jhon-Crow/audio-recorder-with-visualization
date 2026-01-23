@@ -283,3 +283,11 @@ export const SUPPORTED_MIME_TYPES = {
     'video/mp4',
   ],
 } as const;
+
+// Re-export offline audio analyzer types for convenience
+export type {
+  CachedVisualizationData,
+  AudioAnalysisCache,
+  AnalysisProgressCallback,
+  OfflineAnalyzerOptions,
+} from './core/OfflineAudioAnalyzer';

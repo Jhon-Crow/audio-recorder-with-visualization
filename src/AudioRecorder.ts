@@ -2,6 +2,11 @@ import { EventEmitter } from './core/EventEmitter';
 import { AudioAnalyzer } from './core/AudioAnalyzer';
 import { VideoRecorder } from './core/VideoRecorder';
 import {
+  OfflineAudioAnalyzer,
+  AudioAnalysisCache,
+  AnalysisProgressCallback,
+} from './core/OfflineAudioAnalyzer';
+import {
   AudioRecorderConfig,
   AudioRecorderEvents,
   AudioSourceType,
@@ -73,6 +78,12 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private debugVisualActive = false;
   private debugVisualAnimationId: number | null = null;
   private debugVisualStartTime = 0;
+
+  // Offline preview mode properties
+  private offlineAnalyzer: OfflineAudioAnalyzer | null = null;
+  private previewMode: boolean = false;
+  private previewTime: number = 0;
+  private previewAudioElement: HTMLAudioElement | null = null;
 
   constructor(config: AudioRecorderConfig) {
     super();
@@ -444,6 +455,284 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
+   * Analyze an audio file for offline preview mode
+   * This pre-computes visualization data for the entire file, enabling:
+   * - Instant waveform preview before playback
+   * - Smooth scrubbing through the audio
+   * - Visualization that persists when window is minimized
+   *
+   * @param source - File, URL string, or ArrayBuffer containing audio data
+   * @param onProgress - Optional progress callback (0-1)
+   * @returns Promise resolving to the analysis cache
+   */
+  async analyzeAudioFile(
+    source: File | string | ArrayBuffer,
+    onProgress?: AnalysisProgressCallback
+  ): Promise<AudioAnalysisCache> {
+    // Create offline analyzer if not exists
+    if (!this.offlineAnalyzer) {
+      this.offlineAnalyzer = new OfflineAudioAnalyzer({
+        fftSize: this.analyzer.fftSize,
+        debug: this.debug,
+      });
+    }
+
+    this.log('Starting offline audio analysis...');
+    const cache = await this.offlineAnalyzer.analyzeAudio(source, onProgress);
+    this.log('Audio analysis complete:', cache.segmentCount, 'segments');
+
+    return cache;
+  }
+
+  /**
+   * Connect an audio file with offline preview support
+   * This will analyze the audio file first, then set up playback
+   * The waveform will be visible immediately after analysis, before pressing Play
+   *
+   * @param file - File or URL string for the audio
+   * @param onAnalysisProgress - Optional progress callback for analysis phase (0-1)
+   * @returns Promise resolving to the HTMLAudioElement for playback control
+   */
+  async connectAudioFileWithPreview(
+    file: File | string,
+    onAnalysisProgress?: AnalysisProgressCallback
+  ): Promise<HTMLAudioElement> {
+    try {
+      this.stopMicrophone();
+      this.stopPreview();
+
+      // First, analyze the audio file offline
+      await this.analyzeAudioFile(file, onAnalysisProgress);
+
+      // Create audio element for playback
+      this.previewAudioElement = new Audio();
+      this.previewAudioElement.crossOrigin = 'anonymous';
+
+      if (file instanceof File) {
+        this.previewAudioElement.src = URL.createObjectURL(file);
+      } else {
+        this.previewAudioElement.src = file;
+      }
+
+      // Wait for audio element to be ready
+      await new Promise<void>((resolve, reject) => {
+        if (this.previewAudioElement) {
+          this.previewAudioElement.onloadedmetadata = () => resolve();
+          this.previewAudioElement.onerror = () => reject(new Error('Failed to load audio'));
+        } else {
+          reject(new Error('Audio element not created'));
+        }
+      });
+
+      // Enable preview mode and show initial visualization
+      this.previewMode = true;
+      this.previewTime = 0;
+      this._sourceType = 'file';
+
+      // Set up audio element event handlers for synchronized visualization
+      this.previewAudioElement.ontimeupdate = () => {
+        if (this.previewAudioElement && this.previewMode) {
+          this.previewTime = this.previewAudioElement.currentTime;
+        }
+      };
+
+      // Start preview visualization
+      this.startPreviewVisualization();
+
+      this.emit('source:change', 'file');
+      this.log('Connected audio file with preview mode');
+
+      return this.previewAudioElement;
+    } catch (error) {
+      this.emit('error', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Start visualization in preview mode using cached offline data
+   */
+  private startPreviewVisualization(): void {
+    if (this.animationFrameId !== null) {
+      return;
+    }
+
+    const animate = (timestamp: number): void => {
+      // Limit frame rate
+      if (timestamp - this.lastFrameTime >= this.frameInterval) {
+        this.lastFrameTime = timestamp;
+        this.drawPreviewFrame(timestamp);
+      }
+
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+
+    this.animationFrameId = requestAnimationFrame(animate);
+    this.log('Started preview visualization');
+  }
+
+  /**
+   * Draw a frame using cached offline data
+   */
+  private drawPreviewFrame(timestamp: number): void {
+    if (!this.offlineAnalyzer || !this.offlineAnalyzer.isCached) {
+      // Fallback to demo data if cache not available
+      this.drawDemoFrame(timestamp);
+      return;
+    }
+
+    // Get cached data for current preview time
+    const cachedData = this.offlineAnalyzer.getDataAtTime(this.previewTime);
+    if (!cachedData) {
+      this.drawDemoFrame(timestamp);
+      return;
+    }
+
+    const cache = this.offlineAnalyzer.analysisCache!;
+
+    const data: VisualizationData = {
+      timeDomainData: cachedData.timeDomainData,
+      frequencyData: cachedData.frequencyData,
+      timestamp,
+      width: this.canvas.width,
+      height: this.canvas.height,
+      sampleRate: cache.sampleRate,
+      fftSize: cache.fftSize,
+    };
+
+    this.visualizer.draw(this.ctx, data);
+    this.emit('frame', data);
+  }
+
+  /**
+   * Seek to a specific time in preview mode
+   * This will instantly update the visualization to show the waveform at that time
+   *
+   * @param time - Time in seconds to seek to
+   */
+  seekPreview(time: number): void {
+    if (!this.previewMode || !this.offlineAnalyzer?.isCached) {
+      return;
+    }
+
+    const duration = this.offlineAnalyzer.duration;
+    this.previewTime = Math.max(0, Math.min(time, duration));
+
+    // Also seek the audio element if it exists
+    if (this.previewAudioElement) {
+      this.previewAudioElement.currentTime = this.previewTime;
+    }
+
+    // Force an immediate redraw
+    this.drawPreviewFrame(performance.now());
+
+    this.log('Seeked preview to:', this.previewTime.toFixed(2), 'seconds');
+  }
+
+  /**
+   * Get the waveform overview for the analyzed audio
+   * Returns peak amplitudes suitable for drawing a waveform preview/scrubber
+   *
+   * @param numPoints - Number of points to generate (default: 200)
+   * @returns Array of peak amplitude values (0-1), or null if no audio is analyzed
+   */
+  getWaveformOverview(numPoints: number = 200): Float32Array | null {
+    return this.offlineAnalyzer?.getWaveformOverview(numPoints) ?? null;
+  }
+
+  /**
+   * Get the duration of the analyzed audio
+   * @returns Duration in seconds, or 0 if no audio is analyzed
+   */
+  getPreviewDuration(): number {
+    return this.offlineAnalyzer?.duration ?? 0;
+  }
+
+  /**
+   * Get the current preview time
+   * @returns Current time in seconds
+   */
+  getPreviewTime(): number {
+    return this.previewTime;
+  }
+
+  /**
+   * Check if preview mode is active
+   */
+  get isPreviewMode(): boolean {
+    return this.previewMode;
+  }
+
+  /**
+   * Check if offline analysis is in progress
+   */
+  get isAnalyzing(): boolean {
+    return this.offlineAnalyzer?.isAnalyzing ?? false;
+  }
+
+  /**
+   * Check if audio has been analyzed and cached
+   */
+  get hasAnalysisCache(): boolean {
+    return this.offlineAnalyzer?.isCached ?? false;
+  }
+
+  /**
+   * Get the audio element used for preview playback
+   */
+  getPreviewAudioElement(): HTMLAudioElement | null {
+    return this.previewAudioElement;
+  }
+
+  /**
+   * Play the preview audio
+   * Visualization will sync with playback automatically
+   */
+  async playPreview(): Promise<void> {
+    if (this.previewAudioElement) {
+      await this.previewAudioElement.play();
+      this.log('Started preview playback');
+    }
+  }
+
+  /**
+   * Pause the preview audio
+   */
+  pausePreview(): void {
+    if (this.previewAudioElement) {
+      this.previewAudioElement.pause();
+      this.log('Paused preview playback');
+    }
+  }
+
+  /**
+   * Stop preview mode and clean up resources
+   */
+  stopPreview(): void {
+    this.stopVisualization();
+    this.previewMode = false;
+    this.previewTime = 0;
+
+    if (this.previewAudioElement) {
+      this.previewAudioElement.pause();
+      if (this.previewAudioElement.src.startsWith('blob:')) {
+        URL.revokeObjectURL(this.previewAudioElement.src);
+      }
+      this.previewAudioElement = null;
+    }
+
+    this.log('Stopped preview mode');
+  }
+
+  /**
+   * Abort any in-progress offline analysis
+   */
+  abortAnalysis(): void {
+    this.offlineAnalyzer?.abortAnalysis();
+    this.log('Aborted offline analysis');
+  }
+
+  /**
    * Start recording video
    */
   startRecording(options?: {
@@ -730,6 +1019,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
     this.hideDebugVisual();
     this.stopVisualization();
     this.stopMicrophone();
+    this.stopPreview();
     this.cancelRecording();
 
     if (this.audioElement) {
@@ -738,6 +1028,12 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
         URL.revokeObjectURL(this.audioElement.src);
       }
       this.audioElement = null;
+    }
+
+    // Clean up offline analyzer
+    if (this.offlineAnalyzer) {
+      this.offlineAnalyzer.destroy();
+      this.offlineAnalyzer = null;
     }
 
     this.visualizer.destroy();
