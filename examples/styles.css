@@ -143,6 +143,8 @@ h1 {
 }
 
 #visualizer {
+  position: relative;
+  z-index: 1;
   display: block;
   background: #000;
   max-width: 100%;
@@ -161,6 +163,7 @@ h1 {
 .preview-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.82);
   box-shadow:
@@ -171,11 +174,16 @@ h1 {
 .alignment-grid {
   position: absolute;
   inset: 0;
-  opacity: 0.22;
+  opacity: 0;
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.55) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.55) 1px, transparent 1px);
   background-size: 25% 25%;
+  transition: opacity 120ms ease;
+}
+
+.preview-overlay.is-dragging .alignment-grid {
+  opacity: 0.22;
 }
 
 .alignment-grid::before,
@@ -206,7 +214,7 @@ h1 {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 8px rgba(255, 79, 216, 0.8);
 }
 
-.smart-guide.is-visible {
+.preview-overlay.is-dragging .smart-guide.is-visible {
   display: block;
 }
 

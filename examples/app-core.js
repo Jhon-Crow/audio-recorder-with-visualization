@@ -1008,6 +1008,12 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     setGuide(horizontalGrid, showGridY, 'top', `${50 + (nearestGridY / canvas.height) * 100}%`);
   }
 
+  function setPreviewGuidesDragging(isDragging) {
+    if (!previewOverlay) return;
+    previewOverlay.classList.toggle('is-dragging', isDragging);
+    updatePreviewGuides();
+  }
+
   function setGuide(guide, visible, property, value) {
     if (!guide) return;
     guide.classList.toggle('is-visible', visible);
@@ -1089,6 +1095,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     getCurrentSettings,
     getCurrentOptions,
     updatePreview,
+    setPreviewGuidesDragging,
     updateSliderColors,
     updateStatus,
     updateButtonStates,

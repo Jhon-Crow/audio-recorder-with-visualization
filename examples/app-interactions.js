@@ -479,6 +479,7 @@ function initInteractions() {
       canvasDragStartOffsetY = parseInt(el.offsetY.value);
     }
     canvas.style.cursor = 'grabbing';
+    app.setPreviewGuidesDragging(true);
   });
 
   canvas.addEventListener('mousemove', (e) => {
@@ -537,6 +538,7 @@ function initInteractions() {
       canvasDragging = false;
       isDraggingCenterImage = false;
       canvas.style.cursor = 'grab';
+      app.setPreviewGuidesDragging(false);
       saveSettings(getCurrentSettings());
     }
   });
@@ -546,6 +548,7 @@ function initInteractions() {
       canvasDragging = false;
       isDraggingCenterImage = false;
       canvas.style.cursor = 'grab';
+      app.setPreviewGuidesDragging(false);
       saveSettings(getCurrentSettings());
     }
   });
@@ -561,6 +564,7 @@ function initInteractions() {
       canvasDragStartY = e.touches[0].clientY;
       canvasDragStartOffsetX = parseInt(el.offsetX.value);
       canvasDragStartOffsetY = parseInt(el.offsetY.value);
+      app.setPreviewGuidesDragging(true);
     }
   }, { passive: true });
 
@@ -585,6 +589,7 @@ function initInteractions() {
   canvas.addEventListener('touchend', () => {
     if (canvasDragging) {
       canvasDragging = false;
+      app.setPreviewGuidesDragging(false);
       saveSettings(getCurrentSettings());
     }
   });
