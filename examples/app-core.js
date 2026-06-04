@@ -24,7 +24,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   });
 
-  const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
+  const { AudioRecorder, AudioToVideoConverter, AudioAnalyzer } = window.AudioRecorderVisualization;
 
   // Elements
   const canvas = document.getElementById('visualizer');
@@ -101,6 +101,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const audioEnhancementControls = document.getElementById('audioEnhancementControls');
   const noiseReduction = document.getElementById('noiseReduction');
   const noiseReductionValue = document.getElementById('noiseReductionValue');
+  const noiseProfileFile = document.getElementById('noiseProfileFile');
+  const noiseProfileFileName = document.getElementById('noiseProfileFileName');
+  const noiseProfileReduction = document.getElementById('noiseProfileReduction');
+  const noiseProfileReductionValue = document.getElementById('noiseProfileReductionValue');
+  const noiseProfileVoiceProtection = document.getElementById('noiseProfileVoiceProtection');
+  const noiseProfileVoiceProtectionValue = document.getElementById('noiseProfileVoiceProtectionValue');
+  const clearNoiseProfile = document.getElementById('clearNoiseProfile');
   const smartNormalization = document.getElementById('smartNormalization');
   const smartNormalizationValue = document.getElementById('smartNormalizationValue');
   const saturation = document.getElementById('saturation');
@@ -202,6 +209,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     particleShape: 'circle',
     audioEnhancementEnabled: false,
     noiseReduction: 0,
+    noiseProfile: null,
+    noiseProfileName: null,
+    noiseProfileReduction: 45,
+    noiseProfileVoiceProtection: 85,
     smartNormalization: 0,
     saturation: 0,
     saturationMode: 'soft-clip',
@@ -319,6 +330,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track background image URL
   let currentBackgroundImageUrl = null;
   let currentCenterImageUrl = null;
+  let currentNoiseProfile = null;
+  let currentNoiseProfileName = null;
 
   // Blink debug mode state
   let blinkDebugAudioBuffer = null;
@@ -375,6 +388,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       particleShape: particleShapeSelect.value,
       audioEnhancementEnabled: audioEnhancementEnabled.checked,
       noiseReduction: parseInt(noiseReduction.value),
+      noiseProfile: currentNoiseProfile,
+      noiseProfileName: currentNoiseProfileName,
+      noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationMode: saturationMode.value,
@@ -508,6 +525,16 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     audioEnhancementControls.style.display = audioEnhancementEnabled.checked ? 'grid' : 'none';
     noiseReduction.value = settings.noiseReduction || 0;
     noiseReductionValue.textContent = (settings.noiseReduction || 0) + '%';
+    currentNoiseProfile = settings.noiseProfile || null;
+    currentNoiseProfileName = settings.noiseProfileName || null;
+    noiseProfileFileName.textContent = currentNoiseProfileName
+      ? `${currentNoiseProfileName} (${currentNoiseProfile?.bands?.length || 0} bands)`
+      : 'No profile loaded';
+    clearNoiseProfile.disabled = !currentNoiseProfile;
+    noiseProfileReduction.value = settings.noiseProfileReduction ?? 45;
+    noiseProfileReductionValue.textContent = (settings.noiseProfileReduction ?? 45) + '%';
+    noiseProfileVoiceProtection.value = settings.noiseProfileVoiceProtection ?? 85;
+    noiseProfileVoiceProtectionValue.textContent = (settings.noiseProfileVoiceProtection ?? 85) + '%';
     smartNormalization.value = settings.smartNormalization || 0;
     smartNormalizationValue.textContent = (settings.smartNormalization || 0) + '%';
     saturation.value = settings.saturation || 0;
@@ -702,6 +729,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     audioEnhancement: {
       enabled: savedSettings.audioEnhancementEnabled || false,
       noiseReduction: savedSettings.noiseReduction || 0,
+      noiseProfile: savedSettings.noiseProfile || null,
+      noiseProfileReduction: savedSettings.noiseProfileReduction ?? 45,
+      noiseProfileVoiceProtection: savedSettings.noiseProfileVoiceProtection ?? 85,
       smartNormalization: savedSettings.smartNormalization || 0,
       saturation: savedSettings.saturation || 0,
       saturationFrequencyRange: {
@@ -794,13 +824,16 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       mirror, mirrorHorizontal, useCustomColors, centerImage, centerImageZoom,
       centerImageOffsetX, centerImageOffsetY, visualizationAlpha, offsetX, offsetY,
       visualizationScale, layerEffect, layerEffectIntensity, barShapeSelect, particleShapeSelect,
-      audioEnhancementEnabled, noiseReduction, smartNormalization, saturation,
+      audioEnhancementEnabled, noiseReduction, noiseProfileFile, noiseProfileReduction,
+      noiseProfileVoiceProtection,
+      smartNormalization, saturation,
       saturationMode, saturationMin, saturationMax
     ];
 
     settingsElements.forEach(el => {
       if (el) el.disabled = isRecording;
     });
+    clearNoiseProfile.disabled = isRecording || !currentNoiseProfile;
   }
 
   // Start microphone
@@ -1027,6 +1060,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     return {
       enabled: audioEnhancementEnabled.checked,
       noiseReduction: parseInt(noiseReduction.value),
+      noiseProfile: currentNoiseProfile,
+      noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationFrequencyRange: {
@@ -1125,12 +1161,17 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     canvas,
     recorder,
     converter,
+    AudioAnalyzer,
     savedSettings,
     // Mutable state accessors
     get currentBackgroundImageUrl() { return currentBackgroundImageUrl; },
     set currentBackgroundImageUrl(val) { currentBackgroundImageUrl = val; },
     get currentCenterImageUrl() { return currentCenterImageUrl; },
     set currentCenterImageUrl(val) { currentCenterImageUrl = val; },
+    get currentNoiseProfile() { return currentNoiseProfile; },
+    set currentNoiseProfile(val) { currentNoiseProfile = val; },
+    get currentNoiseProfileName() { return currentNoiseProfileName; },
+    set currentNoiseProfileName(val) { currentNoiseProfileName = val; },
     get isRecording() { return isRecording; },
     set isRecording(val) { isRecording = val; },
     get isConverting() { return isConverting; },
@@ -1244,6 +1285,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       audioEnhancementControls,
       noiseReduction,
       noiseReductionValue,
+      noiseProfileFile,
+      noiseProfileFileName,
+      noiseProfileReduction,
+      noiseProfileReductionValue,
+      noiseProfileVoiceProtection,
+      noiseProfileVoiceProtectionValue,
+      clearNoiseProfile,
       smartNormalization,
       smartNormalizationValue,
       saturation,
