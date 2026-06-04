@@ -402,14 +402,7 @@ function initInteractions() {
     }
 
     try {
-      // Get video dimensions based on quality setting
-      const qualityMap = {
-        '720p': { width: 1280, height: 720 },
-        '1080p': { width: 1920, height: 1080 },
-        '1440p': { width: 2560, height: 1440 },
-        '2160p': { width: 3840, height: 2160 },
-      };
-      const quality = qualityMap[el.videoQuality.value] || qualityMap['1080p'];
+      const dimensions = app.getVideoDimensions();
 
       const result = await converter.convertWithFallback({
         audioSource: file,
@@ -417,8 +410,8 @@ function initInteractions() {
         visualizer: el.visualizerSelect.value,
         visualizerOptions: getCurrentOptions(),
         fps: 30,
-        videoWidth: quality.width,
-        videoHeight: quality.height,
+        videoWidth: dimensions.width,
+        videoHeight: dimensions.height,
         format: el.videoFormat.value,
         onProgress: updateProgress,
       });

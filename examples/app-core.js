@@ -72,6 +72,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const loopPreviewCheckbox = document.getElementById('loopPreview');
   const progressFill = document.getElementById('progressFill');
   const videoQuality = document.getElementById('videoQuality');
+  const aspectRatio = document.getElementById('aspectRatio');
+  const videoDimensions = document.getElementById('videoDimensions');
   const bgSizeMode = document.getElementById('bgSizeMode');
   const customSizeControls = document.getElementById('customSizeControls');
   const bgCustomWidth = document.getElementById('bgCustomWidth');
@@ -173,6 +175,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     backgroundWidth: 800,
     backgroundHeight: 400,
     videoQuality: '1080p',
+    aspectRatio: '16:9',
     videoFormat: 'webm',
     layerEffect: 'none',
     layerEffectIntensity: 50,
@@ -337,6 +340,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       backgroundWidth: parseInt(bgCustomWidth.value),
       backgroundHeight: parseInt(bgCustomHeight.value),
       videoQuality: videoQuality.value,
+      aspectRatio: aspectRatio.value,
       videoFormat: videoFormat.value,
       layerEffect: layerEffect.value,
       layerEffectIntensity: parseInt(layerEffectIntensity.value),
@@ -409,6 +413,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     bgCustomWidth.value = settings.backgroundWidth || 800;
     bgCustomHeight.value = settings.backgroundHeight || 400;
     videoQuality.value = settings.videoQuality || '1080p';
+    aspectRatio.value = settings.aspectRatio || '16:9';
     layerEffect.value = settings.layerEffect || 'none';
     layerEffectIntensity.value = settings.layerEffectIntensity || 50;
     layerEffectIntensityValue.textContent = (settings.layerEffectIntensity || 50) + '%';
@@ -516,9 +521,50 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Initialize accordions
   initializeAccordions();
 
+  const qualityDimensions = {
+    '720p': { width: 1280, height: 720 },
+    '1080p': { width: 1920, height: 1080 },
+    '1440p': { width: 2560, height: 1440 },
+    '2160p': { width: 3840, height: 2160 },
+  };
+
+  function getVideoDimensions() {
+    const base = qualityDimensions[videoQuality.value] || qualityDimensions['1080p'];
+    const [ratioWidth, ratioHeight] = (aspectRatio.value || '16:9')
+      .split(':')
+      .map(value => parseInt(value, 10));
+
+    if (!ratioWidth || !ratioHeight) {
+      return base;
+    }
+
+    if (ratioWidth >= ratioHeight) {
+      return {
+        width: base.width,
+        height: Math.round(base.width * ratioHeight / ratioWidth),
+      };
+    }
+
+    return {
+      width: Math.round(base.height * ratioWidth / ratioHeight),
+      height: base.height,
+    };
+  }
+
+  function applyVideoDimensions(redraw = true) {
+    const dimensions = getVideoDimensions();
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    videoDimensions.textContent = `${dimensions.width} x ${dimensions.height}`;
+    if (redraw) {
+      updatePreview();
+    }
+  }
+
   // Load and apply saved settings on startup
   const savedSettings = loadSettings();
   applySettings(savedSettings);
+  applyVideoDimensions(false);
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -1002,6 +1048,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     updateStatus,
     updateButtonStates,
     addRecording,
+    getVideoDimensions,
+    applyVideoDimensions,
     // Elements (for other modules)
     elements: {
       visualizerSelect,
@@ -1041,6 +1089,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       loopPreviewCheckbox,
       progressFill,
       videoQuality,
+      aspectRatio,
+      videoDimensions,
       bgSizeMode,
       customSizeControls,
       bgCustomWidth,
