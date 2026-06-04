@@ -1444,12 +1444,14 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     presetSidebar.addEventListener('pointerleave', scheduleClosePresetSidebar);
     presetEdgeTrigger.addEventListener('pointerleave', scheduleClosePresetSidebar);
 
-    presetRenameBtn.addEventListener('click', () => {
+    presetRenameBtn.addEventListener('click', event => {
+      event.stopPropagation();
       const presetId = activePresetMenuId;
       hidePresetContextMenu();
       renamePreset(presetId);
     });
-    presetDeleteBtn.addEventListener('click', () => {
+    presetDeleteBtn.addEventListener('click', event => {
+      event.stopPropagation();
       const presetId = activePresetMenuId;
       hidePresetContextMenu();
       deletePreset(presetId);

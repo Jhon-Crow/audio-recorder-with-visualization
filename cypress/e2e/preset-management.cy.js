@@ -68,6 +68,10 @@ describe('Preset Management', () => {
     cy.get('#presetContextMenu').should('be.visible');
     cy.get('#presetRenameBtn').click();
     cy.get('#presetList .preset-load-btn').eq(1).should('contain', 'Renamed');
+    cy.window().then((win) => {
+      const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
+      expect(presets[1].name).to.equal('Renamed');
+    });
 
     cy.get('#presetList .preset-load-btn').eq(2).rightclick();
     cy.get('#presetDeleteBtn').click();
