@@ -56,6 +56,18 @@
             </select>
           </label>
           <label>
+            Aspect Ratio
+            <select id="aspectRatio" aria-label="Select video aspect ratio">
+              <option value="16:9" selected>16:9 Landscape</option>
+              <option value="9:16">9:16 Shorts / Vertical</option>
+              <option value="1:1">1:1 Square</option>
+              <option value="4:5">4:5 Portrait</option>
+              <option value="4:3">4:3 Classic</option>
+              <option value="21:9">21:9 Ultrawide</option>
+            </select>
+          </label>
+          <div class="dimension-summary" id="videoDimensions" aria-live="polite">1920 x 1080</div>
+          <label>
             Video Format
             <select id="videoFormat" aria-label="Select video format">
               <option value="webm" selected>WebM (VP9/VP8)</option>

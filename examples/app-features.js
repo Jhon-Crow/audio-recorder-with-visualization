@@ -204,6 +204,13 @@ function initFeatures() {
     updatePreview();
   });
 
+  [el.videoQuality, el.aspectRatio].forEach(elem => {
+    elem.addEventListener('change', () => {
+      app.applyVideoDimensions();
+      saveSettings(getCurrentSettings());
+    });
+  });
+
   // Layer effect intensity handler with display update
   el.layerEffectIntensity.addEventListener('input', () => {
     const intensity = parseInt(el.layerEffectIntensity.value);
