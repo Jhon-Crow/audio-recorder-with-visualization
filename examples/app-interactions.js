@@ -409,6 +409,7 @@ function initInteractions() {
       const dimensions = app.getVideoDimensions();
       const totalFiles = files.length;
       const fallbackMessages = [];
+      const requestedFormat = el.videoFormat.value;
 
       for (let index = 0; index < totalFiles; index++) {
         const file = files[index];
@@ -428,7 +429,7 @@ function initInteractions() {
           fps: 30,
           videoWidth: dimensions.width,
           videoHeight: dimensions.height,
-          format: el.videoFormat.value,
+          format: requestedFormat,
           onProgress: progress => updateProgress(progress, index, totalFiles),
         });
 

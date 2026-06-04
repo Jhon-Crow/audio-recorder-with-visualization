@@ -66,4 +66,12 @@ describe('Batch Visualization Mode', () => {
       expect(recordings[1].fileName).to.equal('second-track.webm');
     });
   });
+
+  it('uses the selected output format for every file in a batch', () => {
+    cy.readFile('examples/app-interactions.js').then((source) => {
+      expect(source).to.include('const requestedFormat = el.videoFormat.value;');
+      expect(source).to.include('format: requestedFormat,');
+      expect(source).not.to.include('format: el.videoFormat.value,');
+    });
+  });
 });
