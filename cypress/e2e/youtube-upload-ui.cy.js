@@ -43,6 +43,59 @@ describe('YouTube Upload UI', () => {
     cy.get('#authorizeYouTubeBtn').should('not.be.disabled').and('contain.text', 'Open localhost');
   });
 
+  it('explains invalid OAuth client IDs before Google sign-in', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeClientId').type('not-a-web-client-id');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeAuthStatus')
+      .should('have.class', 'error')
+      .and('contain.text', 'This does not look like a Google Web OAuth Client ID')
+      .and('contain.text', 'Authorized JavaScript origins')
+      .and('contain.text', 'http://localhost');
+  });
+
+  it('explains Google invalid_client responses with origin setup guidance', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      error: 'invalid_client',
+                      error_description: 'The OAuth client was not found.',
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeClientId').type('123-test.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeAuthStatus')
+      .should('have.class', 'error')
+      .and('contain.text', 'Google rejected this OAuth Client ID')
+      .and('contain.text', 'Authorized JavaScript origins')
+      .and('contain.text', 'http://localhost');
+  });
+
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;

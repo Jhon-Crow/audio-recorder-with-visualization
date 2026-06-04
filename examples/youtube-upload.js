@@ -19,6 +19,7 @@
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve, then use the localhost page.';
+  const WEB_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
 
   const authModal = document.getElementById('youtubeAuthModal');
   const closeAuthBtn = document.getElementById('closeYouTubeAuthBtn');
@@ -107,6 +108,25 @@
     return origin.protocol === 'https:' ||
       origin.hostname === 'localhost' ||
       origin.hostname === '127.0.0.1';
+  }
+
+  function getCurrentOriginText() {
+    const origin = window.__audioRecorderYouTubeOrigin || window.location;
+    if (origin.origin && origin.origin !== 'null') {
+      return origin.origin;
+    }
+    return `${origin.protocol}//${origin.host || origin.hostname || ''}`;
+  }
+
+  function getOAuthClientSetupMessage(clientId) {
+    const origin = getCurrentOriginText();
+    const details = `Create a Web application OAuth Client ID in Google Cloud Console and add ${origin} to Authorized JavaScript origins.`;
+
+    if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
+      return `This does not look like a Google Web OAuth Client ID. Use a value ending in .apps.googleusercontent.com. ${details}`;
+    }
+
+    return details;
   }
 
   function getLocalhostExampleUrl() {
@@ -254,7 +274,15 @@
         scope: YOUTUBE_UPLOAD_SCOPE,
         callback: (response) => {
           if (!response || response.error) {
-            reject(new Error(response && response.error_description ? response.error_description : 'Google authorization failed'));
+            const errorCode = response && response.error ? response.error : '';
+            const errorDescription = response && response.error_description ? response.error_description : '';
+
+            if (errorCode === 'invalid_client' || /invalid_client/i.test(errorDescription)) {
+              reject(new Error(`Google rejected this OAuth Client ID. ${getOAuthClientSetupMessage(clientId)}`));
+              return;
+            }
+
+            reject(new Error(errorDescription || 'Google authorization failed'));
             return;
           }
 
@@ -278,6 +306,11 @@
     const clientId = clientIdInput.value.trim();
     if (!clientId) {
       setStatus(authStatus, 'OAuth Client ID is required.', 'error');
+      return;
+    }
+
+    if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
+      setStatus(authStatus, getOAuthClientSetupMessage(clientId), 'error');
       return;
     }
 
