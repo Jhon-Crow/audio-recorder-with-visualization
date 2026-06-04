@@ -639,14 +639,23 @@
               </div>
             </div>
             <!-- Manual Configuration (shown when debug mode is disabled) -->
-            <div id="blinkManualControls">
-              <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
-                Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
-                <div style="display: flex; gap: 8px;">
-                  <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
-                  <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
+            <div id="blinkManualControls" class="blink-manual-controls">
+              <div class="range-pair" data-tooltip="Frequency range in Hz to monitor for blinking trigger">
+                <div class="range-pair-header">
+                  <span>Frequency Range (Hz):</span>
+                  <span id="blinkFrequencyValue">60 - 250</span>
                 </div>
-              </label>
+                <div class="range-pair-controls">
+                  <label>
+                    Min
+                    <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" aria-label="Adjust blink minimum frequency">
+                  </label>
+                  <label>
+                    Max
+                    <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" aria-label="Adjust blink maximum frequency">
+                  </label>
+                </div>
+              </div>
               <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
                 Volume Threshold: <span id="blinkThresholdValue">200</span>
                 <input type="range" id="blinkThreshold" min="50" max="255" value="200">
