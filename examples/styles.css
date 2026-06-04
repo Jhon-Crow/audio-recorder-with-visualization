@@ -145,6 +145,12 @@ body {
   outline-offset: 2px;
 }
 
+.preset-load-btn.is-active {
+  background: rgba(0, 255, 136, 0.2);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-glow);
+}
+
 .preset-settings-btn {
   margin-top: auto;
 }

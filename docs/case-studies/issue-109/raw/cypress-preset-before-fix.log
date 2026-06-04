@@ -1,0 +1,84 @@
+
+DevTools listening on ws://127.0.0.1:33491/devtools/browser/0531fc8e-9f2c-4828-b7ef-9daa9897d1bf
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (preset-management.cy.js)                                              │
+  │ Searched:       cypress/e2e/preset-management.cy.js                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preset-management.cy.js                                                         (1 of 1)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (2051ms)
+    ✓ uses skip dialog mode with numbered default names (1196ms)
+    1) renames, deletes, and reorders presets from the sidebar
+    2) highlights the loaded preset until settings change
+
+
+  2 passing (28s)
+  2 failing
+
+  1) Preset Management
+       renames, deletes, and reorders presets from the sidebar:
+     AssertionError: Timed out retrying after 10000ms: Expected to find element: `#presetRenameModal`, but never found it.
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/preset-management.cy.js:69:33)
+
+  2) Preset Management
+       highlights the loaded preset until settings change:
+     AssertionError: Timed out retrying after 10000ms: expected '<button.preset-icon-btn.preset-load-btn>' to have class 'is-active'
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/preset-management.cy.js:118:7)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      2                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     27 seconds                                                                       │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/preset-management.cy.js/P     (1280x720)
+     reset Management -- renames, deletes, and reorders presets from the sidebar (fai
+     led).png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/preset-management.cy.js/P     (1280x720)
+     reset Management -- highlights the loaded preset until settings change (failed).
+     png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preset-management.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  preset-management.cy.js                  00:27        4        2        2        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     00:27        4        2        2        -        -

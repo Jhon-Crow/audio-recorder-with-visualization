@@ -59,7 +59,6 @@ describe('Preset Management', () => {
     cy.reload();
     cy.waitForVisualization();
     cy.window().then((win) => {
-      cy.stub(win, 'prompt').returns('Renamed');
       cy.stub(win, 'confirm').returns(true);
     });
     cy.get('#presetEdgeTrigger').trigger('pointerenter');
@@ -67,6 +66,10 @@ describe('Preset Management', () => {
     cy.get('#presetList .preset-load-btn').eq(1).rightclick();
     cy.get('#presetContextMenu').should('be.visible');
     cy.get('#presetRenameBtn').click();
+    cy.get('#presetRenameModal').should('be.visible');
+    cy.get('#presetRenameInput').should('have.value', 'B').clear().type('Renamed');
+    cy.get('#presetConfirmRenameBtn').click();
+    cy.get('#presetRenameModal').should('not.be.visible');
     cy.get('#presetList .preset-load-btn').eq(1).should('contain', 'Renamed');
     cy.window().then((win) => {
       const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
@@ -92,5 +95,32 @@ describe('Preset Management', () => {
       const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
       expect(presets.map((preset) => preset.name)).to.deep.equal(['Renamed', 'A']);
     });
+  });
+
+  it('highlights the loaded preset until settings change', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-presets', JSON.stringify([
+        { id: 'preset-a', name: 'A', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+        {
+          id: 'preset-b',
+          name: 'B',
+          createdAt: '2026-06-04T00:00:01.000Z',
+          settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
+        },
+      ]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().click();
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'is-active')
+      .and('have.attr', 'aria-current', 'true');
+
+    cy.get('#visualizerSelect').select('waveform');
+    cy.get('#presetList .preset-load-btn').first()
+      .should('not.have.class', 'is-active')
+      .and('not.have.attr', 'aria-current');
   });
 });
