@@ -238,7 +238,7 @@ const blob = await converter.convert({
 
 Browser-friendly helper for uploading a generated video `Blob` with the YouTube Data API resumable upload protocol. Use Google Identity Services to obtain an access token with `YOUTUBE_UPLOAD_SCOPE`, then pass that token to the uploader.
 
-Google sign-in must run from an authorized web origin. For local testing, serve the example from `http://localhost` instead of opening `examples/index.html` with a `file://` URL.
+Google sign-in must run from an authorized web origin. For local testing, serve the example from `http://localhost:8080` instead of opening `examples/index.html` with a `file://` URL, then add exactly `http://localhost:8080` to the OAuth Client ID's Authorized JavaScript origins. The Electron app also uses `http://localhost:8080` by default so the same OAuth origin works in both paths.
 
 ```typescript
 import { YouTubeUploader, YOUTUBE_UPLOAD_SCOPE } from 'audio-recorder-with-visualization';

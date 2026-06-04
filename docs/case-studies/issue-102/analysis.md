@@ -9,6 +9,9 @@
 - Latest issue comments snapshot: `logs/issue-102-comments-latest.json`
 - Latest PR snapshot: `logs/pr-104-latest.json`
 - Latest PR comments snapshot: `logs/pr-104-comments-latest.json`
+- Latest PR review comments snapshot: `logs/pr-104-review-comments-latest.json`
+- Latest PR reviews snapshot: `logs/pr-104-reviews-latest.json`
+- Latest CI runs snapshot: `logs/ci-runs-latest.json`
 - Issue URL: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/102
 
 The issue asks for an upload-to-YouTube button next to the existing save action. If the user has not signed in with Google, clicking upload should open Google sign-in first; after authorization, the YouTube upload form should open. If authorization is already available, the form should open immediately. The form should expose video metadata, including a Short checkbox that appends `#short` to the description.
@@ -25,6 +28,9 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 ## External Research
 
 - Google Identity Services token model is the recommended browser OAuth path for calling Google APIs from JavaScript. `requestAccessToken()` opens the account/sign-in/consent flow and returns a short-lived access token; Google APIs can then be called directly with REST and CORS. Source: https://developers.google.com/identity/oauth2/web/guides/use-token-model
+- Google Identity Services setup requires a Web application OAuth Client ID and Authorized JavaScript origins. For local testing, Google documents adding both `http://localhost` and `http://localhost:<port_number>`. Source: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
+- Google's OAuth troubleshooting docs map `invalid_client` to an unauthorized request origin and `origin_mismatch` to a scheme, domain, or port mismatch against Authorized JavaScript origins. Source: https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
+- Google Account Authorization JavaScript API documents `initTokenClient`, the browser token-flow entry point used by this implementation. Source: https://developers.google.com/identity/oauth2/web/reference/js-reference
 - YouTube `videos.insert` uploads a video and can set metadata. It requires an authorized scope such as `https://www.googleapis.com/auth/youtube.upload`, supports media upload, and accepts `video/*` or `application/octet-stream`. Source: https://developers.google.com/youtube/v3/docs/videos/insert
 - YouTube resumable uploads start with `POST /upload/youtube/v3/videos?uploadType=resumable&part=...`; a successful session returns a `Location` header, then the binary data is uploaded with `PUT` requests. Chunk sizes must be multiples of 256 KB except the final chunk. Source: https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol
 - The YouTube video resource supports `snippet.title`, `snippet.description`, `snippet.tags`, `snippet.categoryId`, `status.privacyStatus`, `status.selfDeclaredMadeForKids`, and `status.containsSyntheticMedia`. Source: https://developers.google.com/youtube/v3/docs/videos
@@ -41,7 +47,8 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - First PR feedback reported `400 invalid_request` with `origin=file://`. Root cause: Google Identity Services cannot authorize from a `file://` origin.
 - Follow-up fix blocked direct `file://` authorization and showed a localhost/HTTPS requirement. That avoided Google's raw error page, but desktop users opening the packaged app were left with a blocked sign-in path.
 - Electron follow-up started a loopback static server and loaded the app from `http://localhost:<port>/index.html`, so desktop OAuth requests now originate from HTTP localhost instead of `file://`.
-- Latest PR feedback reported `401 invalid_client` with `flowName=GeneralOAuthLite`. Root cause analysis: after the origin fix, the remaining failure is OAuth client configuration, not the recording/upload code. The likely causes are a missing/wrong OAuth Client ID, using a non-Web client type, using a deleted/disabled client, or not adding the exact `http://localhost:<port>` origin used by the app to Authorized JavaScript origins.
+- PR feedback then reported `401 invalid_client` with `flowName=GeneralOAuthLite`. Root cause analysis: after the origin fix, the remaining failure is OAuth client configuration, not the recording/upload code. The likely causes are a missing/wrong OAuth Client ID, using a non-Web client type, using a deleted/disabled client, or not adding the exact `http://localhost:<port>` origin used by the app to Authorized JavaScript origins.
+- Latest PR feedback repeated `401 invalid_client`. The additional root cause found in this follow-up is that Electron used port `0`, which means a random localhost port on each launch. Because Google validates JavaScript origins by scheme, host, and port, users could not reliably pre-register one stable Electron origin.
 
 ## OAuth Root Causes
 
@@ -49,6 +56,7 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - The Electron app must run the renderer from localhost or HTTPS before calling Google OAuth; loading the same HTML as a local file will produce request-origin errors.
 - `invalid_client` is not recoverable by retrying upload code. It requires a valid Web application OAuth Client ID configured in Google Cloud Console.
 - Authorized JavaScript origins are exact at the scheme, host, and port level. For example, `http://localhost:8080` and `http://localhost:51234` are different origins.
+- A random Electron app-server port turns the required OAuth origin into a moving target. Even a correctly configured Web OAuth client can fail if it was authorized for `http://localhost:8080` but the app launches from `http://localhost:51234`.
 - A user-pasted value that is not shaped like `*.apps.googleusercontent.com` can be rejected locally before opening Google's popup.
 
 ## Considered Solutions
@@ -77,6 +85,10 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 
    Pros: catches malformed client IDs before a popup and turns Google's `invalid_client` callback into concrete setup guidance that includes the current origin. Cons: it cannot validate a real Google Cloud client remotely without attempting OAuth.
 
+7. Use a stable Electron localhost port for the renderer origin
+
+   Pros: aligns Electron with the existing `npm run serve` origin, gives users one OAuth origin to register (`http://localhost:8080`), and keeps the existing browser-compatible Google Identity Services flow. Cons: if another process already owns port 8080, the app must fall back to an ephemeral port and the user must authorize the fallback origin.
+
 ## Implemented Solution
 
 - Added `src/core/YouTubeUploader.ts`, exported from `src/index.ts`.
@@ -87,6 +99,7 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - Added `Upload to YouTube` next to both browser `Download` and Electron `Save and Show in Folder` actions.
 - The access token is kept in memory only for the current page session. The OAuth Client ID is stored in localStorage for convenience.
 - Added client-side OAuth diagnostics: malformed client IDs are blocked before Google sign-in, and Google `invalid_client` responses now explain that a Web application OAuth Client ID must include the current origin in Authorized JavaScript origins.
+- Updated Electron to prefer `http://localhost:8080` for the internal static server, falling back to a random port only when 8080 is already busy.
 
 ## Follow-up: OAuth Origin Handling
 
@@ -98,7 +111,15 @@ PR feedback then showed `401 invalid_client`. The app cannot automatically repai
 
 `Google rejected this OAuth Client ID. Create a Web application OAuth Client ID in Google Cloud Console and add <current-origin> to Authorized JavaScript origins.`
 
-For Electron this origin is the loopback origin shown in the app URL. For browser testing with `npm run serve`, it is usually `http://localhost:8080`.
+For Electron this origin is now normally `http://localhost:8080`, matching browser testing with `npm run serve`.
+
+## Follow-up: Stable OAuth Origin
+
+The repeated `401 invalid_client` report after the diagnostics change showed that guidance alone was not enough. Electron was loading from a random localhost port, so the required Authorized JavaScript origin could change every launch. The fix is to make the Electron static server prefer port 8080, the same port used by the existing `npm run serve` path. The app still falls back to a random port if 8080 is already busy, but the primary path now gives users one stable origin to add in Google Cloud Console:
+
+`http://localhost:8080`
+
+The UI error message was also tightened to say that the Authorized JavaScript origin must be exactly the origin, without `/index.html` or a trailing slash.
 
 ## Verification Plan
 

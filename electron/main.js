@@ -10,6 +10,9 @@ let presentationWindow = null;
 let appServer = null;
 let appServerUrl = null;
 
+const APP_SERVER_HOST = 'localhost';
+const APP_SERVER_PORT = 8080;
+
 // Presentation window settings
 let presentationSettings = {
   enabled: false,
@@ -73,16 +76,9 @@ function sendStaticFile(response, rootDir, urlPath) {
   });
 }
 
-function startAppServer() {
-  if (appServerUrl) {
-    return Promise.resolve(appServerUrl);
-  }
-
-  const examplesDir = path.join(__dirname, '..', 'examples');
-  const distDir = path.join(__dirname, '..', 'dist');
-
-  appServer = http.createServer((request, response) => {
-    const requestUrl = new URL(request.url, 'http://localhost');
+function createAppServer(examplesDir, distDir) {
+  return http.createServer((request, response) => {
+    const requestUrl = new URL(request.url, `http://${APP_SERVER_HOST}`);
 
     if (requestUrl.pathname.startsWith('/dist/')) {
       sendStaticFile(response, distDir, requestUrl.pathname.slice('/dist'.length));
@@ -91,15 +87,53 @@ function startAppServer() {
 
     sendStaticFile(response, examplesDir, requestUrl.pathname);
   });
+}
 
+function listenAppServer(server, port) {
   return new Promise((resolve, reject) => {
-    appServer.once('error', reject);
-    appServer.listen(0, '127.0.0.1', () => {
-      const address = appServer.address();
-      appServerUrl = `http://localhost:${address.port}`;
-      resolve(appServerUrl);
-    });
+    const cleanup = () => {
+      server.off('error', handleError);
+      server.off('listening', handleListening);
+    };
+    const handleError = (error) => {
+      cleanup();
+      reject(error);
+    };
+    const handleListening = () => {
+      cleanup();
+      resolve(server.address());
+    };
+
+    server.once('error', handleError);
+    server.once('listening', handleListening);
+    server.listen(port, APP_SERVER_HOST);
   });
+}
+
+async function startAppServer() {
+  if (appServerUrl) {
+    return Promise.resolve(appServerUrl);
+  }
+
+  const examplesDir = path.join(__dirname, '..', 'examples');
+  const distDir = path.join(__dirname, '..', 'dist');
+
+  try {
+    appServer = createAppServer(examplesDir, distDir);
+    const address = await listenAppServer(appServer, APP_SERVER_PORT);
+    appServerUrl = `http://${APP_SERVER_HOST}:${address.port}`;
+    return appServerUrl;
+  } catch (error) {
+    if (!error || error.code !== 'EADDRINUSE') {
+      appServer = null;
+      throw error;
+    }
+  }
+
+  appServer = createAppServer(examplesDir, distDir);
+  const address = await listenAppServer(appServer, 0);
+  appServerUrl = `http://${APP_SERVER_HOST}:${address.port}`;
+  return appServerUrl;
 }
 
 async function createWindow() {

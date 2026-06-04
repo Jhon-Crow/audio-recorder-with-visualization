@@ -18,7 +18,8 @@
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
-  const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve, then use the localhost page.';
+  const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
+  const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve or Electron, then use the localhost page.';
   const WEB_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
 
   const authModal = document.getElementById('youtubeAuthModal');
@@ -120,7 +121,7 @@
 
   function getOAuthClientSetupMessage(clientId) {
     const origin = getCurrentOriginText();
-    const details = `Create a Web application OAuth Client ID in Google Cloud Console and add ${origin} to Authorized JavaScript origins.`;
+    const details = `Create a Web application OAuth Client ID in Google Cloud Console and add exactly ${origin} to Authorized JavaScript origins, without a path or trailing slash. Electron uses ${LOCALHOST_EXAMPLE_ORIGIN} unless that port is already busy.`;
 
     if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
       return `This does not look like a Google Web OAuth Client ID. Use a value ending in .apps.googleusercontent.com. ${details}`;
@@ -135,7 +136,7 @@
       return '';
     }
 
-    return 'http://localhost:8080/index.html';
+    return `${LOCALHOST_EXAMPLE_ORIGIN}/index.html`;
   }
 
   function getDefaultTitle(fileName) {

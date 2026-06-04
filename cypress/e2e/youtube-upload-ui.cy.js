@@ -57,7 +57,8 @@ describe('YouTube Upload UI', () => {
       .should('have.class', 'error')
       .and('contain.text', 'This does not look like a Google Web OAuth Client ID')
       .and('contain.text', 'Authorized JavaScript origins')
-      .and('contain.text', 'http://localhost');
+      .and('contain.text', 'exactly http://localhost:8080')
+      .and('contain.text', 'without a path or trailing slash');
   });
 
   it('explains Google invalid_client responses with origin setup guidance', () => {
@@ -93,7 +94,8 @@ describe('YouTube Upload UI', () => {
       .should('have.class', 'error')
       .and('contain.text', 'Google rejected this OAuth Client ID')
       .and('contain.text', 'Authorized JavaScript origins')
-      .and('contain.text', 'http://localhost');
+      .and('contain.text', 'exactly http://localhost:8080')
+      .and('contain.text', 'without a path or trailing slash');
   });
 
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {
@@ -151,7 +153,7 @@ describe('YouTube Upload UI', () => {
     cy.contains('button', 'Upload to YouTube').click();
 
     cy.get('#youtubeAuthModal').should('be.visible');
-    cy.get('#youtubeClientId').type('test-client-id.apps.googleusercontent.com');
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
     cy.get('#authorizeYouTubeBtn').click();
 
     cy.get('#youtubeUploadModal').should('be.visible');
