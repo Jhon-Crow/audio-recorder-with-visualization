@@ -166,10 +166,31 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const presentationVisualizationOpacityValue = document.getElementById('presentationVisualizationOpacityValue');
   const presentationClickThrough = document.getElementById('presentationClickThrough');
   const presentationElectronOnly = document.getElementById('presentationElectronOnly');
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const presetList = document.getElementById('presetList');
+  const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  const presetEdgeTrigger = document.getElementById('presetEdgeTrigger');
+  const presetSidebar = document.getElementById('presetSidebar');
+  const presetContextMenu = document.getElementById('presetContextMenu');
+  const presetRenameBtn = document.getElementById('presetRenameBtn');
+  const presetDeleteBtn = document.getElementById('presetDeleteBtn');
+  const presetSaveModal = document.getElementById('presetSaveModal');
+  const presetNameInput = document.getElementById('presetNameInput');
+  const presetFolderInput = document.getElementById('presetFolderInput');
+  const presetChooseFolderBtn = document.getElementById('presetChooseFolderBtn');
+  const presetDontShowAgain = document.getElementById('presetDontShowAgain');
+  const presetCancelSaveBtn = document.getElementById('presetCancelSaveBtn');
+  const presetConfirmSaveBtn = document.getElementById('presetConfirmSaveBtn');
+  const presetSettingsModal = document.getElementById('presetSettingsModal');
+  const presetSettingsPathInput = document.getElementById('presetSettingsPathInput');
+  const presetSettingsChooseFolderBtn = document.getElementById('presetSettingsChooseFolderBtn');
+  const presetSettingsCloseBtn = document.getElementById('presetSettingsCloseBtn');
 
   // Settings persistence
   const SETTINGS_KEY = 'audio-recorder-settings';
   const ACCORDION_STATE_KEY = 'audio-recorder-accordion-states';
+  const PRESETS_KEY = 'audio-recorder-presets';
+  const PRESET_OPTIONS_KEY = 'audio-recorder-preset-options';
 
   // Default settings
   const defaultSettings = {
@@ -266,6 +287,42 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   }
 
+  function loadPresets() {
+    try {
+      const saved = localStorage.getItem(PRESETS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn('Failed to load presets:', error);
+      return [];
+    }
+  }
+
+  function savePresets(presets) {
+    try {
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+    } catch (error) {
+      console.warn('Failed to save presets:', error);
+    }
+  }
+
+  function loadPresetOptions() {
+    try {
+      const saved = localStorage.getItem(PRESET_OPTIONS_KEY);
+      return saved ? JSON.parse(saved) : { savePath: '', skipDialog: false };
+    } catch (error) {
+      console.warn('Failed to load preset options:', error);
+      return { savePath: '', skipDialog: false };
+    }
+  }
+
+  function savePresetOptions(options) {
+    try {
+      localStorage.setItem(PRESET_OPTIONS_KEY, JSON.stringify(options));
+    } catch (error) {
+      console.warn('Failed to save preset options:', error);
+    }
+  }
+
   // Accordion state management
   function loadAccordionStates() {
     try {
@@ -348,6 +405,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track presentation window position (null = auto-center)
   let currentPresentationX = null;
   let currentPresentationY = null;
+  let presets = loadPresets();
+  let presetOptions = loadPresetOptions();
+  let activePresetMenuId = null;
+  let draggedPresetId = null;
+  let presetSidebarCloseTimer = null;
 
   // Get current settings from UI
   function getCurrentSettings() {
@@ -751,6 +813,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Initialize converter
   const converter = new AudioToVideoConverter({ debug: true });
+  initializePresetControls();
 
   // Recording counter
   let recordingCount = 0;
@@ -1128,6 +1191,288 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     if (!guide) return;
     guide.classList.toggle('is-visible', visible);
     guide.style[property] = value;
+  }
+
+  function getNextPresetName() {
+    let index = presets.length + 1;
+    const names = new Set(presets.map(preset => preset.name));
+    while (names.has(String(index))) {
+      index++;
+    }
+    return String(index);
+  }
+
+  function openModal(modal) {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function openPresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebar.classList.add('is-open');
+  }
+
+  function scheduleClosePresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebarCloseTimer = setTimeout(() => {
+      if (!presetSidebar.matches(':hover') && !presetContextMenu.classList.contains('active')) {
+        presetSidebar.classList.remove('is-open');
+      }
+    }, 180);
+  }
+
+  function hidePresetContextMenu() {
+    presetContextMenu.classList.remove('active');
+    presetContextMenu.setAttribute('aria-hidden', 'true');
+    activePresetMenuId = null;
+  }
+
+  function showPresetContextMenu(presetId, x, y) {
+    activePresetMenuId = presetId;
+    presetContextMenu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
+    presetContextMenu.style.top = `${Math.min(y, window.innerHeight - 88)}px`;
+    presetContextMenu.classList.add('active');
+    presetContextMenu.setAttribute('aria-hidden', 'false');
+    openPresetSidebar();
+  }
+
+  function renamePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    const nextName = window.prompt('Rename preset', preset.name || '');
+    const trimmedName = nextName ? nextName.trim() : '';
+    if (!trimmedName) return;
+
+    presets = presets.map(item => (
+      item.id === presetId ? { ...item, name: trimmedName } : item
+    ));
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset renamed to "${trimmedName}"`, 'ready');
+  }
+
+  function deletePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    if (!window.confirm(`Delete preset "${preset.name}"?`)) return;
+
+    presets = presets.filter(item => item.id !== presetId);
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" deleted`, 'ready');
+  }
+
+  function movePresetBefore(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+
+    const source = presets.find(item => item.id === sourceId);
+    if (!source) return;
+
+    const withoutSource = presets.filter(item => item.id !== sourceId);
+    const targetIndex = withoutSource.findIndex(item => item.id === targetId);
+    if (targetIndex === -1) return;
+
+    presets = [
+      ...withoutSource.slice(0, targetIndex),
+      source,
+      ...withoutSource.slice(targetIndex),
+    ];
+    savePresets(presets);
+    renderPresets();
+  }
+
+  async function choosePresetFolder() {
+    if (window.electronAPI && window.electronAPI.choosePresetFolder) {
+      const result = await window.electronAPI.choosePresetFolder();
+      if (result && result.success && result.folderPath) {
+        presetOptions = { ...presetOptions, savePath: result.folderPath };
+        savePresetOptions(presetOptions);
+        presetFolderInput.value = result.folderPath;
+        presetSettingsPathInput.value = result.folderPath;
+      }
+      return;
+    }
+
+    presetOptions = { ...presetOptions, savePath: 'Browser local storage' };
+    savePresetOptions(presetOptions);
+    presetFolderInput.value = presetOptions.savePath;
+    presetSettingsPathInput.value = presetOptions.savePath;
+  }
+
+  async function persistPresetToFolder(preset) {
+    if (!window.electronAPI || !window.electronAPI.savePresetFile || !presetOptions.savePath) {
+      return;
+    }
+
+    const result = await window.electronAPI.savePresetFile(presetOptions.savePath, preset);
+    if (!result.success) {
+      console.warn('Failed to export preset file:', result.error);
+    }
+  }
+
+  function renderPresets() {
+    presetList.innerHTML = '';
+
+    presets.forEach((preset, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset-icon-btn preset-load-btn';
+      button.textContent = preset.name || String(index + 1);
+      button.setAttribute('aria-label', `Load preset ${preset.name || index + 1}`);
+      button.dataset.presetId = preset.id;
+      button.draggable = true;
+      button.addEventListener('click', () => loadPreset(preset.id));
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        showPresetContextMenu(preset.id, event.clientX, event.clientY);
+      });
+      button.addEventListener('dragstart', event => {
+        draggedPresetId = preset.id;
+        button.classList.add('is-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', preset.id);
+      });
+      button.addEventListener('dragend', () => {
+        draggedPresetId = null;
+        button.classList.remove('is-dragging');
+        presetList.querySelectorAll('.is-drop-target').forEach(item => item.classList.remove('is-drop-target'));
+      });
+      button.addEventListener('dragover', event => {
+        if (draggedPresetId && draggedPresetId !== preset.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          button.classList.add('is-drop-target');
+        }
+      });
+      button.addEventListener('dragleave', () => {
+        button.classList.remove('is-drop-target');
+      });
+      button.addEventListener('drop', event => {
+        event.preventDefault();
+        button.classList.remove('is-drop-target');
+        movePresetBefore(event.dataTransfer.getData('text/plain') || draggedPresetId, preset.id);
+      });
+      presetList.appendChild(button);
+    });
+  }
+
+  async function savePreset(name) {
+    const preset = {
+      id: `preset-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: name || getNextPresetName(),
+      createdAt: new Date().toISOString(),
+      settings: getCurrentSettings(),
+    };
+
+    presets = [...presets, preset];
+    savePresets(presets);
+    await persistPresetToFolder(preset);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" saved`, 'ready');
+  }
+
+  async function loadPreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) {
+      updateStatus('Preset not found', 'error');
+      return;
+    }
+
+    const settings = { ...defaultSettings, ...preset.settings };
+    applySettings(settings);
+    saveSettings(settings);
+    await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
+    recorder.setAudioEnhancement(getCurrentAudioEnhancement());
+    applyVideoDimensions();
+    updateSliderColors();
+    updateButtonStates();
+    updatePreview();
+    updateStatus(`Preset "${preset.name}" loaded`, 'ready');
+  }
+
+  function openPresetSaveDialog() {
+    presetNameInput.value = getNextPresetName();
+    presetFolderInput.value = presetOptions.savePath || 'Browser local storage';
+    presetDontShowAgain.checked = presetOptions.skipDialog || false;
+    openModal(presetSaveModal);
+    presetNameInput.focus();
+    presetNameInput.select();
+  }
+
+  function initializePresetControls() {
+    presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+    renderPresets();
+
+    savePresetBtn.addEventListener('click', async () => {
+      if (presetOptions.skipDialog) {
+        await savePreset(getNextPresetName());
+      } else {
+        openPresetSaveDialog();
+      }
+    });
+
+    presetConfirmSaveBtn.addEventListener('click', async () => {
+      presetOptions = {
+        ...presetOptions,
+        savePath: presetFolderInput.value,
+        skipDialog: presetDontShowAgain.checked,
+      };
+      savePresetOptions(presetOptions);
+      await savePreset(presetNameInput.value.trim() || getNextPresetName());
+      closeModal(presetSaveModal);
+    });
+
+    presetCancelSaveBtn.addEventListener('click', () => closeModal(presetSaveModal));
+    presetChooseFolderBtn.addEventListener('click', choosePresetFolder);
+
+    presetSettingsBtn.addEventListener('click', () => {
+      presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+      openModal(presetSettingsModal);
+    });
+    presetSettingsChooseFolderBtn.addEventListener('click', choosePresetFolder);
+    presetSettingsCloseBtn.addEventListener('click', () => closeModal(presetSettingsModal));
+
+    presetEdgeTrigger.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerleave', scheduleClosePresetSidebar);
+    presetEdgeTrigger.addEventListener('pointerleave', scheduleClosePresetSidebar);
+
+    presetRenameBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      renamePreset(presetId);
+    });
+    presetDeleteBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      deletePreset(presetId);
+    });
+
+    document.addEventListener('click', event => {
+      if (!presetContextMenu.contains(event.target)) {
+        hidePresetContextMenu();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        hidePresetContextMenu();
+      }
+    });
+
+    [presetSaveModal, presetSettingsModal].forEach(modal => {
+      modal.addEventListener('click', event => {
+        if (event.target === modal) {
+          closeModal(modal);
+        }
+      });
+    });
   }
 
   // Function to update slider colors based on current primary/secondary colors

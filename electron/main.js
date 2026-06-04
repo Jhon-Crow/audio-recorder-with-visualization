@@ -243,6 +243,44 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
   }
 });
 
+ipcMain.handle('preset-choose-folder', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, folderPath: result.filePaths[0] };
+  } catch (error) {
+    console.error('Error choosing preset folder:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-save-file', async (event, folderPath, preset) => {
+  try {
+    if (!folderPath) {
+      return { success: false, error: 'Preset folder is not configured' };
+    }
+
+    fs.mkdirSync(folderPath, { recursive: true });
+    const safeName = String(preset.name || 'preset')
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+      .replace(/^\.+$/, 'preset')
+      .slice(0, 80);
+    const filePath = path.join(folderPath, `${safeName}-${preset.id || Date.now()}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(preset, null, 2), 'utf8');
+
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error saving preset file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ==================== PRESENTATION MODE IPC HANDLERS ====================
 
 // Start/toggle presentation mode
