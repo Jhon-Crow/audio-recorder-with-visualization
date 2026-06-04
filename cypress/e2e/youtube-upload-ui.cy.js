@@ -61,6 +61,27 @@ describe('YouTube Upload UI', () => {
       .and('contain.text', 'without a path or trailing slash');
   });
 
+  it('opens Google Cloud OAuth setup guidance with the current origin', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+
+    cy.window().then((win) => {
+      cy.stub(win, 'open').as('windowOpen');
+    });
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#openGoogleCloudOAuthBtn').click();
+
+    cy.get('@windowOpen')
+      .should('have.been.calledWith', 'https://console.cloud.google.com/apis/credentials/oauthclient', '_blank', 'noopener');
+    cy.get('#youtubeAuthStatus')
+      .should('contain.text', 'Opening Google Cloud OAuth clients')
+      .and('contain.text', 'Web application OAuth Client ID')
+      .and('contain.text', 'YouTube Data API v3')
+      .and('contain.text', 'http://localhost:8080');
+  });
+
   it('explains Google invalid_client responses with origin setup guidance', () => {
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {

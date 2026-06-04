@@ -25,6 +25,7 @@
   const authModal = document.getElementById('youtubeAuthModal');
   const closeAuthBtn = document.getElementById('closeYouTubeAuthBtn');
   const cancelAuthBtn = document.getElementById('cancelYouTubeAuthBtn');
+  const openGoogleCloudOAuthBtn = document.getElementById('openGoogleCloudOAuthBtn');
   const authorizeBtn = document.getElementById('authorizeYouTubeBtn');
   const clientIdInput = document.getElementById('youtubeClientId');
   const authStatus = document.getElementById('youtubeAuthStatus');
@@ -48,7 +49,7 @@
   const submitUploadBtn = document.getElementById('submitYouTubeUploadBtn');
 
   const requiredElements = [
-    authModal, closeAuthBtn, cancelAuthBtn, authorizeBtn, clientIdInput, authStatus,
+    authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn, clientIdInput, authStatus,
     uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput,
     categorySelect, privacySelect, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
@@ -121,13 +122,41 @@
 
   function getOAuthClientSetupMessage(clientId) {
     const origin = getCurrentOriginText();
-    const details = `Create a Web application OAuth Client ID in Google Cloud Console and add exactly ${origin} to Authorized JavaScript origins, without a path or trailing slash. Electron uses ${LOCALHOST_EXAMPLE_ORIGIN} unless that port is already busy.`;
+    const details = `Create a Web application OAuth Client ID in Google Cloud Console, enable YouTube Data API v3, and add exactly ${origin} to Authorized JavaScript origins, without a path or trailing slash. Electron uses ${LOCALHOST_EXAMPLE_ORIGIN} unless that port is already busy.`;
 
     if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
       return `This does not look like a Google Web OAuth Client ID. Use a value ending in .apps.googleusercontent.com. ${details}`;
     }
 
     return details;
+  }
+
+  async function copyOriginToClipboard() {
+    const origin = getCurrentOriginText();
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+      return false;
+    }
+
+    try {
+      await navigator.clipboard.writeText(origin);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async function openGoogleCloudOAuthSetup() {
+    const origin = getCurrentOriginText();
+    const copied = await copyOriginToClipboard();
+    const copyStatus = copied ? ` Copied ${origin} to clipboard.` : ` Add exactly ${origin}.`;
+
+    setStatus(
+      authStatus,
+      `Opening Google Cloud OAuth clients. Create or edit a Web application OAuth Client ID, enable YouTube Data API v3, and add the Authorized JavaScript origin without a path or trailing slash.${copyStatus}`,
+      ''
+    );
+
+    window.open('https://console.cloud.google.com/apis/credentials/oauthclient', '_blank', 'noopener');
   }
 
   function getLocalhostExampleUrl() {
@@ -409,6 +438,7 @@
 
   closeAuthBtn.addEventListener('click', closeAuthModal);
   cancelAuthBtn.addEventListener('click', closeAuthModal);
+  openGoogleCloudOAuthBtn.addEventListener('click', openGoogleCloudOAuthSetup);
   authorizeBtn.addEventListener('click', authorizeYouTube);
 
   closeUploadBtn.addEventListener('click', closeUploadModal);
