@@ -472,6 +472,30 @@ button:focus-visible {
   accent-color: var(--color-primary);
 }
 
+.advanced-audio-controls {
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.18);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.advanced-audio-controls summary {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.advanced-audio-controls summary:hover {
+  color: var(--color-text-primary);
+}
+
+.advanced-audio-controls .option-group {
+  margin-top: var(--spacing-md);
+  margin-bottom: 0;
+}
+
 .status {
   text-align: center;
   padding: var(--spacing-md);

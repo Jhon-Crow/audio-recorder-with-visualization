@@ -37,6 +37,7 @@ describe('AudioAnalyzer', () => {
       noiseReduction: 0,
       noiseProfile: null,
       noiseProfileReduction: 0,
+      noiseProfileVoiceProtection: 0,
       smartNormalization: 0,
       saturation: 0,
       saturationFrequencyRange: { min: 20, max: 20000 },
@@ -49,6 +50,7 @@ describe('AudioAnalyzer', () => {
       enabled: true,
       noiseReduction: 150,
       noiseProfileReduction: 150,
+      noiseProfileVoiceProtection: 150,
       smartNormalization: -10,
       saturation: 75,
       saturationFrequencyRange: { min: 12000, max: 80 },
@@ -60,6 +62,7 @@ describe('AudioAnalyzer', () => {
       noiseReduction: 100,
       noiseProfile: null,
       noiseProfileReduction: 100,
+      noiseProfileVoiceProtection: 100,
       smartNormalization: 0,
       saturation: 75,
       saturationFrequencyRange: { min: 80, max: 12000 },
@@ -98,6 +101,30 @@ describe('AudioAnalyzer', () => {
     expect(profile.bands).toHaveLength(8);
     expect(profile.durationSeconds).toBeCloseTo(samples.length / sampleRate, 4);
     expect(highBand.reductionDb).toBeGreaterThan(lowBand.reductionDb);
+  });
+
+  test('should keep broadband noise profiles conservative in speech bands', () => {
+    const sampleRate = 44100;
+    const samples = new Float32Array(8192);
+    let seed = 123456789;
+
+    for (let i = 0; i < samples.length; i++) {
+      seed = (1103515245 * seed + 12345) % 2147483648;
+      samples[i] = ((seed / 2147483648) * 2 - 1) * 0.025;
+    }
+
+    const profile = AudioAnalyzer.createNoiseProfileFromSamples(samples, sampleRate, {
+      bandCount: 12,
+      fftSize: 1024,
+      minFrequency: 80,
+      maxFrequency: 12000,
+    });
+    const speechBandReductions = profile.bands
+      .filter((band) => band.centerFrequency >= 150 && band.centerFrequency <= 4000)
+      .map((band) => band.reductionDb);
+
+    expect(Math.max(...speechBandReductions)).toBeLessThanOrEqual(6);
+    expect(profile.bands.some((band) => band.reductionDb > 0)).toBe(true);
   });
 
   test('should require enough samples to build a noise profile', () => {
@@ -185,6 +212,22 @@ describe('AudioAnalyzer', () => {
     analyzer.setAudioEnhancement({ noiseProfile: null });
     expect(analyzer.getAudioEnhancement().noiseProfile).toBeNull();
     expect(analyzer.isAudioEnhancementActive).toBe(false);
+  });
+
+  test('should default profile reduction to voice-preserving settings', () => {
+    const profile = AudioAnalyzer.createNoiseProfileFromSamples(
+      new Float32Array(4096).fill(0.02),
+      44100,
+      { fftSize: 1024 }
+    );
+
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      noiseProfile: profile,
+    });
+
+    expect(analyzer.getAudioEnhancement().noiseProfileReduction).toBe(45);
+    expect(analyzer.getAudioEnhancement().noiseProfileVoiceProtection).toBe(85);
   });
 
   test('should rebuild active graph when audio enhancement changes', async () => {

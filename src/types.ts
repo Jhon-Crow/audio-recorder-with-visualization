@@ -98,6 +98,10 @@ export interface AudioNoiseProfileBand {
   q: number;
   /** Measured average noise level in this band, in dBFS */
   levelDb: number;
+  /** Difference from the median profile band level in dB */
+  prominenceDb?: number;
+  /** Estimated overlap with the speech range, 0-1 */
+  voiceOverlap?: number;
   /** Suggested attenuation for this band in dB before user strength is applied */
   reductionDb: number;
 }
@@ -157,8 +161,10 @@ export interface AudioEnhancementOptions {
   noiseReduction?: number;
   /** Learned microphone/background noise profile, default: null */
   noiseProfile?: AudioNoiseProfile | null;
-  /** Profile-based reduction amount (0-100), default: 60 when a profile is supplied */
+  /** Profile-based reduction amount (0-100), default: 45 when a profile is supplied */
   noiseProfileReduction?: number;
+  /** How strongly profile reduction protects speech-range bands (0-100), default: 85 */
+  noiseProfileVoiceProtection?: number;
   /** Dynamics smoothing and make-up gain amount (0-100), default: 0 */
   smartNormalization?: number;
   /** Harmonic saturation amount (0-100), default: 0 */
@@ -177,6 +183,7 @@ export interface ResolvedAudioEnhancementOptions {
   noiseReduction: number;
   noiseProfile: AudioNoiseProfile | null;
   noiseProfileReduction: number;
+  noiseProfileVoiceProtection: number;
   smartNormalization: number;
   saturation: number;
   saturationFrequencyRange: { min: number; max: number };

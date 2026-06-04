@@ -194,6 +194,12 @@ function initFeatures() {
     updateAudioEnhancement();
   });
 
+  el.noiseProfileVoiceProtection.addEventListener('input', () => {
+    const value = parseInt(el.noiseProfileVoiceProtection.value);
+    el.noiseProfileVoiceProtectionValue.textContent = value + '%';
+    updateAudioEnhancement();
+  });
+
   el.clearNoiseProfile.addEventListener('click', () => {
     app.currentNoiseProfile = null;
     app.currentNoiseProfileName = null;

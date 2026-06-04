@@ -103,6 +103,12 @@ export class AudioAnalyzer {
           ? Math.max(0.2, Math.min(24, band.q))
           : Math.max(0.2, centerFrequency / Math.max(1, upperFrequency - lowerFrequency));
         const levelDb = Number.isFinite(band.levelDb) ? band.levelDb : -120;
+        const prominenceDb = typeof band.prominenceDb === 'number' && Number.isFinite(band.prominenceDb)
+          ? band.prominenceDb
+          : 0;
+        const voiceOverlap = typeof band.voiceOverlap === 'number' && Number.isFinite(band.voiceOverlap)
+          ? AudioAnalyzer.clamp(band.voiceOverlap, 0, 1)
+          : AudioAnalyzer.getBandVoiceOverlap(lowerFrequency, upperFrequency);
         const reductionDb = Number.isFinite(band.reductionDb)
           ? Math.max(0, Math.min(36, band.reductionDb))
           : 0;
@@ -113,6 +119,8 @@ export class AudioAnalyzer {
           upperFrequency,
           q,
           levelDb,
+          prominenceDb,
+          voiceOverlap,
           reductionDb,
         };
       })
@@ -150,7 +158,8 @@ export class AudioAnalyzer {
     const min = Math.min(boundedMin, boundedMax);
     const max = Math.max(boundedMin, boundedMax);
     const noiseProfile = this.normalizeNoiseProfile(options.noiseProfile);
-    const defaultProfileReduction = noiseProfile ? 60 : 0;
+    const defaultProfileReduction = noiseProfile ? 45 : 0;
+    const defaultProfileVoiceProtection = noiseProfile ? 85 : 0;
 
     return {
       enabled: options.enabled ?? false,
@@ -158,6 +167,9 @@ export class AudioAnalyzer {
       noiseProfile,
       noiseProfileReduction: this.clampPercent(
         options.noiseProfileReduction ?? defaultProfileReduction
+      ),
+      noiseProfileVoiceProtection: this.clampPercent(
+        options.noiseProfileVoiceProtection ?? defaultProfileVoiceProtection
       ),
       smartNormalization: this.clampPercent(options.smartNormalization),
       saturation: this.clampPercent(options.saturation),
@@ -174,6 +186,51 @@ export class AudioAnalyzer {
 
   private static toDb(value: number): number {
     return 20 * Math.log10(Math.max(value, 1e-12));
+  }
+
+  private static median(values: number[]): number {
+    if (values.length === 0) {
+      return 0;
+    }
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+
+    return sorted.length % 2 === 0
+      ? (sorted[middle - 1] + sorted[middle]) / 2
+      : sorted[middle];
+  }
+
+  private static getBandVoiceOverlap(lowerFrequency: number, upperFrequency: number): number {
+    const voiceMin = 100;
+    const voiceMax = 5000;
+    const width = Math.max(1, upperFrequency - lowerFrequency);
+    const overlapWidth = Math.max(
+      0,
+      Math.min(upperFrequency, voiceMax) - Math.max(lowerFrequency, voiceMin)
+    );
+    const overlap = overlapWidth / width;
+    const centerFrequency = Math.sqrt(lowerFrequency * upperFrequency);
+    const centerWeight = centerFrequency <= voiceMin
+      ? 0
+      : centerFrequency <= voiceMax
+        ? 1
+        : AudioAnalyzer.clamp((7000 - centerFrequency) / 2000, 0, 1);
+
+    return AudioAnalyzer.clamp(overlap * 0.75 + centerWeight * 0.25, 0, 1);
+  }
+
+  private static getNoiseProfileFrequencyAllowance(centerFrequency: number): number {
+    const rumbleAllowance = centerFrequency < 120
+      ? 0.8
+      : centerFrequency < 250
+        ? 0.45
+        : 0;
+    const hissAllowance = centerFrequency > 5000
+      ? AudioAnalyzer.clamp((centerFrequency - 5000) / 5000, 0, 1) * 0.65
+      : 0;
+
+    return Math.max(0.12, rumbleAllowance, hissAllowance);
   }
 
   private static runFft(real: Float64Array, imag: Float64Array): void {
@@ -330,6 +387,8 @@ export class AudioAnalyzer {
         upperFrequency,
         q: Math.max(0.2, centerFrequency / Math.max(1, upperFrequency - lowerFrequency)),
         levelDb: -120,
+        prominenceDb: 0,
+        voiceOverlap: AudioAnalyzer.getBandVoiceOverlap(lowerFrequency, upperFrequency),
         reductionDb: 0,
       });
     }
@@ -390,19 +449,43 @@ export class AudioAnalyzer {
       const hits = bandHits[index] || 1;
       return Math.sqrt(power / hits) / fftSize;
     });
-    const maxMagnitude = Math.max(...bandMagnitudes, 1e-12);
+    const bandLevelsDb = bandMagnitudes.map((magnitude) => AudioAnalyzer.toDb(magnitude));
+    const medianLevelDb = AudioAnalyzer.median(bandLevelsDb);
+    const maxLevelDb = Math.max(...bandLevelsDb, -120);
 
     for (let i = 0; i < bands.length; i++) {
-      const magnitude = bandMagnitudes[i];
-      const relative = magnitude / maxMagnitude;
-      const profileWeight = relative <= 0.03 ? 0 : Math.pow(relative, 0.65);
+      const levelDb = bandLevelsDb[i];
+      const prominenceDb = levelDb - medianLevelDb;
+      const relativeToPeakDb = levelDb - maxLevelDb;
+      const audibleWeight = AudioAnalyzer.clamp((levelDb + 90) / 35, 0, 1);
+      const peakWeight = AudioAnalyzer.clamp((relativeToPeakDb + 24) / 24, 0, 1);
+      const prominenceWeight = AudioAnalyzer.clamp((prominenceDb + 3) / 15, 0, 1);
+      const frequencyAllowance = AudioAnalyzer.getNoiseProfileFrequencyAllowance(
+        bands[i].centerFrequency
+      );
+      const voiceOverlap = AudioAnalyzer.getBandVoiceOverlap(
+        bands[i].lowerFrequency,
+        bands[i].upperFrequency
+      );
+      const voiceSafety = 1 - voiceOverlap * 0.72;
+      const profileWeight = audibleWeight
+        * peakWeight
+        * Math.max(frequencyAllowance, prominenceWeight);
+      const protectedCapDb = 5.5 * voiceOverlap + maxReductionDb * (1 - voiceOverlap);
+      const reductionDb = profileWeight === 0
+        ? 0
+        : Math.min(
+          protectedCapDb,
+          (minReductionDb + (maxReductionDb - minReductionDb) * Math.pow(profileWeight, 0.85))
+            * voiceSafety
+        );
 
       bands[i] = {
         ...bands[i],
-        levelDb: AudioAnalyzer.toDb(magnitude),
-        reductionDb: profileWeight === 0
-          ? 0
-          : minReductionDb + (maxReductionDb - minReductionDb) * profileWeight,
+        levelDb,
+        prominenceDb,
+        voiceOverlap,
+        reductionDb,
       };
     }
 
@@ -562,13 +645,25 @@ export class AudioAnalyzer {
       return input;
     }
 
-    const strength = amount / 100;
+    const strength = Math.pow(amount / 100, 1.15);
+    const voiceProtection = this.audioEnhancement.noiseProfileVoiceProtection / 100;
     const nyquist = ctx.sampleRate / 2;
     let current = input;
 
     for (const band of profile.bands) {
       const centerFrequency = Math.max(20, Math.min(band.centerFrequency, nyquist - 10));
-      const reductionDb = Math.min(24, Math.max(0, band.reductionDb)) * strength;
+      const voiceOverlap = typeof band.voiceOverlap === 'number' && Number.isFinite(band.voiceOverlap)
+        ? AudioAnalyzer.clamp(band.voiceOverlap, 0, 1)
+        : AudioAnalyzer.getBandVoiceOverlap(band.lowerFrequency, band.upperFrequency);
+      const voiceMultiplier = 1 - voiceOverlap * (0.35 + voiceProtection * 0.55);
+      const speechCapDb = 2 + (1 - voiceProtection) * 6;
+      const nonSpeechCapDb = 9 + (1 - voiceProtection) * 15;
+      const reductionCapDb = speechCapDb * voiceOverlap + nonSpeechCapDb * (1 - voiceOverlap);
+      const reductionDb = AudioAnalyzer.clamp(
+        Math.min(24, Math.max(0, band.reductionDb)) * strength * voiceMultiplier,
+        0,
+        reductionCapDb
+      );
 
       if (reductionDb < 0.25 || centerFrequency >= nyquist) {
         continue;
@@ -577,7 +672,7 @@ export class AudioAnalyzer {
       const filter = ctx.createBiquadFilter();
       filter.type = 'peaking';
       filter.frequency.value = centerFrequency;
-      filter.Q.value = Math.max(0.2, Math.min(12, band.q));
+      filter.Q.value = Math.max(0.2, Math.min(4, band.q * (1 - voiceOverlap * 0.35)));
       filter.gain.value = -reductionDb;
 
       current.connect(filter);
@@ -765,12 +860,33 @@ export class AudioAnalyzer {
    * Update audio enhancement settings and rebuild the active graph if needed
    */
   setAudioEnhancement(options: AudioEnhancementOptions): void {
-    this.audioEnhancement = this.resolveAudioEnhancement({
+    const addingProfile = this.audioEnhancement.noiseProfile === null
+      && options.noiseProfile !== undefined
+      && options.noiseProfile !== null;
+    const mergedOptions: AudioEnhancementOptions = {
       ...this.audioEnhancement,
       ...options,
       saturationFrequencyRange: options.saturationFrequencyRange
         ?? this.audioEnhancement.saturationFrequencyRange,
-    });
+    };
+
+    if (
+      addingProfile
+      && options.noiseProfileReduction === undefined
+      && this.audioEnhancement.noiseProfileReduction === 0
+    ) {
+      mergedOptions.noiseProfileReduction = undefined;
+    }
+
+    if (
+      addingProfile
+      && options.noiseProfileVoiceProtection === undefined
+      && this.audioEnhancement.noiseProfileVoiceProtection === 0
+    ) {
+      mergedOptions.noiseProfileVoiceProtection = undefined;
+    }
+
+    this.audioEnhancement = this.resolveAudioEnhancement(mergedOptions);
 
     if (this.sourceNode) {
       this.connectAudioGraph(this.outputToSpeakers);

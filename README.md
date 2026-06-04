@@ -133,6 +133,7 @@ interface AudioEnhancementOptions {
   noiseReduction?: number;              // 0-100, attenuates quiet background noise
   noiseProfile?: AudioNoiseProfile | null; // Learned noise-only spectrum, default: null
   noiseProfileReduction?: number;       // 0-100, applies learned profile reduction
+  noiseProfileVoiceProtection?: number; // 0-100, protects speech bands from over-reduction
   smartNormalization?: number;           // 0-100, smooths loud/quiet sections
   saturation?: number;                   // 0-100, adds harmonic saturation
   saturationFrequencyRange?: { min: number; max: number }; // Hz, default 20-20000
@@ -144,11 +145,12 @@ const noiseProfile = AudioAnalyzer.createNoiseProfileFromAudioBuffer(noiseProfil
 
 recorder.setAudioEnhancement({
   enabled: true,
-  noiseReduction: 35,
+  noiseReduction: 10,
   noiseProfile,
-  noiseProfileReduction: 60,
-  smartNormalization: 60,
-  saturation: 15,
+  noiseProfileReduction: 45,
+  noiseProfileVoiceProtection: 85,
+  smartNormalization: 25,
+  saturation: 0,
   saturationFrequencyRange: { min: 120, max: 8000 },
   saturationMode: 'tube',
 });
@@ -156,7 +158,9 @@ recorder.setAudioEnhancement({
 
 For profile-based reduction, use a short file that contains only the microphone hiss,
 fan, hum, or room tone you want to reduce. The profile is most effective for
-steady noise and should be applied moderately to avoid dulling speech or music.
+steady noise. `noiseProfileVoiceProtection` keeps the speech range conservative
+when the learned profile overlaps voice, so higher cleanup settings are less
+likely to make speech sound hollow or muffled.
 
 #### Methods
 

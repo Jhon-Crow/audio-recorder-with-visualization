@@ -104,6 +104,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const noiseProfileFileName = document.getElementById('noiseProfileFileName');
   const noiseProfileReduction = document.getElementById('noiseProfileReduction');
   const noiseProfileReductionValue = document.getElementById('noiseProfileReductionValue');
+  const noiseProfileVoiceProtection = document.getElementById('noiseProfileVoiceProtection');
+  const noiseProfileVoiceProtectionValue = document.getElementById('noiseProfileVoiceProtectionValue');
   const clearNoiseProfile = document.getElementById('clearNoiseProfile');
   const smartNormalization = document.getElementById('smartNormalization');
   const smartNormalizationValue = document.getElementById('smartNormalizationValue');
@@ -208,7 +210,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     noiseReduction: 0,
     noiseProfile: null,
     noiseProfileName: null,
-    noiseProfileReduction: 60,
+    noiseProfileReduction: 45,
+    noiseProfileVoiceProtection: 85,
     smartNormalization: 0,
     saturation: 0,
     saturationMode: 'soft-clip',
@@ -387,6 +390,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       noiseProfile: currentNoiseProfile,
       noiseProfileName: currentNoiseProfileName,
       noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationMode: saturationMode.value,
@@ -526,8 +530,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       ? `${currentNoiseProfileName} (${currentNoiseProfile?.bands?.length || 0} bands)`
       : 'No profile loaded';
     clearNoiseProfile.disabled = !currentNoiseProfile;
-    noiseProfileReduction.value = settings.noiseProfileReduction ?? 60;
-    noiseProfileReductionValue.textContent = (settings.noiseProfileReduction ?? 60) + '%';
+    noiseProfileReduction.value = settings.noiseProfileReduction ?? 45;
+    noiseProfileReductionValue.textContent = (settings.noiseProfileReduction ?? 45) + '%';
+    noiseProfileVoiceProtection.value = settings.noiseProfileVoiceProtection ?? 85;
+    noiseProfileVoiceProtectionValue.textContent = (settings.noiseProfileVoiceProtection ?? 85) + '%';
     smartNormalization.value = settings.smartNormalization || 0;
     smartNormalizationValue.textContent = (settings.smartNormalization || 0) + '%';
     saturation.value = settings.saturation || 0;
@@ -722,7 +728,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       enabled: savedSettings.audioEnhancementEnabled || false,
       noiseReduction: savedSettings.noiseReduction || 0,
       noiseProfile: savedSettings.noiseProfile || null,
-      noiseProfileReduction: savedSettings.noiseProfileReduction ?? 60,
+      noiseProfileReduction: savedSettings.noiseProfileReduction ?? 45,
+      noiseProfileVoiceProtection: savedSettings.noiseProfileVoiceProtection ?? 85,
       smartNormalization: savedSettings.smartNormalization || 0,
       saturation: savedSettings.saturation || 0,
       saturationFrequencyRange: {
@@ -816,6 +823,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       centerImageOffsetX, centerImageOffsetY, visualizationAlpha, offsetX, offsetY,
       visualizationScale, layerEffect, layerEffectIntensity, barShapeSelect, particleShapeSelect,
       audioEnhancementEnabled, noiseReduction, noiseProfileFile, noiseProfileReduction,
+      noiseProfileVoiceProtection,
       smartNormalization, saturation,
       saturationMode, saturationMin, saturationMax
     ];
@@ -1052,6 +1060,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       noiseReduction: parseInt(noiseReduction.value),
       noiseProfile: currentNoiseProfile,
       noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationFrequencyRange: {
@@ -1228,6 +1237,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       noiseProfileFileName,
       noiseProfileReduction,
       noiseProfileReductionValue,
+      noiseProfileVoiceProtection,
+      noiseProfileVoiceProtectionValue,
       clearNoiseProfile,
       smartNormalization,
       smartNormalizationValue,

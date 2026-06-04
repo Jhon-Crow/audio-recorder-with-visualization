@@ -327,49 +327,58 @@
                 </label>
               </div>
               <div class="option-group" id="audioEnhancementControls" style="display: none;">
-                <label data-tooltip="Attenuates very quiet signal levels and filters low rumble before recording.">
-                  Noise Reduction: <span id="noiseReductionValue">0%</span>
-                  <input type="range" id="noiseReduction" min="0" max="100" value="0" aria-label="Adjust noise reduction">
-                </label>
                 <label data-tooltip="Select a short audio file containing only microphone noise or room tone. The app learns that noise spectrum and reduces matching bands before recording or conversion.">
                   Noise Profile File
                   <input type="file" id="noiseProfileFile" accept="audio/*" aria-label="Select noise profile audio file">
                   <span id="noiseProfileFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">No profile loaded</span>
                 </label>
-                <label data-tooltip="Controls how strongly the learned noise profile is reduced. Start moderate to avoid muffling voice or music.">
-                  Profile Reduction: <span id="noiseProfileReductionValue">60%</span>
-                  <input type="range" id="noiseProfileReduction" min="0" max="100" value="60" aria-label="Adjust profile-based noise reduction">
+                <label data-tooltip="Controls the main learned-noise cleanup amount while keeping speech bands conservative.">
+                  Clean Voice: <span id="noiseProfileReductionValue">45%</span>
+                  <input type="range" id="noiseProfileReduction" min="0" max="100" value="45" aria-label="Adjust clean voice amount">
+                </label>
+                <label data-tooltip="Keeps voice frequencies from being over-reduced when the learned noise overlaps speech.">
+                  Voice Protection: <span id="noiseProfileVoiceProtectionValue">85%</span>
+                  <input type="range" id="noiseProfileVoiceProtection" min="0" max="100" value="85" aria-label="Adjust voice protection">
                 </label>
                 <label style="justify-content: flex-end;">
                   <button type="button" id="clearNoiseProfile" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" disabled data-tooltip="Remove the learned noise profile" aria-label="Clear noise profile">
                     Clear Noise Profile
                   </button>
                 </label>
-                <label data-tooltip="Smooths loud and quiet sections with compression and make-up gain.">
-                  Smart Normalization: <span id="smartNormalizationValue">0%</span>
-                  <input type="range" id="smartNormalization" min="0" max="100" value="0" aria-label="Adjust smart normalization">
-                </label>
-                <label data-tooltip="Adds controlled harmonic saturation before recording.">
-                  Saturation: <span id="saturationValue">0%</span>
-                  <input type="range" id="saturation" min="0" max="100" value="0" aria-label="Adjust saturation">
-                </label>
-                <label data-tooltip="Choose the saturation curve character.">
-                  Saturation Type
-                  <select id="saturationMode" aria-label="Select saturation type">
-                    <option value="soft-clip" selected>Soft Clip</option>
-                    <option value="hard-clip">Hard Clip</option>
-                    <option value="tape">Tape</option>
-                    <option value="tube">Tube</option>
-                  </select>
-                </label>
-                <label data-tooltip="Lower frequency limit for the saturation wet path.">
-                  Saturation Min Hz: <span id="saturationMinValue">20</span>
-                  <input type="range" id="saturationMin" min="20" max="20000" value="20" step="10" aria-label="Adjust saturation minimum frequency">
-                </label>
-                <label data-tooltip="Upper frequency limit for the saturation wet path.">
-                  Saturation Max Hz: <span id="saturationMaxValue">20000</span>
-                  <input type="range" id="saturationMax" min="20" max="20000" value="20000" step="10" aria-label="Adjust saturation maximum frequency">
-                </label>
+                <details class="advanced-audio-controls">
+                  <summary>Advanced</summary>
+                  <div class="option-group">
+                    <label data-tooltip="Attenuates very quiet signal levels and filters low rumble before recording.">
+                      Noise Gate: <span id="noiseReductionValue">0%</span>
+                      <input type="range" id="noiseReduction" min="0" max="100" value="0" aria-label="Adjust noise gate">
+                    </label>
+                    <label data-tooltip="Smooths loud and quiet sections with compression and make-up gain.">
+                      Smart Normalization: <span id="smartNormalizationValue">0%</span>
+                      <input type="range" id="smartNormalization" min="0" max="100" value="0" aria-label="Adjust smart normalization">
+                    </label>
+                    <label data-tooltip="Adds controlled harmonic saturation before recording.">
+                      Saturation: <span id="saturationValue">0%</span>
+                      <input type="range" id="saturation" min="0" max="100" value="0" aria-label="Adjust saturation">
+                    </label>
+                    <label data-tooltip="Choose the saturation curve character.">
+                      Saturation Type
+                      <select id="saturationMode" aria-label="Select saturation type">
+                        <option value="soft-clip" selected>Soft Clip</option>
+                        <option value="hard-clip">Hard Clip</option>
+                        <option value="tape">Tape</option>
+                        <option value="tube">Tube</option>
+                      </select>
+                    </label>
+                    <label data-tooltip="Lower frequency limit for the saturation wet path.">
+                      Saturation Min Hz: <span id="saturationMinValue">20</span>
+                      <input type="range" id="saturationMin" min="20" max="20000" value="20" step="10" aria-label="Adjust saturation minimum frequency">
+                    </label>
+                    <label data-tooltip="Upper frequency limit for the saturation wet path.">
+                      Saturation Max Hz: <span id="saturationMaxValue">20000</span>
+                      <input type="range" id="saturationMax" min="20" max="20000" value="20000" step="10" aria-label="Adjust saturation maximum frequency">
+                    </label>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
