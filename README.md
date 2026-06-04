@@ -223,6 +223,8 @@ const blob = await converter.convert({
 
 Browser-friendly helper for uploading a generated video `Blob` with the YouTube Data API resumable upload protocol. Use Google Identity Services to obtain an access token with `YOUTUBE_UPLOAD_SCOPE`, then pass that token to the uploader.
 
+Google sign-in must run from an authorized web origin. For local testing, serve the example from `http://localhost` instead of opening `examples/index.html` with a `file://` URL.
+
 ```typescript
 import { YouTubeUploader, YOUTUBE_UPLOAD_SCOPE } from 'audio-recorder-with-visualization';
 

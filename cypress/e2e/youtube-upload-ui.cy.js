@@ -24,6 +24,24 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('not.be.visible');
   });
 
+  it('blocks Google sign-in on file origins with an actionable message', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.__audioRecorderYouTubeOrigin = new URL('file:///tmp/audio-recorder-with-visualization/examples/index.html');
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeAuthModal').should('be.visible');
+    cy.get('#youtubeAuthStatus')
+      .should('have.class', 'error')
+      .and('contain.text', 'Google sign-in requires this page to run from http://localhost or HTTPS');
+    cy.get('#authorizeYouTubeBtn').should('be.disabled');
+  });
+
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;

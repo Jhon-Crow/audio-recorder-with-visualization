@@ -18,6 +18,7 @@
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
+  const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires this page to run from http://localhost or HTTPS. Start a local server, then open the example from that URL.';
 
   const authModal = document.getElementById('youtubeAuthModal');
   const closeAuthBtn = document.getElementById('closeYouTubeAuthBtn');
@@ -101,6 +102,13 @@
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
   }
 
+  function isSupportedGoogleSignInOrigin() {
+    const origin = window.__audioRecorderYouTubeOrigin || window.location;
+    return origin.protocol === 'https:' ||
+      origin.hostname === 'localhost' ||
+      origin.hostname === '127.0.0.1';
+  }
+
   function getDefaultTitle(fileName) {
     return (fileName || 'recording')
       .replace(/\.[^.]+$/, '')
@@ -133,11 +141,18 @@
   }
 
   function openAuthModal() {
-    setStatus(authStatus, 'Loading Google sign-in...');
-    authorizeBtn.disabled = true;
     authorizeBtn.textContent = 'Sign in with Google';
     showModal(authModal);
     clientIdInput.focus();
+
+    if (!isSupportedGoogleSignInOrigin()) {
+      setStatus(authStatus, UNSUPPORTED_ORIGIN_MESSAGE, 'error');
+      authorizeBtn.disabled = true;
+      return;
+    }
+
+    setStatus(authStatus, 'Loading Google sign-in...');
+    authorizeBtn.disabled = true;
 
     loadGoogleIdentityServices()
       .then(() => {
@@ -211,6 +226,10 @@
   }
 
   async function requestAccessToken(clientId) {
+    if (!isSupportedGoogleSignInOrigin()) {
+      throw new Error(UNSUPPORTED_ORIGIN_MESSAGE);
+    }
+
     await loadGoogleIdentityServices();
 
     const oauth = window.google && window.google.accounts && window.google.accounts.oauth2;
