@@ -11,7 +11,16 @@
     <h1>Audio Recorder with Visualization</h1>
 
     <div class="canvas-container">
-      <canvas id="visualizer" width="1920" height="1080"></canvas>
+      <div class="preview-stage" id="previewStage" aria-label="Preview mounting area">
+        <canvas id="visualizer" width="1920" height="1080"></canvas>
+        <div class="preview-overlay" id="previewOverlay" aria-hidden="true">
+          <div class="alignment-grid"></div>
+          <div class="smart-guide smart-guide-v" data-guide="vertical-center"></div>
+          <div class="smart-guide smart-guide-h" data-guide="horizontal-center"></div>
+          <div class="smart-guide smart-guide-v grid-guide" data-guide="vertical-grid"></div>
+          <div class="smart-guide smart-guide-h grid-guide" data-guide="horizontal-grid"></div>
+        </div>
+      </div>
     </div>
 
     <div id="status" class="status ready">Ready - Click "Start Microphone" to begin</div>
