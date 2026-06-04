@@ -65,6 +65,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const visualizationScale = document.getElementById('visualizationScale');
   const scaleValue = document.getElementById('scaleValue');
   const recordingsList = document.getElementById('recordingsList');
+  const saveAllRecordingsBtn = document.getElementById('saveAllRecordings');
   const audioFile = document.getElementById('audioFile');
   const convertBtn = document.getElementById('convertBtn');
   const cancelConvertBtn = document.getElementById('cancelConvertBtn');
@@ -335,6 +336,91 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track presentation window position (null = auto-center)
   let currentPresentationX = null;
   let currentPresentationY = null;
+  const savedRecordings = [];
+
+  function getVideoExtension(blob, fallbackFormat) {
+    if (fallbackFormat) {
+      return fallbackFormat;
+    }
+    return blob.type.includes('mp4') ? 'mp4' : 'webm';
+  }
+
+  function sanitizeFileBaseName(fileName) {
+    return (fileName || 'recording')
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim() || 'recording';
+  }
+
+  function buildRecordingFileName(sourceName, blob, format) {
+    const extension = getVideoExtension(blob, format);
+    if (sourceName) {
+      return `${sanitizeFileBaseName(sourceName)}.${extension}`;
+    }
+    return `recording-${recordingCount}.${extension}`;
+  }
+
+  function triggerBrowserDownload(url, fileName) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function saveRecording(recording, button) {
+    const isElectron = window.electronAPI && window.electronAPI.isElectron;
+
+    if (isElectron) {
+      const result = await window.electronAPI.saveVideoAndShow(recording.blob, recording.fileName);
+      if (!result.success && !result.canceled) {
+        throw new Error(result.error || 'Failed to save video');
+      }
+      return result;
+    }
+
+    triggerBrowserDownload(recording.url, recording.fileName);
+    return { success: true };
+  }
+
+  async function saveAllRecordings() {
+    if (!savedRecordings.length || saveAllRecordingsBtn.disabled) {
+      return;
+    }
+
+    const originalText = saveAllRecordingsBtn.textContent;
+    saveAllRecordingsBtn.disabled = true;
+    saveAllRecordingsBtn.textContent = 'Saving...';
+
+    try {
+      for (let i = 0; i < savedRecordings.length; i++) {
+        saveAllRecordingsBtn.textContent = `Saving ${i + 1}/${savedRecordings.length}...`;
+        await saveRecording(savedRecordings[i], saveAllRecordingsBtn);
+        if (!(window.electronAPI && window.electronAPI.isElectron)) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      }
+      saveAllRecordingsBtn.textContent = 'Saved All';
+      setTimeout(() => {
+        saveAllRecordingsBtn.textContent = originalText;
+        saveAllRecordingsBtn.disabled = savedRecordings.length === 0;
+      }, 2000);
+    } catch (error) {
+      console.error('Error saving all recordings:', error);
+      saveAllRecordingsBtn.textContent = 'Error - Try Again';
+      setTimeout(() => {
+        saveAllRecordingsBtn.textContent = originalText;
+        saveAllRecordingsBtn.disabled = savedRecordings.length === 0;
+      }, 2000);
+    }
+  }
+
+  if (saveAllRecordingsBtn) {
+    saveAllRecordingsBtn.addEventListener('click', saveAllRecordings);
+  }
 
   // Get current settings from UI
   function getCurrentSettings() {
@@ -850,9 +936,21 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   });
 
   // Add recording to list
-  function addRecording(blob) {
+  function addRecording(blob, options = {}) {
     recordingCount++;
     const url = URL.createObjectURL(blob);
+    const fileName = buildRecordingFileName(options.sourceName, blob, options.format);
+    const recording = {
+      blob,
+      url,
+      fileName,
+      index: recordingCount,
+    };
+    savedRecordings.push(recording);
+    if (saveAllRecordingsBtn) {
+      saveAllRecordingsBtn.disabled = false;
+    }
+
     const item = document.createElement('div');
     item.className = 'recording-item';
 
@@ -878,7 +976,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     videoEl.title = 'Double-click for fullscreen';
 
     const infoDiv = document.createElement('div');
-    const fileName = `recording-${recordingCount}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
 
     // Check if running in Electron
     const isElectron = window.electronAPI && window.electronAPI.isElectron;
@@ -886,7 +983,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     if (isElectron) {
       // Electron: Use IPC to save and show in folder
       infoDiv.innerHTML = `
-        <p>Recording ${recordingCount}</p>
+        <p>${fileName}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
         <button class="btn-info" data-blob-index="${recordingCount}">Save and Show in Folder</button>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
@@ -903,7 +1000,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving...';
 
-          const result = await window.electronAPI.saveVideoAndShow(blob, fileName);
+          const result = await saveRecording(recording, saveBtn);
 
           if (result.success) {
             saveBtn.textContent = 'Saved!';
@@ -928,7 +1025,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     } else {
       // Browser: Use regular download link
       infoDiv.innerHTML = `
-        <p>Recording ${recordingCount}</p>
+        <p>${fileName}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
         <a href="${url}" download="${fileName}">Download</a>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
@@ -1209,6 +1306,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       visualizationScale,
       scaleValue,
       audioFile,
+      saveAllRecordingsBtn,
       convertBtn,
       cancelConvertBtn,
       previewBtn,
