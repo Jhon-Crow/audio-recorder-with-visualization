@@ -24,10 +24,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   });
 
-  const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
+  const { AudioRecorder, AudioToVideoConverter, AudioAnalyzer } = window.AudioRecorderVisualization;
 
   // Elements
   const canvas = document.getElementById('visualizer');
+  const previewOverlay = document.getElementById('previewOverlay');
   const status = document.getElementById('status');
   const startMicBtn = document.getElementById('startMic');
   const stopMicBtn = document.getElementById('stopMic');
@@ -100,6 +101,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const audioEnhancementControls = document.getElementById('audioEnhancementControls');
   const noiseReduction = document.getElementById('noiseReduction');
   const noiseReductionValue = document.getElementById('noiseReductionValue');
+  const noiseProfileFile = document.getElementById('noiseProfileFile');
+  const noiseProfileFileName = document.getElementById('noiseProfileFileName');
+  const noiseProfileReduction = document.getElementById('noiseProfileReduction');
+  const noiseProfileReductionValue = document.getElementById('noiseProfileReductionValue');
+  const noiseProfileVoiceProtection = document.getElementById('noiseProfileVoiceProtection');
+  const noiseProfileVoiceProtectionValue = document.getElementById('noiseProfileVoiceProtectionValue');
+  const clearNoiseProfile = document.getElementById('clearNoiseProfile');
   const smartNormalization = document.getElementById('smartNormalization');
   const smartNormalizationValue = document.getElementById('smartNormalizationValue');
   const saturation = document.getElementById('saturation');
@@ -158,10 +166,31 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const presentationVisualizationOpacityValue = document.getElementById('presentationVisualizationOpacityValue');
   const presentationClickThrough = document.getElementById('presentationClickThrough');
   const presentationElectronOnly = document.getElementById('presentationElectronOnly');
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const presetList = document.getElementById('presetList');
+  const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  const presetEdgeTrigger = document.getElementById('presetEdgeTrigger');
+  const presetSidebar = document.getElementById('presetSidebar');
+  const presetContextMenu = document.getElementById('presetContextMenu');
+  const presetRenameBtn = document.getElementById('presetRenameBtn');
+  const presetDeleteBtn = document.getElementById('presetDeleteBtn');
+  const presetSaveModal = document.getElementById('presetSaveModal');
+  const presetNameInput = document.getElementById('presetNameInput');
+  const presetFolderInput = document.getElementById('presetFolderInput');
+  const presetChooseFolderBtn = document.getElementById('presetChooseFolderBtn');
+  const presetDontShowAgain = document.getElementById('presetDontShowAgain');
+  const presetCancelSaveBtn = document.getElementById('presetCancelSaveBtn');
+  const presetConfirmSaveBtn = document.getElementById('presetConfirmSaveBtn');
+  const presetSettingsModal = document.getElementById('presetSettingsModal');
+  const presetSettingsPathInput = document.getElementById('presetSettingsPathInput');
+  const presetSettingsChooseFolderBtn = document.getElementById('presetSettingsChooseFolderBtn');
+  const presetSettingsCloseBtn = document.getElementById('presetSettingsCloseBtn');
 
   // Settings persistence
   const SETTINGS_KEY = 'audio-recorder-settings';
   const ACCORDION_STATE_KEY = 'audio-recorder-accordion-states';
+  const PRESETS_KEY = 'audio-recorder-presets';
+  const PRESET_OPTIONS_KEY = 'audio-recorder-preset-options';
 
   // Default settings
   const defaultSettings = {
@@ -201,6 +230,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     particleShape: 'circle',
     audioEnhancementEnabled: false,
     noiseReduction: 0,
+    noiseProfile: null,
+    noiseProfileName: null,
+    noiseProfileReduction: 45,
+    noiseProfileVoiceProtection: 85,
     smartNormalization: 0,
     saturation: 0,
     saturationMode: 'soft-clip',
@@ -251,6 +284,42 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (error) {
       console.warn('Failed to save settings:', error);
+    }
+  }
+
+  function loadPresets() {
+    try {
+      const saved = localStorage.getItem(PRESETS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn('Failed to load presets:', error);
+      return [];
+    }
+  }
+
+  function savePresets(presets) {
+    try {
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+    } catch (error) {
+      console.warn('Failed to save presets:', error);
+    }
+  }
+
+  function loadPresetOptions() {
+    try {
+      const saved = localStorage.getItem(PRESET_OPTIONS_KEY);
+      return saved ? JSON.parse(saved) : { savePath: '', skipDialog: false };
+    } catch (error) {
+      console.warn('Failed to load preset options:', error);
+      return { savePath: '', skipDialog: false };
+    }
+  }
+
+  function savePresetOptions(options) {
+    try {
+      localStorage.setItem(PRESET_OPTIONS_KEY, JSON.stringify(options));
+    } catch (error) {
+      console.warn('Failed to save preset options:', error);
     }
   }
 
@@ -318,6 +387,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track background image URL
   let currentBackgroundImageUrl = null;
   let currentCenterImageUrl = null;
+  let currentNoiseProfile = null;
+  let currentNoiseProfileName = null;
 
   // Blink debug mode state
   let blinkDebugAudioBuffer = null;
@@ -334,6 +405,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track presentation window position (null = auto-center)
   let currentPresentationX = null;
   let currentPresentationY = null;
+  let presets = loadPresets();
+  let presetOptions = loadPresetOptions();
+  let activePresetMenuId = null;
+  let draggedPresetId = null;
+  let presetSidebarCloseTimer = null;
 
   // Get current settings from UI
   function getCurrentSettings() {
@@ -374,6 +450,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       particleShape: particleShapeSelect.value,
       audioEnhancementEnabled: audioEnhancementEnabled.checked,
       noiseReduction: parseInt(noiseReduction.value),
+      noiseProfile: currentNoiseProfile,
+      noiseProfileName: currentNoiseProfileName,
+      noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationMode: saturationMode.value,
@@ -507,6 +587,16 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     audioEnhancementControls.style.display = audioEnhancementEnabled.checked ? 'grid' : 'none';
     noiseReduction.value = settings.noiseReduction || 0;
     noiseReductionValue.textContent = (settings.noiseReduction || 0) + '%';
+    currentNoiseProfile = settings.noiseProfile || null;
+    currentNoiseProfileName = settings.noiseProfileName || null;
+    noiseProfileFileName.textContent = currentNoiseProfileName
+      ? `${currentNoiseProfileName} (${currentNoiseProfile?.bands?.length || 0} bands)`
+      : 'No profile loaded';
+    clearNoiseProfile.disabled = !currentNoiseProfile;
+    noiseProfileReduction.value = settings.noiseProfileReduction ?? 45;
+    noiseProfileReductionValue.textContent = (settings.noiseProfileReduction ?? 45) + '%';
+    noiseProfileVoiceProtection.value = settings.noiseProfileVoiceProtection ?? 85;
+    noiseProfileVoiceProtectionValue.textContent = (settings.noiseProfileVoiceProtection ?? 85) + '%';
     smartNormalization.value = settings.smartNormalization || 0;
     smartNormalizationValue.textContent = (settings.smartNormalization || 0) + '%';
     saturation.value = settings.saturation || 0;
@@ -599,6 +689,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     canvas.width = dimensions.width;
     canvas.height = dimensions.height;
     videoDimensions.textContent = `${dimensions.width} x ${dimensions.height}`;
+    updatePreviewGuides();
     if (redraw) {
       updatePreview();
     }
@@ -700,6 +791,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     audioEnhancement: {
       enabled: savedSettings.audioEnhancementEnabled || false,
       noiseReduction: savedSettings.noiseReduction || 0,
+      noiseProfile: savedSettings.noiseProfile || null,
+      noiseProfileReduction: savedSettings.noiseProfileReduction ?? 45,
+      noiseProfileVoiceProtection: savedSettings.noiseProfileVoiceProtection ?? 85,
       smartNormalization: savedSettings.smartNormalization || 0,
       saturation: savedSettings.saturation || 0,
       saturationFrequencyRange: {
@@ -719,6 +813,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Initialize converter
   const converter = new AudioToVideoConverter({ debug: true });
+  initializePresetControls();
 
   // Recording counter
   let recordingCount = 0;
@@ -792,13 +887,16 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       mirror, mirrorHorizontal, useCustomColors, centerImage, centerImageZoom,
       centerImageOffsetX, centerImageOffsetY, visualizationAlpha, offsetX, offsetY,
       visualizationScale, layerEffect, layerEffectIntensity, barShapeSelect, particleShapeSelect,
-      audioEnhancementEnabled, noiseReduction, smartNormalization, saturation,
+      audioEnhancementEnabled, noiseReduction, noiseProfileFile, noiseProfileReduction,
+      noiseProfileVoiceProtection,
+      smartNormalization, saturation,
       saturationMode, saturationMin, saturationMax
     ];
 
     settingsElements.forEach(el => {
       if (el) el.disabled = isRecording;
     });
+    clearNoiseProfile.disabled = isRecording || !currentNoiseProfile;
   }
 
   // Start microphone
@@ -1041,6 +1139,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     return {
       enabled: audioEnhancementEnabled.checked,
       noiseReduction: parseInt(noiseReduction.value),
+      noiseProfile: currentNoiseProfile,
+      noiseProfileReduction: parseInt(noiseProfileReduction.value),
+      noiseProfileVoiceProtection: parseInt(noiseProfileVoiceProtection.value),
       smartNormalization: parseInt(smartNormalization.value),
       saturation: parseInt(saturation.value),
       saturationFrequencyRange: {
@@ -1053,10 +1154,341 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Helper function to show preview after settings change
   function updatePreview() {
+    updatePreviewGuides();
     // Show demo visualization if no audio source is active
     if (!recorder.sourceType) {
       recorder.showDemoVisualization(500);
     }
+  }
+
+  function updatePreviewGuides() {
+    if (!previewOverlay) return;
+
+    const offsetXValue = parseInt(offsetX.value) || 0;
+    const offsetYValue = parseInt(offsetY.value) || 0;
+    const scale = Math.max(0.01, parseInt(visualizationScale.value) / 100 || 1);
+    const snapTolerance = 6;
+    const gridStepX = canvas.width / 8;
+    const gridStepY = canvas.height / 8;
+    const overlayX = 50 + (offsetXValue / canvas.width) * 100;
+    const overlayY = 50 + (offsetYValue / canvas.height) * 100;
+    const visualWidth = Math.min(100, Math.max(0, 100 * scale));
+    const visualHeight = Math.min(100, Math.max(0, 100 * scale));
+
+    previewOverlay.style.setProperty('--visual-center-x', `${overlayX}%`);
+    previewOverlay.style.setProperty('--visual-center-y', `${overlayY}%`);
+    previewOverlay.style.setProperty('--visual-width', `${visualWidth}%`);
+    previewOverlay.style.setProperty('--visual-height', `${visualHeight}%`);
+
+    const verticalCenter = previewOverlay.querySelector('[data-guide="vertical-center"]');
+    const horizontalCenter = previewOverlay.querySelector('[data-guide="horizontal-center"]');
+    const verticalGrid = previewOverlay.querySelector('[data-guide="vertical-grid"]');
+    const horizontalGrid = previewOverlay.querySelector('[data-guide="horizontal-grid"]');
+
+    setGuide(verticalCenter, Math.abs(offsetXValue) <= snapTolerance, 'left', '50%');
+    setGuide(horizontalCenter, Math.abs(offsetYValue) <= snapTolerance, 'top', '50%');
+
+    const nearestGridX = Math.round(offsetXValue / gridStepX) * gridStepX;
+    const nearestGridY = Math.round(offsetYValue / gridStepY) * gridStepY;
+    const showGridX = Math.abs(offsetXValue - nearestGridX) <= snapTolerance && Math.abs(nearestGridX) > snapTolerance;
+    const showGridY = Math.abs(offsetYValue - nearestGridY) <= snapTolerance && Math.abs(nearestGridY) > snapTolerance;
+
+    setGuide(verticalGrid, showGridX, 'left', `${50 + (nearestGridX / canvas.width) * 100}%`);
+    setGuide(horizontalGrid, showGridY, 'top', `${50 + (nearestGridY / canvas.height) * 100}%`);
+  }
+
+  function setPreviewGuidesDragging(isDragging) {
+    if (!previewOverlay) return;
+    previewOverlay.classList.toggle('is-dragging', isDragging);
+    updatePreviewGuides();
+  }
+
+  function setGuide(guide, visible, property, value) {
+    if (!guide) return;
+    guide.classList.toggle('is-visible', visible);
+    guide.style[property] = value;
+  }
+
+  function getNextPresetName() {
+    let index = presets.length + 1;
+    const names = new Set(presets.map(preset => preset.name));
+    while (names.has(String(index))) {
+      index++;
+    }
+    return String(index);
+  }
+
+  function openModal(modal) {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function openPresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebar.classList.add('is-open');
+  }
+
+  function scheduleClosePresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebarCloseTimer = setTimeout(() => {
+      if (!presetSidebar.matches(':hover') && !presetContextMenu.classList.contains('active')) {
+        presetSidebar.classList.remove('is-open');
+      }
+    }, 180);
+  }
+
+  function hidePresetContextMenu() {
+    presetContextMenu.classList.remove('active');
+    presetContextMenu.setAttribute('aria-hidden', 'true');
+    activePresetMenuId = null;
+  }
+
+  function showPresetContextMenu(presetId, x, y) {
+    activePresetMenuId = presetId;
+    presetContextMenu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
+    presetContextMenu.style.top = `${Math.min(y, window.innerHeight - 88)}px`;
+    presetContextMenu.classList.add('active');
+    presetContextMenu.setAttribute('aria-hidden', 'false');
+    openPresetSidebar();
+  }
+
+  function renamePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    const nextName = window.prompt('Rename preset', preset.name || '');
+    const trimmedName = nextName ? nextName.trim() : '';
+    if (!trimmedName) return;
+
+    presets = presets.map(item => (
+      item.id === presetId ? { ...item, name: trimmedName } : item
+    ));
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset renamed to "${trimmedName}"`, 'ready');
+  }
+
+  function deletePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    if (!window.confirm(`Delete preset "${preset.name}"?`)) return;
+
+    presets = presets.filter(item => item.id !== presetId);
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" deleted`, 'ready');
+  }
+
+  function movePresetBefore(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+
+    const source = presets.find(item => item.id === sourceId);
+    if (!source) return;
+
+    const withoutSource = presets.filter(item => item.id !== sourceId);
+    const targetIndex = withoutSource.findIndex(item => item.id === targetId);
+    if (targetIndex === -1) return;
+
+    presets = [
+      ...withoutSource.slice(0, targetIndex),
+      source,
+      ...withoutSource.slice(targetIndex),
+    ];
+    savePresets(presets);
+    renderPresets();
+  }
+
+  async function choosePresetFolder() {
+    if (window.electronAPI && window.electronAPI.choosePresetFolder) {
+      const result = await window.electronAPI.choosePresetFolder();
+      if (result && result.success && result.folderPath) {
+        presetOptions = { ...presetOptions, savePath: result.folderPath };
+        savePresetOptions(presetOptions);
+        presetFolderInput.value = result.folderPath;
+        presetSettingsPathInput.value = result.folderPath;
+      }
+      return;
+    }
+
+    presetOptions = { ...presetOptions, savePath: 'Browser local storage' };
+    savePresetOptions(presetOptions);
+    presetFolderInput.value = presetOptions.savePath;
+    presetSettingsPathInput.value = presetOptions.savePath;
+  }
+
+  async function persistPresetToFolder(preset) {
+    if (!window.electronAPI || !window.electronAPI.savePresetFile || !presetOptions.savePath) {
+      return;
+    }
+
+    const result = await window.electronAPI.savePresetFile(presetOptions.savePath, preset);
+    if (!result.success) {
+      console.warn('Failed to export preset file:', result.error);
+    }
+  }
+
+  function renderPresets() {
+    presetList.innerHTML = '';
+
+    presets.forEach((preset, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset-icon-btn preset-load-btn';
+      button.textContent = preset.name || String(index + 1);
+      button.setAttribute('aria-label', `Load preset ${preset.name || index + 1}`);
+      button.dataset.presetId = preset.id;
+      button.draggable = true;
+      button.addEventListener('click', () => loadPreset(preset.id));
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        showPresetContextMenu(preset.id, event.clientX, event.clientY);
+      });
+      button.addEventListener('dragstart', event => {
+        draggedPresetId = preset.id;
+        button.classList.add('is-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', preset.id);
+      });
+      button.addEventListener('dragend', () => {
+        draggedPresetId = null;
+        button.classList.remove('is-dragging');
+        presetList.querySelectorAll('.is-drop-target').forEach(item => item.classList.remove('is-drop-target'));
+      });
+      button.addEventListener('dragover', event => {
+        if (draggedPresetId && draggedPresetId !== preset.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          button.classList.add('is-drop-target');
+        }
+      });
+      button.addEventListener('dragleave', () => {
+        button.classList.remove('is-drop-target');
+      });
+      button.addEventListener('drop', event => {
+        event.preventDefault();
+        button.classList.remove('is-drop-target');
+        movePresetBefore(event.dataTransfer.getData('text/plain') || draggedPresetId, preset.id);
+      });
+      presetList.appendChild(button);
+    });
+  }
+
+  async function savePreset(name) {
+    const preset = {
+      id: `preset-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: name || getNextPresetName(),
+      createdAt: new Date().toISOString(),
+      settings: getCurrentSettings(),
+    };
+
+    presets = [...presets, preset];
+    savePresets(presets);
+    await persistPresetToFolder(preset);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" saved`, 'ready');
+  }
+
+  async function loadPreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) {
+      updateStatus('Preset not found', 'error');
+      return;
+    }
+
+    const settings = { ...defaultSettings, ...preset.settings };
+    applySettings(settings);
+    saveSettings(settings);
+    await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
+    recorder.setAudioEnhancement(getCurrentAudioEnhancement());
+    applyVideoDimensions();
+    updateSliderColors();
+    updateButtonStates();
+    updatePreview();
+    updateStatus(`Preset "${preset.name}" loaded`, 'ready');
+  }
+
+  function openPresetSaveDialog() {
+    presetNameInput.value = getNextPresetName();
+    presetFolderInput.value = presetOptions.savePath || 'Browser local storage';
+    presetDontShowAgain.checked = presetOptions.skipDialog || false;
+    openModal(presetSaveModal);
+    presetNameInput.focus();
+    presetNameInput.select();
+  }
+
+  function initializePresetControls() {
+    presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+    renderPresets();
+
+    savePresetBtn.addEventListener('click', async () => {
+      if (presetOptions.skipDialog) {
+        await savePreset(getNextPresetName());
+      } else {
+        openPresetSaveDialog();
+      }
+    });
+
+    presetConfirmSaveBtn.addEventListener('click', async () => {
+      presetOptions = {
+        ...presetOptions,
+        savePath: presetFolderInput.value,
+        skipDialog: presetDontShowAgain.checked,
+      };
+      savePresetOptions(presetOptions);
+      await savePreset(presetNameInput.value.trim() || getNextPresetName());
+      closeModal(presetSaveModal);
+    });
+
+    presetCancelSaveBtn.addEventListener('click', () => closeModal(presetSaveModal));
+    presetChooseFolderBtn.addEventListener('click', choosePresetFolder);
+
+    presetSettingsBtn.addEventListener('click', () => {
+      presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+      openModal(presetSettingsModal);
+    });
+    presetSettingsChooseFolderBtn.addEventListener('click', choosePresetFolder);
+    presetSettingsCloseBtn.addEventListener('click', () => closeModal(presetSettingsModal));
+
+    presetEdgeTrigger.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerleave', scheduleClosePresetSidebar);
+    presetEdgeTrigger.addEventListener('pointerleave', scheduleClosePresetSidebar);
+
+    presetRenameBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      renamePreset(presetId);
+    });
+    presetDeleteBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      deletePreset(presetId);
+    });
+
+    document.addEventListener('click', event => {
+      if (!presetContextMenu.contains(event.target)) {
+        hidePresetContextMenu();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        hidePresetContextMenu();
+      }
+    });
+
+    [presetSaveModal, presetSettingsModal].forEach(modal => {
+      modal.addEventListener('click', event => {
+        if (event.target === modal) {
+          closeModal(modal);
+        }
+      });
+    });
   }
 
   // Function to update slider colors based on current primary/secondary colors
@@ -1090,12 +1522,17 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     canvas,
     recorder,
     converter,
+    AudioAnalyzer,
     savedSettings,
     // Mutable state accessors
     get currentBackgroundImageUrl() { return currentBackgroundImageUrl; },
     set currentBackgroundImageUrl(val) { currentBackgroundImageUrl = val; },
     get currentCenterImageUrl() { return currentCenterImageUrl; },
     set currentCenterImageUrl(val) { currentCenterImageUrl = val; },
+    get currentNoiseProfile() { return currentNoiseProfile; },
+    set currentNoiseProfile(val) { currentNoiseProfile = val; },
+    get currentNoiseProfileName() { return currentNoiseProfileName; },
+    set currentNoiseProfileName(val) { currentNoiseProfileName = val; },
     get isRecording() { return isRecording; },
     set isRecording(val) { isRecording = val; },
     get isConverting() { return isConverting; },
@@ -1135,6 +1572,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     getCurrentOptions,
     getCurrentAudioEnhancement,
     updatePreview,
+    setPreviewGuidesDragging,
     updateSliderColors,
     updateStatus,
     updateButtonStates,
@@ -1208,6 +1646,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       audioEnhancementControls,
       noiseReduction,
       noiseReductionValue,
+      noiseProfileFile,
+      noiseProfileFileName,
+      noiseProfileReduction,
+      noiseProfileReductionValue,
+      noiseProfileVoiceProtection,
+      noiseProfileVoiceProtectionValue,
+      clearNoiseProfile,
       smartNormalization,
       smartNormalizationValue,
       saturation,

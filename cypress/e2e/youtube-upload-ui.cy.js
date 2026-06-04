@@ -24,7 +24,7 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('not.be.visible');
   });
 
-  it('blocks Google sign-in on file origins with an actionable message', () => {
+  it('offers to reopen file origins on localhost before Google sign-in', () => {
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
         win.__audioRecorderYouTubeOrigin = new URL('file:///tmp/audio-recorder-with-visualization/examples/index.html');
@@ -38,8 +38,9 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeAuthModal').should('be.visible');
     cy.get('#youtubeAuthStatus')
       .should('have.class', 'error')
-      .and('contain.text', 'Google sign-in requires this page to run from http://localhost or HTTPS');
-    cy.get('#authorizeYouTubeBtn').should('be.disabled');
+      .and('contain.text', 'Google sign-in requires a localhost or HTTPS URL')
+      .and('contain.text', 'http://localhost:8080/index.html');
+    cy.get('#authorizeYouTubeBtn').should('not.be.disabled').and('contain.text', 'Open localhost');
   });
 
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {

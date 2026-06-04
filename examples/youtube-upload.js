@@ -18,7 +18,7 @@
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
-  const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires this page to run from http://localhost or HTTPS. Start a local server, then open the example from that URL.';
+  const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve, then use the localhost page.';
 
   const authModal = document.getElementById('youtubeAuthModal');
   const closeAuthBtn = document.getElementById('closeYouTubeAuthBtn');
@@ -109,6 +109,15 @@
       origin.hostname === '127.0.0.1';
   }
 
+  function getLocalhostExampleUrl() {
+    const origin = window.__audioRecorderYouTubeOrigin || window.location;
+    if (origin.protocol !== 'file:') {
+      return '';
+    }
+
+    return 'http://localhost:8080/index.html';
+  }
+
   function getDefaultTitle(fileName) {
     return (fileName || 'recording')
       .replace(/\.[^.]+$/, '')
@@ -146,8 +155,10 @@
     clientIdInput.focus();
 
     if (!isSupportedGoogleSignInOrigin()) {
-      setStatus(authStatus, UNSUPPORTED_ORIGIN_MESSAGE, 'error');
-      authorizeBtn.disabled = true;
+      const localUrl = getLocalhostExampleUrl();
+      setStatus(authStatus, localUrl ? `${UNSUPPORTED_ORIGIN_MESSAGE} Opening ${localUrl}...` : UNSUPPORTED_ORIGIN_MESSAGE, 'error');
+      authorizeBtn.disabled = false;
+      authorizeBtn.textContent = 'Open localhost';
       return;
     }
 
@@ -258,6 +269,12 @@
   }
 
   async function authorizeYouTube() {
+    const localUrl = getLocalhostExampleUrl();
+    if (localUrl && !isSupportedGoogleSignInOrigin()) {
+      window.location.href = localUrl;
+      return;
+    }
+
     const clientId = clientIdInput.value.trim();
     if (!clientId) {
       setStatus(authStatus, 'OAuth Client ID is required.', 'error');

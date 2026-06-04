@@ -1,10 +1,14 @@
 const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { pathToFileURL } = require('url');
 
 // Keep a global reference of the window objects to prevent garbage collection
 let mainWindow = null;
 let presentationWindow = null;
+let appServer = null;
+let appServerUrl = null;
 
 // Presentation window settings
 let presentationSettings = {
@@ -20,7 +24,85 @@ let presentationSettings = {
   clickThrough: true,
 };
 
-function createWindow() {
+function getContentType(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  const contentTypes = {
+    '.css': 'text/css; charset=utf-8',
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.webm': 'video/webm',
+    '.mp4': 'video/mp4',
+    '.wasm': 'application/wasm',
+  };
+
+  return contentTypes[extension] || 'application/octet-stream';
+}
+
+function sendStaticFile(response, rootDir, urlPath) {
+  const decodedPath = decodeURIComponent(urlPath.split('?')[0]);
+  const normalizedPath = path.normalize(decodedPath).replace(/^(\.\.[/\\])+/, '');
+  const requestedPath = normalizedPath === '/' ? '/index.html' : normalizedPath;
+  const filePath = path.join(rootDir, requestedPath);
+  const relativePath = path.relative(rootDir, filePath);
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    response.writeHead(403);
+    response.end('Forbidden');
+    return;
+  }
+
+  fs.stat(filePath, (statError, stat) => {
+    if (statError || !stat.isFile()) {
+      response.writeHead(404);
+      response.end('Not found');
+      return;
+    }
+
+    response.writeHead(200, {
+      'Content-Type': getContentType(filePath),
+      'Cache-Control': 'no-store',
+    });
+    fs.createReadStream(filePath).pipe(response);
+  });
+}
+
+function startAppServer() {
+  if (appServerUrl) {
+    return Promise.resolve(appServerUrl);
+  }
+
+  const examplesDir = path.join(__dirname, '..', 'examples');
+  const distDir = path.join(__dirname, '..', 'dist');
+
+  appServer = http.createServer((request, response) => {
+    const requestUrl = new URL(request.url, 'http://localhost');
+
+    if (requestUrl.pathname.startsWith('/dist/')) {
+      sendStaticFile(response, distDir, requestUrl.pathname.slice('/dist'.length));
+      return;
+    }
+
+    sendStaticFile(response, examplesDir, requestUrl.pathname);
+  });
+
+  return new Promise((resolve, reject) => {
+    appServer.once('error', reject);
+    appServer.listen(0, '127.0.0.1', () => {
+      const address = appServer.address();
+      appServerUrl = `http://localhost:${address.port}`;
+      resolve(appServerUrl);
+    });
+  });
+}
+
+async function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -37,8 +119,9 @@ function createWindow() {
     backgroundColor: '#1a1a2e',
   });
 
-  // Load the examples/index.html file
-  mainWindow.loadFile(path.join(__dirname, '..', 'examples', 'index.html'));
+  // Load through localhost so Google OAuth receives a web origin instead of file://.
+  const serverUrl = await startAppServer();
+  mainWindow.loadURL(`${serverUrl}/index.html`);
 
   // Open DevTools in development mode
   if (process.argv.includes('--dev')) {
@@ -129,8 +212,11 @@ function createPresentationWindow(settings) {
     presentationWindow.setAlwaysOnTop(false);
   }
 
-  // Load the presentation page
-  presentationWindow.loadFile(path.join(__dirname, '..', 'examples', 'presentation.html'));
+  if (appServerUrl) {
+    presentationWindow.loadURL(`${appServerUrl}/presentation.html`);
+  } else {
+    presentationWindow.loadURL(pathToFileURL(path.join(__dirname, '..', 'examples', 'presentation.html')).toString());
+  }
 
   // Prevent closing with Alt+F4 by intercepting the close event
   presentationWindow.on('close', (event) => {
@@ -167,8 +253,8 @@ function closePresentationWindow() {
 }
 
 // Create window when Electron is ready
-app.whenReady().then(() => {
-  createWindow();
+app.whenReady().then(async () => {
+  await createWindow();
 
   // Register global shortcut Alt+Q to close presentation window
   globalShortcut.register('Alt+Q', () => {
@@ -188,6 +274,9 @@ app.whenReady().then(() => {
 // Unregister shortcuts when app is about to quit
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  if (appServer) {
+    appServer.close();
+  }
 });
 
 // Quit when all windows are closed (except on macOS)
@@ -239,6 +328,44 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
     return { success: true, filePath: result.filePath };
   } catch (error) {
     console.error('Error saving file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-choose-folder', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, folderPath: result.filePaths[0] };
+  } catch (error) {
+    console.error('Error choosing preset folder:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-save-file', async (event, folderPath, preset) => {
+  try {
+    if (!folderPath) {
+      return { success: false, error: 'Preset folder is not configured' };
+    }
+
+    fs.mkdirSync(folderPath, { recursive: true });
+    const safeName = String(preset.name || 'preset')
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+      .replace(/^\.+$/, 'preset')
+      .slice(0, 80);
+    const filePath = path.join(folderPath, `${safeName}-${preset.id || Date.now()}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(preset, null, 2), 'utf8');
+
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error saving preset file:', error);
     return { success: false, error: error.message };
   }
 });

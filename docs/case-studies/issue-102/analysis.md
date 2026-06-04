@@ -56,8 +56,12 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - Added `Upload to YouTube` next to both browser `Download` and Electron `Save and Show in Folder` actions.
 - The access token is kept in memory only for the current page session. The OAuth Client ID is stored in localStorage for convenience.
 
+## Follow-up: OAuth Origin Handling
+
+PR feedback showed that blocking `file://` origins avoided Google's `origin=file://` 400 page, but it also left desktop users stuck when they launched the bundled Electron app. Google Identity Services requires a web origin such as `http://localhost` or HTTPS, so the Electron app now starts a loopback static server and loads the same example UI from `http://localhost:<port>/index.html`. Direct browser `file://` usage still cannot authorize with Google, but the UI offers to reopen the example at `http://localhost:8080/index.html`, matching the existing `npm run serve` script.
+
 ## Verification Plan
 
 - Unit tests cover metadata generation, Short tag behavior, resumable session requests, chunk continuation after HTTP 308, API error handling, and empty-video validation.
-- Cypress coverage creates a synthetic recording, verifies the YouTube button beside the download action, stubs Google sign-in, stubs YouTube API requests, and verifies that the Short checkbox adds `#short` to the submitted description.
+- Cypress coverage creates a synthetic recording, verifies the YouTube button beside the download action, verifies the file-origin localhost handoff, stubs Google sign-in, stubs YouTube API requests, and verifies that the Short checkbox adds `#short` to the submitted description.
 - Local checks should include `npm run typecheck`, `npm test -- --runInBand`, `npm run build`, and the new Cypress spec.
