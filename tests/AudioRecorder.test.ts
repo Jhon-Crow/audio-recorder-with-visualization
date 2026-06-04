@@ -1,4 +1,5 @@
 import { AudioRecorder } from '../src/AudioRecorder';
+import { AudioAnalyzer } from '../src/core/AudioAnalyzer';
 import { WaveformVisualizer } from '../src/visualizers/WaveformVisualizer';
 
 describe('AudioRecorder', () => {
@@ -119,6 +120,8 @@ describe('AudioRecorder', () => {
       expect(recorder.getAudioEnhancement()).toEqual({
         enabled: false,
         noiseReduction: 0,
+        noiseProfile: null,
+        noiseProfileReduction: 0,
         smartNormalization: 0,
         saturation: 0,
         saturationFrequencyRange: { min: 20, max: 20000 },
@@ -127,11 +130,19 @@ describe('AudioRecorder', () => {
     });
 
     test('should initialize with audio enhancement options', () => {
+      const noiseProfile = AudioAnalyzer.createNoiseProfileFromSamples(
+        new Float32Array(4096).fill(0.02),
+        44100,
+        { fftSize: 1024 }
+      );
+
       recorder = new AudioRecorder({
         canvas,
         audioEnhancement: {
           enabled: true,
           noiseReduction: 35,
+          noiseProfile,
+          noiseProfileReduction: 45,
           smartNormalization: 60,
           saturation: 15,
           saturationFrequencyRange: { min: 120, max: 7000 },
@@ -142,6 +153,8 @@ describe('AudioRecorder', () => {
       expect(recorder.getAudioEnhancement()).toEqual({
         enabled: true,
         noiseReduction: 35,
+        noiseProfile,
+        noiseProfileReduction: 45,
         smartNormalization: 60,
         saturation: 15,
         saturationFrequencyRange: { min: 120, max: 7000 },

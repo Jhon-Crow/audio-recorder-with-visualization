@@ -35,6 +35,8 @@ describe('AudioAnalyzer', () => {
     expect(analyzer.getAudioEnhancement()).toEqual({
       enabled: false,
       noiseReduction: 0,
+      noiseProfile: null,
+      noiseProfileReduction: 0,
       smartNormalization: 0,
       saturation: 0,
       saturationFrequencyRange: { min: 20, max: 20000 },
@@ -46,6 +48,7 @@ describe('AudioAnalyzer', () => {
     analyzer.setAudioEnhancement({
       enabled: true,
       noiseReduction: 150,
+      noiseProfileReduction: 150,
       smartNormalization: -10,
       saturation: 75,
       saturationFrequencyRange: { min: 12000, max: 80 },
@@ -55,12 +58,52 @@ describe('AudioAnalyzer', () => {
     expect(analyzer.getAudioEnhancement()).toEqual({
       enabled: true,
       noiseReduction: 100,
+      noiseProfile: null,
+      noiseProfileReduction: 100,
       smartNormalization: 0,
       saturation: 75,
       saturationFrequencyRange: { min: 80, max: 12000 },
       saturationMode: 'tape',
     });
     expect(analyzer.isAudioEnhancementActive).toBe(true);
+  });
+
+  test('should create stronger profile reduction for dominant noise bands', () => {
+    const sampleRate = 44100;
+    const samples = new Float32Array(4096);
+
+    for (let i = 0; i < samples.length; i++) {
+      const time = i / sampleRate;
+      samples[i] = Math.sin(2 * Math.PI * 6000 * time) * 0.08
+        + Math.sin(2 * Math.PI * 120 * time) * 0.005;
+    }
+
+    const profile = AudioAnalyzer.createNoiseProfileFromSamples(samples, sampleRate, {
+      bandCount: 8,
+      fftSize: 1024,
+      minFrequency: 80,
+      maxFrequency: 12000,
+    });
+    const lowBand = profile.bands.reduce((closest, band) => (
+      Math.abs(band.centerFrequency - 120) < Math.abs(closest.centerFrequency - 120)
+        ? band
+        : closest
+    ));
+    const highBand = profile.bands.reduce((closest, band) => (
+      Math.abs(band.centerFrequency - 6000) < Math.abs(closest.centerFrequency - 6000)
+        ? band
+        : closest
+    ));
+
+    expect(profile.bands).toHaveLength(8);
+    expect(profile.durationSeconds).toBeCloseTo(samples.length / sampleRate, 4);
+    expect(highBand.reductionDb).toBeGreaterThan(lowBand.reductionDb);
+  });
+
+  test('should require enough samples to build a noise profile', () => {
+    expect(() => {
+      AudioAnalyzer.createNoiseProfileFromSamples(new Float32Array(128), 44100);
+    }).toThrow('Noise profile requires at least');
   });
 
   test('should throw error for invalid FFT size', () => {
@@ -101,6 +144,47 @@ describe('AudioAnalyzer', () => {
 
     expect(analyzer.isAudioEnhancementActive).toBe(true);
     expect(analyzer.getProcessedStream()).toBeInstanceOf(MediaStream);
+  });
+
+  test('should expose processed stream when noise profile reduction is active', async () => {
+    const samples = new Float32Array(4096);
+    for (let i = 0; i < samples.length; i++) {
+      samples[i] = Math.sin(2 * Math.PI * 5000 * (i / 44100)) * 0.04;
+    }
+
+    const profile = AudioAnalyzer.createNoiseProfileFromSamples(samples, 44100, {
+      bandCount: 6,
+      fftSize: 1024,
+    });
+
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      noiseProfile: profile,
+      noiseProfileReduction: 70,
+    });
+
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+
+    expect(analyzer.isAudioEnhancementActive).toBe(true);
+    expect(analyzer.getProcessedStream()).toBeInstanceOf(MediaStream);
+  });
+
+  test('should clear noise profile at runtime', () => {
+    const samples = new Float32Array(4096).fill(0.02);
+    const profile = AudioAnalyzer.createNoiseProfileFromSamples(samples, 44100, {
+      fftSize: 1024,
+    });
+
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      noiseProfile: profile,
+    });
+    expect(analyzer.getAudioEnhancement().noiseProfile).not.toBeNull();
+
+    analyzer.setAudioEnhancement({ noiseProfile: null });
+    expect(analyzer.getAudioEnhancement().noiseProfile).toBeNull();
+    expect(analyzer.isAudioEnhancementActive).toBe(false);
   });
 
   test('should rebuild active graph when audio enhancement changes', async () => {

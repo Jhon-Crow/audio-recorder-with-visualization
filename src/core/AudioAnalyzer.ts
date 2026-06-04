@@ -1,5 +1,8 @@
 import {
   AudioEnhancementOptions,
+  AudioNoiseProfile,
+  AudioNoiseProfileBand,
+  AudioNoiseProfileOptions,
   ResolvedAudioEnhancementOptions,
   SaturationMode,
 } from '../types';
@@ -43,6 +46,10 @@ export class AudioAnalyzer {
     return size >= 32 && size <= 32768 && (size & (size - 1)) === 0;
   }
 
+  private static isValidAnalysisFftSize(size: number): boolean {
+    return size >= 512 && size <= 32768 && (size & (size - 1)) === 0;
+  }
+
   private log(...args: unknown[]): void {
     if (this.debug) {
       console.log('[AudioAnalyzer]', ...args);
@@ -63,6 +70,75 @@ export class AudioAnalyzer {
       || value === 'tube';
   }
 
+  private normalizeNoiseProfile(
+    profile: AudioNoiseProfile | null | undefined
+  ): AudioNoiseProfile | null {
+    if (!profile || !Array.isArray(profile.bands)) {
+      return null;
+    }
+
+    const sampleRate = Number.isFinite(profile.sampleRate) && profile.sampleRate > 0
+      ? profile.sampleRate
+      : 44100;
+    const fftSize = this.isValidFftSize(profile.fftSize) ? profile.fftSize : 2048;
+    const minFrequency = Number.isFinite(profile.minFrequency)
+      ? Math.max(20, profile.minFrequency)
+      : 80;
+    const maxFrequency = Number.isFinite(profile.maxFrequency)
+      ? Math.max(minFrequency + 10, profile.maxFrequency)
+      : Math.min(16000, sampleRate / 2);
+
+    const bands: AudioNoiseProfileBand[] = profile.bands
+      .map((band) => {
+        const lowerFrequency = Number.isFinite(band.lowerFrequency)
+          ? Math.max(20, band.lowerFrequency)
+          : minFrequency;
+        const upperFrequency = Number.isFinite(band.upperFrequency)
+          ? Math.max(lowerFrequency + 1, band.upperFrequency)
+          : Math.max(lowerFrequency + 1, maxFrequency);
+        const centerFrequency = Number.isFinite(band.centerFrequency)
+          ? Math.max(lowerFrequency, Math.min(upperFrequency, band.centerFrequency))
+          : Math.sqrt(lowerFrequency * upperFrequency);
+        const q = Number.isFinite(band.q)
+          ? Math.max(0.2, Math.min(24, band.q))
+          : Math.max(0.2, centerFrequency / Math.max(1, upperFrequency - lowerFrequency));
+        const levelDb = Number.isFinite(band.levelDb) ? band.levelDb : -120;
+        const reductionDb = Number.isFinite(band.reductionDb)
+          ? Math.max(0, Math.min(36, band.reductionDb))
+          : 0;
+
+        return {
+          lowerFrequency,
+          centerFrequency,
+          upperFrequency,
+          q,
+          levelDb,
+          reductionDb,
+        };
+      })
+      .filter((band) => band.centerFrequency > 0);
+
+    if (bands.length === 0) {
+      return null;
+    }
+
+    return {
+      version: 1,
+      sampleRate,
+      fftSize,
+      bandCount: bands.length,
+      minFrequency,
+      maxFrequency,
+      durationSeconds: Number.isFinite(profile.durationSeconds)
+        ? Math.max(0, profile.durationSeconds)
+        : 0,
+      averageLevelDb: Number.isFinite(profile.averageLevelDb)
+        ? profile.averageLevelDb
+        : -120,
+      bands,
+    };
+  }
+
   private resolveAudioEnhancement(
     options: AudioEnhancementOptions = {}
   ): ResolvedAudioEnhancementOptions {
@@ -73,16 +149,273 @@ export class AudioAnalyzer {
     const boundedMax = Math.max(20, Math.min(20000, rawMax));
     const min = Math.min(boundedMin, boundedMax);
     const max = Math.max(boundedMin, boundedMax);
+    const noiseProfile = this.normalizeNoiseProfile(options.noiseProfile);
+    const defaultProfileReduction = noiseProfile ? 60 : 0;
 
     return {
       enabled: options.enabled ?? false,
       noiseReduction: this.clampPercent(options.noiseReduction),
+      noiseProfile,
+      noiseProfileReduction: this.clampPercent(
+        options.noiseProfileReduction ?? defaultProfileReduction
+      ),
       smartNormalization: this.clampPercent(options.smartNormalization),
       saturation: this.clampPercent(options.saturation),
       saturationFrequencyRange: { min, max },
       saturationMode: this.isSaturationMode(options.saturationMode)
         ? options.saturationMode
         : 'soft-clip',
+    };
+  }
+
+  private static clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  private static toDb(value: number): number {
+    return 20 * Math.log10(Math.max(value, 1e-12));
+  }
+
+  private static runFft(real: Float64Array, imag: Float64Array): void {
+    const n = real.length;
+    let j = 0;
+
+    for (let i = 1; i < n; i++) {
+      let bit = n >> 1;
+      while (j & bit) {
+        j ^= bit;
+        bit >>= 1;
+      }
+      j ^= bit;
+
+      if (i < j) {
+        const realTemp = real[i];
+        real[i] = real[j];
+        real[j] = realTemp;
+
+        const imagTemp = imag[i];
+        imag[i] = imag[j];
+        imag[j] = imagTemp;
+      }
+    }
+
+    for (let length = 2; length <= n; length <<= 1) {
+      const angle = -2 * Math.PI / length;
+      const wLengthReal = Math.cos(angle);
+      const wLengthImag = Math.sin(angle);
+
+      for (let i = 0; i < n; i += length) {
+        let wReal = 1;
+        let wImag = 0;
+        const halfLength = length >> 1;
+
+        for (let k = 0; k < halfLength; k++) {
+          const evenIndex = i + k;
+          const oddIndex = evenIndex + halfLength;
+          const oddReal = real[oddIndex] * wReal - imag[oddIndex] * wImag;
+          const oddImag = real[oddIndex] * wImag + imag[oddIndex] * wReal;
+
+          real[oddIndex] = real[evenIndex] - oddReal;
+          imag[oddIndex] = imag[evenIndex] - oddImag;
+          real[evenIndex] += oddReal;
+          imag[evenIndex] += oddImag;
+
+          const nextWReal = wReal * wLengthReal - wImag * wLengthImag;
+          wImag = wReal * wLengthImag + wImag * wLengthReal;
+          wReal = nextWReal;
+        }
+      }
+    }
+  }
+
+  /**
+   * Analyze a decoded AudioBuffer containing only microphone/background noise.
+   */
+  static createNoiseProfileFromAudioBuffer(
+    audioBuffer: AudioBuffer,
+    options: AudioNoiseProfileOptions = {}
+  ): AudioNoiseProfile {
+    if (!audioBuffer || audioBuffer.length === 0 || audioBuffer.numberOfChannels === 0) {
+      throw new Error('Noise profile audio buffer must contain audio samples');
+    }
+
+    const sampleCount = audioBuffer.length;
+    const monoSamples = new Float32Array(sampleCount);
+
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      const channelData = audioBuffer.getChannelData(channel);
+      for (let i = 0; i < sampleCount; i++) {
+        monoSamples[i] += channelData[i] / audioBuffer.numberOfChannels;
+      }
+    }
+
+    return AudioAnalyzer.createNoiseProfileFromSamples(
+      monoSamples,
+      audioBuffer.sampleRate,
+      options
+    );
+  }
+
+  /**
+   * Analyze noise-only PCM samples and produce a reusable frequency profile.
+   */
+  static createNoiseProfileFromSamples(
+    samples: ArrayLike<number>,
+    sampleRate: number,
+    options: AudioNoiseProfileOptions = {}
+  ): AudioNoiseProfile {
+    if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+      throw new Error('Noise profile sample rate must be a positive number');
+    }
+
+    const fftSize = AudioAnalyzer.isValidAnalysisFftSize(options.fftSize ?? 2048)
+      ? options.fftSize ?? 2048
+      : 2048;
+
+    if (!samples || samples.length < fftSize) {
+      throw new Error(`Noise profile requires at least ${fftSize} samples`);
+    }
+
+    const nyquist = sampleRate / 2;
+    const bandCount = Math.round(AudioAnalyzer.clamp(options.bandCount ?? 12, 4, 32));
+    const requestedMin = Number.isFinite(options.minFrequency)
+      ? options.minFrequency ?? 80
+      : 80;
+    const requestedMax = Number.isFinite(options.maxFrequency)
+      ? options.maxFrequency ?? Math.min(16000, nyquist * 0.95)
+      : Math.min(16000, nyquist * 0.95);
+    const minFrequency = AudioAnalyzer.clamp(
+      Math.min(requestedMin, requestedMax),
+      20,
+      Math.max(20, nyquist - 20)
+    );
+    const maxFrequency = AudioAnalyzer.clamp(
+      Math.max(requestedMin, requestedMax),
+      minFrequency + 10,
+      Math.max(minFrequency + 10, nyquist - 10)
+    );
+    const maxDurationSeconds = Number.isFinite(options.maxDurationSeconds)
+      ? Math.max(0.1, options.maxDurationSeconds ?? 30)
+      : 30;
+    const sampleCount = Math.min(
+      samples.length,
+      Math.max(fftSize, Math.floor(maxDurationSeconds * sampleRate))
+    );
+    const hopSize = fftSize / 2;
+    const frameCount = Math.max(1, Math.floor((sampleCount - fftSize) / hopSize) + 1);
+    const minReductionDb = AudioAnalyzer.clamp(options.minReductionDb ?? 1.5, 0, 24);
+    const maxReductionDb = AudioAnalyzer.clamp(
+      options.maxReductionDb ?? 18,
+      minReductionDb,
+      36
+    );
+
+    const logMin = Math.log(minFrequency);
+    const logMax = Math.log(maxFrequency);
+    const bandEdges: number[] = [];
+    const bands: AudioNoiseProfileBand[] = [];
+
+    for (let i = 0; i <= bandCount; i++) {
+      bandEdges.push(Math.exp(logMin + (i / bandCount) * (logMax - logMin)));
+    }
+
+    for (let i = 0; i < bandCount; i++) {
+      const lowerFrequency = bandEdges[i];
+      const upperFrequency = bandEdges[i + 1];
+      const centerFrequency = Math.sqrt(lowerFrequency * upperFrequency);
+
+      bands.push({
+        lowerFrequency,
+        centerFrequency,
+        upperFrequency,
+        q: Math.max(0.2, centerFrequency / Math.max(1, upperFrequency - lowerFrequency)),
+        levelDb: -120,
+        reductionDb: 0,
+      });
+    }
+
+    const binToBand = new Int16Array(fftSize / 2 + 1);
+    binToBand.fill(-1);
+    for (let bin = 1; bin < binToBand.length; bin++) {
+      const frequency = bin * sampleRate / fftSize;
+      for (let bandIndex = 0; bandIndex < bands.length; bandIndex++) {
+        const band = bands[bandIndex];
+        if (frequency >= band.lowerFrequency && frequency < band.upperFrequency) {
+          binToBand[bin] = bandIndex;
+          break;
+        }
+      }
+    }
+
+    const window = new Float64Array(fftSize);
+    for (let i = 0; i < fftSize; i++) {
+      window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (fftSize - 1)));
+    }
+
+    const bandPower = new Float64Array(bandCount);
+    const bandHits = new Uint32Array(bandCount);
+    const real = new Float64Array(fftSize);
+    const imag = new Float64Array(fftSize);
+    let rmsSum = 0;
+
+    for (let i = 0; i < sampleCount; i++) {
+      const sample = Number.isFinite(samples[i]) ? samples[i] : 0;
+      rmsSum += sample * sample;
+    }
+
+    for (let frame = 0; frame < frameCount; frame++) {
+      const offset = frame * hopSize;
+
+      for (let i = 0; i < fftSize; i++) {
+        const sample = Number.isFinite(samples[offset + i]) ? samples[offset + i] : 0;
+        real[i] = sample * window[i];
+        imag[i] = 0;
+      }
+
+      AudioAnalyzer.runFft(real, imag);
+
+      for (let bin = 1; bin < binToBand.length; bin++) {
+        const bandIndex = binToBand[bin];
+        if (bandIndex < 0) {
+          continue;
+        }
+
+        const power = real[bin] * real[bin] + imag[bin] * imag[bin];
+        bandPower[bandIndex] += power;
+        bandHits[bandIndex]++;
+      }
+    }
+
+    const bandMagnitudes = Array.from(bandPower, (power, index) => {
+      const hits = bandHits[index] || 1;
+      return Math.sqrt(power / hits) / fftSize;
+    });
+    const maxMagnitude = Math.max(...bandMagnitudes, 1e-12);
+
+    for (let i = 0; i < bands.length; i++) {
+      const magnitude = bandMagnitudes[i];
+      const relative = magnitude / maxMagnitude;
+      const profileWeight = relative <= 0.03 ? 0 : Math.pow(relative, 0.65);
+
+      bands[i] = {
+        ...bands[i],
+        levelDb: AudioAnalyzer.toDb(magnitude),
+        reductionDb: profileWeight === 0
+          ? 0
+          : minReductionDb + (maxReductionDb - minReductionDb) * profileWeight,
+      };
+    }
+
+    return {
+      version: 1,
+      sampleRate,
+      fftSize,
+      bandCount,
+      minFrequency,
+      maxFrequency,
+      durationSeconds: sampleCount / sampleRate,
+      averageLevelDb: AudioAnalyzer.toDb(Math.sqrt(rmsSum / sampleCount)),
+      bands,
     };
   }
 
@@ -221,6 +554,40 @@ export class AudioAnalyzer {
     return attenuator;
   }
 
+  private applyNoiseProfileReduction(ctx: AudioContext, input: AudioNode): AudioNode {
+    const profile = this.audioEnhancement.noiseProfile;
+    const amount = this.audioEnhancement.noiseProfileReduction;
+
+    if (!profile || amount <= 0) {
+      return input;
+    }
+
+    const strength = amount / 100;
+    const nyquist = ctx.sampleRate / 2;
+    let current = input;
+
+    for (const band of profile.bands) {
+      const centerFrequency = Math.max(20, Math.min(band.centerFrequency, nyquist - 10));
+      const reductionDb = Math.min(24, Math.max(0, band.reductionDb)) * strength;
+
+      if (reductionDb < 0.25 || centerFrequency >= nyquist) {
+        continue;
+      }
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'peaking';
+      filter.frequency.value = centerFrequency;
+      filter.Q.value = Math.max(0.2, Math.min(12, band.q));
+      filter.gain.value = -reductionDb;
+
+      current.connect(filter);
+      current = filter;
+      this.graphNodes.push(filter);
+    }
+
+    return current;
+  }
+
   private applySmartNormalization(ctx: AudioContext, input: AudioNode): AudioNode {
     const amount = this.audioEnhancement.smartNormalization;
     if (amount <= 0) {
@@ -301,6 +668,7 @@ export class AudioAnalyzer {
 
   private applyAudioEnhancement(ctx: AudioContext, input: AudioNode): AudioNode {
     let current = input;
+    current = this.applyNoiseProfileReduction(ctx, current);
     current = this.applyNoiseReduction(ctx, current);
     current = this.applySmartNormalization(ctx, current);
     current = this.applySaturation(ctx, current);
@@ -415,6 +783,12 @@ export class AudioAnalyzer {
   getAudioEnhancement(): ResolvedAudioEnhancementOptions {
     return {
       ...this.audioEnhancement,
+      noiseProfile: this.audioEnhancement.noiseProfile
+        ? {
+            ...this.audioEnhancement.noiseProfile,
+            bands: this.audioEnhancement.noiseProfile.bands.map((band) => ({ ...band })),
+          }
+        : null,
       saturationFrequencyRange: { ...this.audioEnhancement.saturationFrequencyRange },
     };
   }
@@ -584,6 +958,10 @@ export class AudioAnalyzer {
     return this.audioEnhancement.enabled
       && (
         this.audioEnhancement.noiseReduction > 0
+        || (
+          this.audioEnhancement.noiseProfile !== null
+          && this.audioEnhancement.noiseProfileReduction > 0
+        )
         || this.audioEnhancement.smartNormalization > 0
         || this.audioEnhancement.saturation > 0
       );

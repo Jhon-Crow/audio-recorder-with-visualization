@@ -17,6 +17,7 @@ function initFeatures() {
     canvas,
     recorder,
     converter,
+    AudioAnalyzer,
     savedSettings,
     saveSettings,
     getCurrentSettings,
@@ -126,6 +127,13 @@ function initFeatures() {
     saveSettings(getCurrentSettings());
   }
 
+  function updateNoiseProfileDisplay() {
+    el.noiseProfileFileName.textContent = app.currentNoiseProfileName
+      ? `${app.currentNoiseProfileName} (${app.currentNoiseProfile?.bands?.length || 0} bands)`
+      : 'No profile loaded';
+    el.clearNoiseProfile.disabled = !app.currentNoiseProfile || app.isRecording;
+  }
+
   el.audioEnhancementEnabled.addEventListener('change', () => {
     el.audioEnhancementControls.style.display = el.audioEnhancementEnabled.checked ? 'grid' : 'none';
     updateAudioEnhancement();
@@ -135,6 +143,64 @@ function initFeatures() {
     const value = parseInt(el.noiseReduction.value);
     el.noiseReductionValue.textContent = value + '%';
     updateAudioEnhancement();
+  });
+
+  el.noiseProfileFile.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) {
+      updateStatus('Error: Audio profile analysis is not supported in this browser', 'error');
+      return;
+    }
+
+    let audioContext = null;
+    try {
+      updateStatus('Analyzing noise profile...', 'recording');
+      audioContext = new AudioContextCtor();
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const profile = AudioAnalyzer.createNoiseProfileFromAudioBuffer(audioBuffer, {
+        bandCount: 12,
+        fftSize: 2048,
+        minFrequency: 80,
+        maxFrequency: Math.min(16000, audioBuffer.sampleRate / 2 - 10),
+      });
+
+      app.currentNoiseProfile = profile;
+      app.currentNoiseProfileName = file.name;
+      el.audioEnhancementEnabled.checked = true;
+      el.audioEnhancementControls.style.display = 'grid';
+      updateNoiseProfileDisplay();
+      updateAudioEnhancement();
+      updateStatus('Noise profile loaded', 'ready');
+    } catch (error) {
+      updateStatus('Error: ' + error.message, 'error');
+      console.error(error);
+    } finally {
+      if (audioContext && audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
+      updateButtonStates();
+    }
+  });
+
+  el.noiseProfileReduction.addEventListener('input', () => {
+    const value = parseInt(el.noiseProfileReduction.value);
+    el.noiseProfileReductionValue.textContent = value + '%';
+    updateAudioEnhancement();
+  });
+
+  el.clearNoiseProfile.addEventListener('click', () => {
+    app.currentNoiseProfile = null;
+    app.currentNoiseProfileName = null;
+    el.noiseProfileFile.value = '';
+    updateNoiseProfileDisplay();
+    updateAudioEnhancement();
+    updateButtonStates();
   });
 
   el.smartNormalization.addEventListener('input', () => {

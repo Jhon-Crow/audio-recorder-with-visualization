@@ -7,7 +7,7 @@ A TypeScript library for audio visualization and recording. Capture audio from m
 - **Real-time audio visualization** from microphone input
 - **Video recording** with audio + visualization (WebM/MP4)
 - **Audio file to video conversion** with visualization
-- **Optional audio enhancement** for noise reduction, smart normalization, and saturation
+- **Optional audio enhancement** for profile-based noise reduction, smart normalization, and saturation
 - **Multiple visualization types**:
   - Waveform (oscilloscope)
   - Bars (spectrum analyzer)
@@ -131,21 +131,32 @@ All audio enhancement controls are disabled by default. Enable them in the const
 interface AudioEnhancementOptions {
   enabled?: boolean;
   noiseReduction?: number;              // 0-100, attenuates quiet background noise
+  noiseProfile?: AudioNoiseProfile | null; // Learned noise-only spectrum, default: null
+  noiseProfileReduction?: number;       // 0-100, applies learned profile reduction
   smartNormalization?: number;           // 0-100, smooths loud/quiet sections
   saturation?: number;                   // 0-100, adds harmonic saturation
   saturationFrequencyRange?: { min: number; max: number }; // Hz, default 20-20000
   saturationMode?: 'soft-clip' | 'hard-clip' | 'tape' | 'tube';
 }
 
+const noiseProfileBuffer = await audioContext.decodeAudioData(await noiseOnlyFile.arrayBuffer());
+const noiseProfile = AudioAnalyzer.createNoiseProfileFromAudioBuffer(noiseProfileBuffer);
+
 recorder.setAudioEnhancement({
   enabled: true,
   noiseReduction: 35,
+  noiseProfile,
+  noiseProfileReduction: 60,
   smartNormalization: 60,
   saturation: 15,
   saturationFrequencyRange: { min: 120, max: 8000 },
   saturationMode: 'tube',
 });
 ```
+
+For profile-based reduction, use a short file that contains only the microphone hiss,
+fan, hum, or room tone you want to reduce. The profile is most effective for
+steady noise and should be applied moderately to avoid dulling speech or music.
 
 #### Methods
 

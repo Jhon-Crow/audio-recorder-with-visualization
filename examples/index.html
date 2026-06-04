@@ -331,6 +331,20 @@
                   Noise Reduction: <span id="noiseReductionValue">0%</span>
                   <input type="range" id="noiseReduction" min="0" max="100" value="0" aria-label="Adjust noise reduction">
                 </label>
+                <label data-tooltip="Select a short audio file containing only microphone noise or room tone. The app learns that noise spectrum and reduces matching bands before recording or conversion.">
+                  Noise Profile File
+                  <input type="file" id="noiseProfileFile" accept="audio/*" aria-label="Select noise profile audio file">
+                  <span id="noiseProfileFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">No profile loaded</span>
+                </label>
+                <label data-tooltip="Controls how strongly the learned noise profile is reduced. Start moderate to avoid muffling voice or music.">
+                  Profile Reduction: <span id="noiseProfileReductionValue">60%</span>
+                  <input type="range" id="noiseProfileReduction" min="0" max="100" value="60" aria-label="Adjust profile-based noise reduction">
+                </label>
+                <label style="justify-content: flex-end;">
+                  <button type="button" id="clearNoiseProfile" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" disabled data-tooltip="Remove the learned noise profile" aria-label="Clear noise profile">
+                    Clear Noise Profile
+                  </button>
+                </label>
                 <label data-tooltip="Smooths loud and quiet sections with compression and make-up gain.">
                   Smart Normalization: <span id="smartNormalizationValue">0%</span>
                   <input type="range" id="smartNormalization" min="0" max="100" value="0" aria-label="Adjust smart normalization">
