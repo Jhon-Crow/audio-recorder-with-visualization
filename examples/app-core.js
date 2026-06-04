@@ -28,6 +28,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Elements
   const canvas = document.getElementById('visualizer');
+  const previewOverlay = document.getElementById('previewOverlay');
   const status = document.getElementById('status');
   const startMicBtn = document.getElementById('startMic');
   const stopMicBtn = document.getElementById('stopMic');
@@ -653,6 +654,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     canvas.width = dimensions.width;
     canvas.height = dimensions.height;
     videoDimensions.textContent = `${dimensions.width} x ${dimensions.height}`;
+    updatePreviewGuides();
     if (redraw) {
       updatePreview();
     }
@@ -1092,10 +1094,59 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Helper function to show preview after settings change
   function updatePreview() {
+    updatePreviewGuides();
     // Show demo visualization if no audio source is active
     if (!recorder.sourceType) {
       recorder.showDemoVisualization(500);
     }
+  }
+
+  function updatePreviewGuides() {
+    if (!previewOverlay) return;
+
+    const offsetXValue = parseInt(offsetX.value) || 0;
+    const offsetYValue = parseInt(offsetY.value) || 0;
+    const scale = Math.max(0.01, parseInt(visualizationScale.value) / 100 || 1);
+    const snapTolerance = 6;
+    const gridStepX = canvas.width / 8;
+    const gridStepY = canvas.height / 8;
+    const overlayX = 50 + (offsetXValue / canvas.width) * 100;
+    const overlayY = 50 + (offsetYValue / canvas.height) * 100;
+    const visualWidth = Math.min(100, Math.max(0, 100 * scale));
+    const visualHeight = Math.min(100, Math.max(0, 100 * scale));
+
+    previewOverlay.style.setProperty('--visual-center-x', `${overlayX}%`);
+    previewOverlay.style.setProperty('--visual-center-y', `${overlayY}%`);
+    previewOverlay.style.setProperty('--visual-width', `${visualWidth}%`);
+    previewOverlay.style.setProperty('--visual-height', `${visualHeight}%`);
+
+    const verticalCenter = previewOverlay.querySelector('[data-guide="vertical-center"]');
+    const horizontalCenter = previewOverlay.querySelector('[data-guide="horizontal-center"]');
+    const verticalGrid = previewOverlay.querySelector('[data-guide="vertical-grid"]');
+    const horizontalGrid = previewOverlay.querySelector('[data-guide="horizontal-grid"]');
+
+    setGuide(verticalCenter, Math.abs(offsetXValue) <= snapTolerance, 'left', '50%');
+    setGuide(horizontalCenter, Math.abs(offsetYValue) <= snapTolerance, 'top', '50%');
+
+    const nearestGridX = Math.round(offsetXValue / gridStepX) * gridStepX;
+    const nearestGridY = Math.round(offsetYValue / gridStepY) * gridStepY;
+    const showGridX = Math.abs(offsetXValue - nearestGridX) <= snapTolerance && Math.abs(nearestGridX) > snapTolerance;
+    const showGridY = Math.abs(offsetYValue - nearestGridY) <= snapTolerance && Math.abs(nearestGridY) > snapTolerance;
+
+    setGuide(verticalGrid, showGridX, 'left', `${50 + (nearestGridX / canvas.width) * 100}%`);
+    setGuide(horizontalGrid, showGridY, 'top', `${50 + (nearestGridY / canvas.height) * 100}%`);
+  }
+
+  function setPreviewGuidesDragging(isDragging) {
+    if (!previewOverlay) return;
+    previewOverlay.classList.toggle('is-dragging', isDragging);
+    updatePreviewGuides();
+  }
+
+  function setGuide(guide, visible, property, value) {
+    if (!guide) return;
+    guide.classList.toggle('is-visible', visible);
+    guide.style[property] = value;
   }
 
   function getNextPresetName() {
@@ -1191,6 +1242,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     applyVideoDimensions();
     updateSliderColors();
     updateButtonStates();
+    updatePreview();
     updateStatus(`Preset "${preset.name}" loaded`, 'ready');
   }
 
@@ -1321,6 +1373,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     getCurrentOptions,
     getCurrentAudioEnhancement,
     updatePreview,
+    setPreviewGuidesDragging,
     updateSliderColors,
     updateStatus,
     updateButtonStates,
