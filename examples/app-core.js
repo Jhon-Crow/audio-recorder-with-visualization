@@ -850,6 +850,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Add recording to list
   function addRecording(blob) {
     recordingCount++;
+    const recordingNumber = recordingCount;
     const url = URL.createObjectURL(blob);
     const item = document.createElement('div');
     item.className = 'recording-item';
@@ -876,7 +877,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     videoEl.title = 'Double-click for fullscreen';
 
     const infoDiv = document.createElement('div');
-    const fileName = `recording-${recordingCount}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+    const fileName = `recording-${recordingNumber}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
 
     // Check if running in Electron
     const isElectron = window.electronAPI && window.electronAPI.isElectron;
@@ -884,9 +885,12 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     if (isElectron) {
       // Electron: Use IPC to save and show in folder
       infoDiv.innerHTML = `
-        <p>Recording ${recordingCount}</p>
+        <p>Recording ${recordingNumber}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-        <button class="btn-info" data-blob-index="${recordingCount}">Save and Show in Folder</button>
+        <div class="recording-actions">
+          <button type="button" class="btn-info" data-action="save" data-blob-index="${recordingNumber}">Save and Show in Folder</button>
+          <button type="button" class="btn-info youtube-upload-btn">Upload to YouTube</button>
+        </div>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
       `;
 
@@ -895,7 +899,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       item.dataset.fileName = fileName;
 
       // Add click handler for save button
-      const saveBtn = infoDiv.querySelector('button');
+      const saveBtn = infoDiv.querySelector('button[data-action="save"]');
       saveBtn.addEventListener('click', async () => {
         try {
           saveBtn.disabled = true;
@@ -926,11 +930,23 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     } else {
       // Browser: Use regular download link
       infoDiv.innerHTML = `
-        <p>Recording ${recordingCount}</p>
+        <p>Recording ${recordingNumber}</p>
         <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-        <a href="${url}" download="${fileName}">Download</a>
+        <div class="recording-actions">
+          <a href="${url}" download="${fileName}">Download</a>
+          <button type="button" class="btn-info youtube-upload-btn">Upload to YouTube</button>
+        </div>
         <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
       `;
+    }
+
+    const youtubeUploadBtn = infoDiv.querySelector('.youtube-upload-btn');
+    if (youtubeUploadBtn) {
+      youtubeUploadBtn.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('audioRecorderYouTubeUploadRequested', {
+          detail: { blob, fileName, recordingNumber },
+        }));
+      });
     }
 
     item.appendChild(videoEl);

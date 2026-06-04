@@ -372,6 +372,8 @@ button:focus-visible {
 .option-group select,
 .option-group input[type="color"],
 .option-group input[type="file"],
+.option-group input[type="text"],
+.option-group textarea,
 .option-group input[type="range"] {
   padding: 10px 12px;
   border: 1px solid var(--color-border);
@@ -384,16 +386,26 @@ button:focus-visible {
 }
 
 .option-group select:hover,
-.option-group input[type="file"]:hover {
+.option-group input[type="file"]:hover,
+.option-group input[type="text"]:hover,
+.option-group textarea:hover {
   background: rgba(0, 0, 0, 0.4);
   border-color: var(--color-primary);
 }
 
 .option-group select:focus,
-.option-group input[type="file"]:focus {
+.option-group input[type="file"]:focus,
+.option-group input[type="text"]:focus,
+.option-group textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+}
+
+.option-group textarea {
+  min-height: 110px;
+  resize: vertical;
+  font-family: inherit;
 }
 
 .dimension-summary {
@@ -609,6 +621,20 @@ button:focus-visible {
 .recording-item a:hover {
   color: var(--color-primary-dark);
   text-decoration: underline;
+}
+
+.recording-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin: var(--spacing-sm) 0;
+}
+
+.recording-actions button {
+  min-width: auto;
+  padding: 10px 14px;
+  font-size: 13px;
 }
 
 .recording-item p {
@@ -861,6 +887,38 @@ html {
   overflow: auto;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--color-border);
+}
+
+.youtube-modal-content {
+  max-width: 720px;
+}
+
+.youtube-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.youtube-wide-field {
+  grid-column: 1 / -1;
+}
+
+.youtube-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.youtube-modal-status {
+  min-height: 20px;
+  margin-top: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.youtube-modal-status.success {
+  color: var(--color-primary);
+}
+
+.youtube-modal-status.error {
+  color: #ff8888;
 }
 
 .modal-header {

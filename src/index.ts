@@ -6,6 +6,24 @@ export { AudioToVideoConverter, type ConversionResult } from './AudioToVideoConv
 export { AudioAnalyzer } from './core/AudioAnalyzer';
 export { VideoRecorder } from './core/VideoRecorder';
 export { EventEmitter } from './core/EventEmitter';
+export {
+  YouTubeUploader,
+  YouTubeUploadError,
+  appendShortHashtag,
+  buildYouTubeVideoResource,
+  getYouTubeWatchUrl,
+  normalizeYouTubeTags,
+  YOUTUBE_SHORT_HASHTAG,
+  YOUTUBE_UPLOAD_ENDPOINT,
+  YOUTUBE_UPLOAD_SCOPE,
+  type YouTubePrivacyStatus,
+  type YouTubeUploadMetadata,
+  type YouTubeUploadProgress,
+  type YouTubeUploadRequest,
+  type YouTubeUploadResult,
+  type YouTubeUploadStage,
+  type YouTubeVideoResource,
+} from './core/YouTubeUploader';
 
 // Visualizer exports
 export {
