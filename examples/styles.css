@@ -645,6 +645,42 @@ button:focus-visible {
   color: var(--color-text-primary);
 }
 
+.range-pair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.blink-manual-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  grid-column: 1 / -1;
+}
+
+.blink-manual-controls .range-pair {
+  grid-column: 1 / -1;
+}
+
+.range-pair-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.range-pair-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.range-pair label {
+  min-width: 0;
+}
+
 .option-group select,
 .option-group input[type="color"],
 .option-group input[type="file"],
@@ -1069,6 +1105,14 @@ button:focus-visible {
   }
 
   .option-group {
+    grid-template-columns: 1fr;
+  }
+
+  .blink-manual-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .range-pair-controls {
     grid-template-columns: 1fr;
   }
 
