@@ -113,6 +113,41 @@ describe('AudioRecorder', () => {
       });
       expect(recorder).toBeDefined();
     });
+
+    test('should initialize with audio enhancement disabled by default', () => {
+      recorder = new AudioRecorder({ canvas });
+      expect(recorder.getAudioEnhancement()).toEqual({
+        enabled: false,
+        noiseReduction: 0,
+        smartNormalization: 0,
+        saturation: 0,
+        saturationFrequencyRange: { min: 20, max: 20000 },
+        saturationMode: 'soft-clip',
+      });
+    });
+
+    test('should initialize with audio enhancement options', () => {
+      recorder = new AudioRecorder({
+        canvas,
+        audioEnhancement: {
+          enabled: true,
+          noiseReduction: 35,
+          smartNormalization: 60,
+          saturation: 15,
+          saturationFrequencyRange: { min: 120, max: 7000 },
+          saturationMode: 'tube',
+        },
+      });
+
+      expect(recorder.getAudioEnhancement()).toEqual({
+        enabled: true,
+        noiseReduction: 35,
+        smartNormalization: 60,
+        saturation: 15,
+        saturationFrequencyRange: { min: 120, max: 7000 },
+        saturationMode: 'tube',
+      });
+    });
   });
 
   describe('ready() method', () => {
@@ -372,12 +407,46 @@ describe('AudioRecorder', () => {
       expect(recorder.recordingState).toBe('recording');
     });
 
+    test('should record from processed stream when audio enhancement is active', () => {
+      recorder.setAudioEnhancement({
+        enabled: true,
+        noiseReduction: 30,
+        smartNormalization: 50,
+      });
+
+      recorder.startRecording();
+      expect(recorder.recordingState).toBe('recording');
+      expect(recorder.getProcessedAudioStream()).toBeInstanceOf(MediaStream);
+    });
+
     test('should start recording without audio stream', async () => {
       recorder.stopMicrophone();
       // Create recorder without audio
       recorder = new AudioRecorder({ canvas });
       recorder.startRecording();
       expect(recorder.recordingState).toBe('recording');
+    });
+  });
+
+  describe('Audio enhancement control', () => {
+    beforeEach(() => {
+      recorder = new AudioRecorder({ canvas });
+    });
+
+    test('should update audio enhancement settings at runtime', () => {
+      recorder.setAudioEnhancement({
+        enabled: true,
+        saturation: 45,
+        saturationFrequencyRange: { min: 200, max: 6000 },
+        saturationMode: 'hard-clip',
+      });
+
+      expect(recorder.getAudioEnhancement()).toMatchObject({
+        enabled: true,
+        saturation: 45,
+        saturationFrequencyRange: { min: 200, max: 6000 },
+        saturationMode: 'hard-clip',
+      });
     });
   });
 

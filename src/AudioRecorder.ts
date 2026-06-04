@@ -4,7 +4,9 @@ import { VideoRecorder } from './core/VideoRecorder';
 import {
   AudioRecorderConfig,
   AudioRecorderEvents,
+  AudioEnhancementOptions,
   AudioSourceType,
+  ResolvedAudioEnhancementOptions,
   RecordingState,
   Visualizer,
   VisualizationData,
@@ -117,6 +119,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
     this.analyzer = new AudioAnalyzer({
       fftSize: config.fftSize ?? 2048,
       smoothingTimeConstant: config.smoothingTimeConstant ?? 0.8,
+      audioEnhancement: config.audioEnhancement,
       debug: this.debug,
     });
 
@@ -454,7 +457,11 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       throw new Error('Recording already in progress');
     }
 
-    this.videoRecorder.start(this.canvas, this.micStream ?? undefined, {
+    const audioStream = this.analyzer.isAudioEnhancementActive
+      ? this.analyzer.getProcessedStream() ?? this.micStream
+      : this.micStream;
+
+    this.videoRecorder.start(this.canvas, audioStream ?? undefined, {
       fps: 1000 / this.frameInterval,
       ...options,
     });
@@ -587,6 +594,27 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    */
   getTimeDomainData(): Uint8Array | null {
     return this.analyzer.getTimeDomainData();
+  }
+
+  /**
+   * Update audio enhancement settings used for visualization and recording
+   */
+  setAudioEnhancement(options: AudioEnhancementOptions): void {
+    this.analyzer.setAudioEnhancement(options);
+  }
+
+  /**
+   * Get current resolved audio enhancement settings
+   */
+  getAudioEnhancement(): ResolvedAudioEnhancementOptions {
+    return this.analyzer.getAudioEnhancement();
+  }
+
+  /**
+   * Get processed audio stream from the current audio graph
+   */
+  getProcessedAudioStream(): MediaStream | null {
+    return this.analyzer.getProcessedStream();
   }
 
   /**

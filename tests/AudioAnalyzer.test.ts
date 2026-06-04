@@ -30,6 +30,39 @@ describe('AudioAnalyzer', () => {
     customAnalyzer.destroy();
   });
 
+  test('should keep audio enhancement disabled by default', () => {
+    expect(analyzer.isAudioEnhancementActive).toBe(false);
+    expect(analyzer.getAudioEnhancement()).toEqual({
+      enabled: false,
+      noiseReduction: 0,
+      smartNormalization: 0,
+      saturation: 0,
+      saturationFrequencyRange: { min: 20, max: 20000 },
+      saturationMode: 'soft-clip',
+    });
+  });
+
+  test('should clamp audio enhancement settings', () => {
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      noiseReduction: 150,
+      smartNormalization: -10,
+      saturation: 75,
+      saturationFrequencyRange: { min: 12000, max: 80 },
+      saturationMode: 'tape',
+    });
+
+    expect(analyzer.getAudioEnhancement()).toEqual({
+      enabled: true,
+      noiseReduction: 100,
+      smartNormalization: 0,
+      saturation: 75,
+      saturationFrequencyRange: { min: 80, max: 12000 },
+      saturationMode: 'tape',
+    });
+    expect(analyzer.isAudioEnhancementActive).toBe(true);
+  });
+
   test('should throw error for invalid FFT size', () => {
     expect(() => new AudioAnalyzer({ fftSize: 100 })).toThrow();
     expect(() => new AudioAnalyzer({ fftSize: 16 })).toThrow();
@@ -52,6 +85,36 @@ describe('AudioAnalyzer', () => {
     const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     await analyzer.connectStream(mockStream);
     expect(analyzer.isActive).toBe(true);
+    expect(analyzer.getProcessedStream()).toBeNull();
+  });
+
+  test('should expose processed stream when audio enhancement is active', async () => {
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      noiseReduction: 40,
+      smartNormalization: 60,
+      saturation: 25,
+    });
+
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+
+    expect(analyzer.isAudioEnhancementActive).toBe(true);
+    expect(analyzer.getProcessedStream()).toBeInstanceOf(MediaStream);
+  });
+
+  test('should rebuild active graph when audio enhancement changes', async () => {
+    const mockStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await analyzer.connectStream(mockStream);
+    expect(analyzer.isAudioEnhancementActive).toBe(false);
+
+    analyzer.setAudioEnhancement({
+      enabled: true,
+      smartNormalization: 80,
+    });
+
+    expect(analyzer.isAudioEnhancementActive).toBe(true);
+    expect(analyzer.getProcessedStream()).toBeInstanceOf(MediaStream);
   });
 
   test('should disconnect source', async () => {

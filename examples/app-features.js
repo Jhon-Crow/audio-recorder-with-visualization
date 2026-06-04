@@ -21,6 +21,7 @@ function initFeatures() {
     saveSettings,
     getCurrentSettings,
     getCurrentOptions,
+    getCurrentAudioEnhancement,
     updatePreview,
     updateSliderColors,
     updateStatus,
@@ -117,6 +118,47 @@ function initFeatures() {
     recorder.setVisualizerOptions({ sensitivity: newSensitivity });
     saveSettings(getCurrentSettings());
     updatePreview();
+  });
+
+  // Audio enhancement handlers
+  function updateAudioEnhancement() {
+    recorder.setAudioEnhancement(getCurrentAudioEnhancement());
+    saveSettings(getCurrentSettings());
+  }
+
+  el.audioEnhancementEnabled.addEventListener('change', () => {
+    el.audioEnhancementControls.style.display = el.audioEnhancementEnabled.checked ? 'grid' : 'none';
+    updateAudioEnhancement();
+  });
+
+  el.noiseReduction.addEventListener('input', () => {
+    const value = parseInt(el.noiseReduction.value);
+    el.noiseReductionValue.textContent = value + '%';
+    updateAudioEnhancement();
+  });
+
+  el.smartNormalization.addEventListener('input', () => {
+    const value = parseInt(el.smartNormalization.value);
+    el.smartNormalizationValue.textContent = value + '%';
+    updateAudioEnhancement();
+  });
+
+  el.saturation.addEventListener('input', () => {
+    const value = parseInt(el.saturation.value);
+    el.saturationValue.textContent = value + '%';
+    updateAudioEnhancement();
+  });
+
+  el.saturationMode.addEventListener('change', updateAudioEnhancement);
+
+  el.saturationMin.addEventListener('input', () => {
+    el.saturationMinValue.textContent = el.saturationMin.value;
+    updateAudioEnhancement();
+  });
+
+  el.saturationMax.addEventListener('input', () => {
+    el.saturationMaxValue.textContent = el.saturationMax.value;
+    updateAudioEnhancement();
   });
 
   // ADSR Accordion toggle handler

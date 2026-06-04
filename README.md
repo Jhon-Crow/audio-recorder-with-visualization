@@ -7,6 +7,7 @@ A TypeScript library for audio visualization and recording. Capture audio from m
 - **Real-time audio visualization** from microphone input
 - **Video recording** with audio + visualization (WebM/MP4)
 - **Audio file to video conversion** with visualization
+- **Optional audio enhancement** for noise reduction, smart normalization, and saturation
 - **Multiple visualization types**:
   - Waveform (oscilloscope)
   - Bars (spectrum analyzer)
@@ -117,8 +118,33 @@ interface AudioRecorderConfig {
   format?: 'webm' | 'mp4';              // Recording format, default: 'webm'
   visualizer?: Visualizer | string;     // Visualizer instance or name
   visualizerOptions?: VisualizerOptions;// Visualizer options
+  audioEnhancement?: AudioEnhancementOptions; // Optional audio processing, default: disabled
   debug?: boolean;                      // Enable debug logging
 }
+```
+
+#### Audio Enhancement Options
+
+All audio enhancement controls are disabled by default. Enable them in the constructor or update them at runtime:
+
+```typescript
+interface AudioEnhancementOptions {
+  enabled?: boolean;
+  noiseReduction?: number;              // 0-100, attenuates quiet background noise
+  smartNormalization?: number;           // 0-100, smooths loud/quiet sections
+  saturation?: number;                   // 0-100, adds harmonic saturation
+  saturationFrequencyRange?: { min: number; max: number }; // Hz, default 20-20000
+  saturationMode?: 'soft-clip' | 'hard-clip' | 'tape' | 'tube';
+}
+
+recorder.setAudioEnhancement({
+  enabled: true,
+  noiseReduction: 35,
+  smartNormalization: 60,
+  saturation: 15,
+  saturationFrequencyRange: { min: 120, max: 8000 },
+  saturationMode: 'tube',
+});
 ```
 
 #### Methods
@@ -139,6 +165,8 @@ recorder.cancelRecording(): void
 // Visualization
 recorder.setVisualizer(visualizer: Visualizer | string, options?: VisualizerOptions): void
 recorder.setVisualizerOptions(options: Partial<VisualizerOptions>): void
+recorder.setAudioEnhancement(options: AudioEnhancementOptions): void
+recorder.getAudioEnhancement(): ResolvedAudioEnhancementOptions
 recorder.stopVisualization(): void
 recorder.resumeVisualization(): void  // Resume after stopVisualization (e.g., during conversion)
 
@@ -179,6 +207,7 @@ const blob = await converter.convert({
   canvas: HTMLCanvasElement | string,
   visualizer?: Visualizer | string,
   visualizerOptions?: VisualizerOptions,
+  audioEnhancement?: AudioEnhancementOptions,
   fps?: number,
   videoWidth?: number,
   videoHeight?: number,

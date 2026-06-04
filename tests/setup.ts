@@ -4,9 +4,45 @@
  */
 
 // Mock AudioContext
+class MockAudioNode {
+  connect = jest.fn();
+  disconnect = jest.fn();
+}
+
+class MockAudioParam {
+  constructor(public value: number) {}
+}
+
+class MockGainNode extends MockAudioNode {
+  gain = new MockAudioParam(1);
+}
+
+class MockWaveShaperNode extends MockAudioNode {
+  curve: Float32Array | null = null;
+  oversample: OverSampleType = 'none';
+}
+
+class MockDynamicsCompressorNode extends MockAudioNode {
+  threshold = new MockAudioParam(-24);
+  knee = new MockAudioParam(30);
+  ratio = new MockAudioParam(12);
+  reduction = 0;
+  attack = new MockAudioParam(0.003);
+  release = new MockAudioParam(0.25);
+}
+
+class MockBiquadFilterNode extends MockAudioNode {
+  type: BiquadFilterType = 'lowpass';
+  frequency = new MockAudioParam(350);
+  detune = new MockAudioParam(0);
+  Q = new MockAudioParam(1);
+  gain = new MockAudioParam(0);
+}
+
 class MockAudioContext {
   private _state: AudioContextState = 'running';
   readonly sampleRate = 44100;
+  readonly destination = new MockAudioNode() as unknown as AudioDestinationNode;
 
   get state(): AudioContextState {
     return this._state;
@@ -24,34 +60,43 @@ class MockAudioContext {
     return new MockAnalyserNode() as unknown as AnalyserNode;
   }
 
+  createGain(): GainNode {
+    return new MockGainNode() as unknown as GainNode;
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new MockWaveShaperNode() as unknown as WaveShaperNode;
+  }
+
+  createDynamicsCompressor(): DynamicsCompressorNode {
+    return new MockDynamicsCompressorNode() as unknown as DynamicsCompressorNode;
+  }
+
+  createBiquadFilter(): BiquadFilterNode {
+    return new MockBiquadFilterNode() as unknown as BiquadFilterNode;
+  }
+
   createMediaStreamSource(_stream: MediaStream): MediaStreamAudioSourceNode {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    } as unknown as MediaStreamAudioSourceNode;
+    return new MockAudioNode() as unknown as MediaStreamAudioSourceNode;
   }
 
   createMediaElementSource(_element: HTMLMediaElement): MediaElementAudioSourceNode {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    } as unknown as MediaElementAudioSourceNode;
+    return new MockAudioNode() as unknown as MediaElementAudioSourceNode;
   }
 
   createMediaStreamDestination(): MediaStreamAudioDestinationNode {
     return {
       stream: new MediaStream(),
+      connect: jest.fn(),
+      disconnect: jest.fn(),
     } as unknown as MediaStreamAudioDestinationNode;
   }
 }
 
-class MockAnalyserNode {
+class MockAnalyserNode extends MockAudioNode {
   fftSize = 2048;
   smoothingTimeConstant = 0.8;
   frequencyBinCount = 1024;
-
-  connect(): void {}
-  disconnect(): void {}
 
   getByteTimeDomainData(array: Uint8Array): void {
     // Fill with silence (128)

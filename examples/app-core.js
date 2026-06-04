@@ -96,6 +96,19 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const particleShapeControls = document.getElementById('particleShapeControls');
   const particleShapeSelect = document.getElementById('particleShape');
   const videoFormat = document.getElementById('videoFormat');
+  const audioEnhancementEnabled = document.getElementById('audioEnhancementEnabled');
+  const audioEnhancementControls = document.getElementById('audioEnhancementControls');
+  const noiseReduction = document.getElementById('noiseReduction');
+  const noiseReductionValue = document.getElementById('noiseReductionValue');
+  const smartNormalization = document.getElementById('smartNormalization');
+  const smartNormalizationValue = document.getElementById('smartNormalizationValue');
+  const saturation = document.getElementById('saturation');
+  const saturationValue = document.getElementById('saturationValue');
+  const saturationMode = document.getElementById('saturationMode');
+  const saturationMin = document.getElementById('saturationMin');
+  const saturationMinValue = document.getElementById('saturationMinValue');
+  const saturationMax = document.getElementById('saturationMax');
+  const saturationMaxValue = document.getElementById('saturationMaxValue');
 
   // Image blink controls
   const imageBlinkEnabled = document.getElementById('imageBlinkEnabled');
@@ -186,6 +199,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     centerImageOffsetY: 0,
     barShape: 'rounded',
     particleShape: 'circle',
+    audioEnhancementEnabled: false,
+    noiseReduction: 0,
+    smartNormalization: 0,
+    saturation: 0,
+    saturationMode: 'soft-clip',
+    saturationMin: 20,
+    saturationMax: 20000,
     imageBlinkEnabled: false,
     imageBlinkStyle: 'gradient-sweep',
     imageBlinkTarget: 'background',
@@ -252,6 +272,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       background: true,
       transform: true,
       effects: true,
+      audioEnhancement: true,
       imageBlink: true
     };
   }
@@ -351,6 +372,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       centerImageOffsetY: parseInt(centerImageOffsetY.value),
       barShape: barShapeSelect.value,
       particleShape: particleShapeSelect.value,
+      audioEnhancementEnabled: audioEnhancementEnabled.checked,
+      noiseReduction: parseInt(noiseReduction.value),
+      smartNormalization: parseInt(smartNormalization.value),
+      saturation: parseInt(saturation.value),
+      saturationMode: saturationMode.value,
+      saturationMin: parseInt(saturationMin.value),
+      saturationMax: parseInt(saturationMax.value),
       imageBlinkEnabled: imageBlinkEnabled.checked,
       imageBlinkStyle: imageBlinkStyle.value,
       imageBlinkTarget: imageBlinkTarget.value,
@@ -473,6 +501,21 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     // Bar and particle shape settings
     barShapeSelect.value = settings.barShape || 'rounded';
     particleShapeSelect.value = settings.particleShape || 'circle';
+
+    // Audio enhancement settings
+    audioEnhancementEnabled.checked = settings.audioEnhancementEnabled || false;
+    audioEnhancementControls.style.display = audioEnhancementEnabled.checked ? 'grid' : 'none';
+    noiseReduction.value = settings.noiseReduction || 0;
+    noiseReductionValue.textContent = (settings.noiseReduction || 0) + '%';
+    smartNormalization.value = settings.smartNormalization || 0;
+    smartNormalizationValue.textContent = (settings.smartNormalization || 0) + '%';
+    saturation.value = settings.saturation || 0;
+    saturationValue.textContent = (settings.saturation || 0) + '%';
+    saturationMode.value = settings.saturationMode || 'soft-clip';
+    saturationMin.value = settings.saturationMin || 20;
+    saturationMinValue.textContent = settings.saturationMin || 20;
+    saturationMax.value = settings.saturationMax || 20000;
+    saturationMaxValue.textContent = settings.saturationMax || 20000;
 
     // Show/hide shape controls based on visualizer type
     const isBars = settings.visualizer === 'bars';
@@ -654,6 +697,17 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     fps: 30,
     visualizer: savedSettings.visualizer,
     visualizerOptions,
+    audioEnhancement: {
+      enabled: savedSettings.audioEnhancementEnabled || false,
+      noiseReduction: savedSettings.noiseReduction || 0,
+      smartNormalization: savedSettings.smartNormalization || 0,
+      saturation: savedSettings.saturation || 0,
+      saturationFrequencyRange: {
+        min: savedSettings.saturationMin || 20,
+        max: savedSettings.saturationMax || 20000,
+      },
+      saturationMode: savedSettings.saturationMode || 'soft-clip',
+    },
     debug: true,
   });
 
@@ -737,7 +791,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       barCount, frequencyWidth, bgImage, bgSizeMode, bgCustomWidth, bgCustomHeight,
       mirror, mirrorHorizontal, useCustomColors, centerImage, centerImageZoom,
       centerImageOffsetX, centerImageOffsetY, visualizationAlpha, offsetX, offsetY,
-      visualizationScale, layerEffect, layerEffectIntensity, barShapeSelect, particleShapeSelect
+      visualizationScale, layerEffect, layerEffectIntensity, barShapeSelect, particleShapeSelect,
+      audioEnhancementEnabled, noiseReduction, smartNormalization, saturation,
+      saturationMode, saturationMin, saturationMax
     ];
 
     settingsElements.forEach(el => {
@@ -961,6 +1017,24 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     return options;
   }
 
+  // Get current audio enhancement settings
+  function getCurrentAudioEnhancement() {
+    const minHz = parseInt(saturationMin.value);
+    const maxHz = parseInt(saturationMax.value);
+
+    return {
+      enabled: audioEnhancementEnabled.checked,
+      noiseReduction: parseInt(noiseReduction.value),
+      smartNormalization: parseInt(smartNormalization.value),
+      saturation: parseInt(saturation.value),
+      saturationFrequencyRange: {
+        min: Math.min(minHz, maxHz),
+        max: Math.max(minHz, maxHz),
+      },
+      saturationMode: saturationMode.value,
+    };
+  }
+
   // Helper function to show preview after settings change
   function updatePreview() {
     // Show demo visualization if no audio source is active
@@ -1043,6 +1117,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     saveSettings,
     getCurrentSettings,
     getCurrentOptions,
+    getCurrentAudioEnhancement,
     updatePreview,
     updateSliderColors,
     updateStatus,
@@ -1113,6 +1188,19 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       particleShapeControls,
       particleShapeSelect,
       videoFormat,
+      audioEnhancementEnabled,
+      audioEnhancementControls,
+      noiseReduction,
+      noiseReductionValue,
+      smartNormalization,
+      smartNormalizationValue,
+      saturation,
+      saturationValue,
+      saturationMode,
+      saturationMin,
+      saturationMinValue,
+      saturationMax,
+      saturationMaxValue,
       imageBlinkEnabled,
       imageBlinkControls,
       imageBlinkStyle,

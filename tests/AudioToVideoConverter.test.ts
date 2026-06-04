@@ -232,6 +232,23 @@ describe('AudioToVideoConverter', () => {
 
       expect(blob).toBeInstanceOf(Blob);
     }, 10000);
+
+    test('should convert with audio enhancement options', async () => {
+      const blob = await converter.convert({
+        audioSource: 'test.mp3',
+        canvas,
+        audioEnhancement: {
+          enabled: true,
+          noiseReduction: 40,
+          smartNormalization: 65,
+          saturation: 20,
+          saturationFrequencyRange: { min: 100, max: 8000 },
+          saturationMode: 'tape',
+        },
+      });
+
+      expect(blob).toBeInstanceOf(Blob);
+    }, 10000);
   });
 
   describe('convert() cancellation', () => {
