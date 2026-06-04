@@ -23,7 +23,7 @@ The issue report says that pressing Rename for a preset does nothing. Follow-up 
 - Fork CI run metadata: `raw/ci-runs-fork.json`
 - Upstream CI logs: `ci-logs/build-portable-exe-26964899103.log`, `ci-logs/build-portable-exe-26965159932.log`, `ci-logs/build-portable-exe-26965210554.log`
 - Prior solution draft log from the linked Gist: `raw/solution-draft-log-pr-1780590638241.txt`
-- Local install/build/test logs: `raw/npm-install.log`, `raw/npm-build-before-fix.log`, `raw/cypress-preset-before-fix.log`, `raw/cypress-preset-after-fix.log`, `raw/cypress-preset-after-fix-2.log`, `raw/cypress-background-size-after-helper-fix.log`, `raw/npm-test-final.log`, `raw/npm-typecheck-final.log`, `raw/npm-lint-final.log`, `raw/npm-build-final.log`, `raw/npm-test-e2e-final.log`
+- Local install/build/test logs: `raw/npm-install.log`, `raw/npm-build-before-fix.log`, `raw/cypress-preset-before-fix.log`, `raw/cypress-preset-after-fix.log`, `raw/cypress-preset-after-fix-2.log`, `raw/cypress-background-size-after-helper-fix.log`, `raw/npm-test-final.log`, `raw/npm-typecheck-final.log`, `raw/npm-lint-final.log`, `raw/npm-build-final.log`, `raw/npm-test-e2e-final.log`, `raw/npm-test-post-merge.log`, `raw/npm-typecheck-post-merge.log`, `raw/npm-lint-post-merge.log`, `raw/npm-build-post-merge.log`, `raw/npm-test-e2e-post-merge.log`
 - Screenshots: `screenshots/before-context-menu.png`, `screenshots/after-rename-modal.png`, `screenshots/after-active-preset.png`
 
 ## Timeline
@@ -36,6 +36,7 @@ The issue report says that pressing Rename for a preset does nothing. Follow-up 
 - 2026-06-04T16:35:12Z: Automation reported the PR ready to merge.
 - 2026-06-04T17:19:37Z: Repository owner reported that rename still does not work, mentioned possible z-index/clipping symptoms, and requested active-preset highlighting plus the case study.
 - 2026-06-04T20:01:18Z: A new AI work session started and PR 110 was returned to draft mode.
+- 2026-06-04T20:37:01Z: The branch was merged with the latest `upstream/main` after issue 111 landed, then local checks were rerun on the merged branch.
 
 ## Reproduction
 
@@ -122,6 +123,9 @@ After fix:
 - `npm run lint` passed. See `raw/npm-lint-final.log`.
 - `npm run build` passed. See `raw/npm-build-final.log`.
 - `npm run test:e2e` passed with 20 tests. See `raw/npm-test-e2e-final.log`.
+- After merging the latest `upstream/main`, `npm test` passed with 324 tests. See `raw/npm-test-post-merge.log`.
+- After merging the latest `upstream/main`, `npm run typecheck`, `npm run lint`, and `npm run build` passed. See `raw/npm-typecheck-post-merge.log`, `raw/npm-lint-post-merge.log`, and `raw/npm-build-post-merge.log`.
+- After merging the latest `upstream/main`, `npm run test:e2e` passed with 21 tests, including the new issue 111 e2e spec. See `raw/npm-test-e2e-post-merge.log`.
 - Playwright screenshot evidence was captured for the replacement rename modal and active preset highlight.
 
 ## Remaining Notes
