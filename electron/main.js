@@ -243,6 +243,74 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
   }
 });
 
+ipcMain.handle('save-all-videos-and-show', async (event, recordings) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    const folderPath = result.filePaths[0];
+    const savedFiles = [];
+
+    for (const recording of recordings) {
+      const filePath = path.join(folderPath, recording.fileName);
+      fs.writeFileSync(filePath, Buffer.from(recording.blob));
+      savedFiles.push(filePath);
+    }
+
+    if (savedFiles.length > 0) {
+      shell.showItemInFolder(savedFiles[0]);
+    }
+
+    return { success: true, folderPath, filePaths: savedFiles };
+  } catch (error) {
+    console.error('Error saving files:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-choose-folder', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, folderPath: result.filePaths[0] };
+  } catch (error) {
+    console.error('Error choosing preset folder:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-save-file', async (event, folderPath, preset) => {
+  try {
+    if (!folderPath) {
+      return { success: false, error: 'Preset folder is not configured' };
+    }
+
+    fs.mkdirSync(folderPath, { recursive: true });
+    const safeName = String(preset.name || 'preset')
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+      .replace(/^\.+$/, 'preset')
+      .slice(0, 80);
+    const filePath = path.join(folderPath, `${safeName}-${preset.id || Date.now()}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(preset, null, 2), 'utf8');
+
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error saving preset file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ==================== PRESENTATION MODE IPC HANDLERS ====================
 
 // Start/toggle presentation mode

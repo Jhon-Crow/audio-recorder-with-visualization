@@ -85,6 +85,72 @@ export type ImageBlinkTarget = 'background' | 'foreground' | 'both';
 export type SaturationMode = 'soft-clip' | 'hard-clip' | 'tape' | 'tube';
 
 /**
+ * One learned noise band used by profile-based noise reduction.
+ */
+export interface AudioNoiseProfileBand {
+  /** Lower edge of the band in Hz */
+  lowerFrequency: number;
+  /** Center frequency for the correction filter in Hz */
+  centerFrequency: number;
+  /** Upper edge of the band in Hz */
+  upperFrequency: number;
+  /** Filter Q for this band */
+  q: number;
+  /** Measured average noise level in this band, in dBFS */
+  levelDb: number;
+  /** Difference from the median profile band level in dB */
+  prominenceDb?: number;
+  /** Estimated overlap with the speech range, 0-1 */
+  voiceOverlap?: number;
+  /** Suggested attenuation for this band in dB before user strength is applied */
+  reductionDb: number;
+}
+
+/**
+ * Learned spectral fingerprint of microphone/background noise.
+ */
+export interface AudioNoiseProfile {
+  /** Profile format version */
+  version: 1;
+  /** Source sample rate in Hz */
+  sampleRate: number;
+  /** FFT size used to analyze the profile */
+  fftSize: number;
+  /** Number of analyzed frequency bands */
+  bandCount: number;
+  /** Lower analyzed frequency in Hz */
+  minFrequency: number;
+  /** Upper analyzed frequency in Hz */
+  maxFrequency: number;
+  /** Duration of analyzed noise-only audio in seconds */
+  durationSeconds: number;
+  /** Time-domain RMS level of the profile source in dBFS */
+  averageLevelDb: number;
+  /** Log-spaced reduction bands derived from the noise-only source */
+  bands: AudioNoiseProfileBand[];
+}
+
+/**
+ * Options for deriving a noise profile from noise-only audio.
+ */
+export interface AudioNoiseProfileOptions {
+  /** FFT size for profile analysis, power of 2, default: 2048 */
+  fftSize?: number;
+  /** Number of log-spaced bands to generate, default: 12 */
+  bandCount?: number;
+  /** Lowest analyzed frequency in Hz, default: 80 */
+  minFrequency?: number;
+  /** Highest analyzed frequency in Hz, default: min(16000, Nyquist * 0.95) */
+  maxFrequency?: number;
+  /** Maximum duration to analyze, default: 30 seconds */
+  maxDurationSeconds?: number;
+  /** Minimum per-band attenuation candidate in dB, default: 1.5 */
+  minReductionDb?: number;
+  /** Maximum per-band attenuation candidate in dB, default: 18 */
+  maxReductionDb?: number;
+}
+
+/**
  * Audio enhancement settings. All processing is bypassed unless enabled is true
  * and at least one amount is greater than 0.
  */
@@ -93,6 +159,12 @@ export interface AudioEnhancementOptions {
   enabled?: boolean;
   /** Low-level noise attenuation amount (0-100), default: 0 */
   noiseReduction?: number;
+  /** Learned microphone/background noise profile, default: null */
+  noiseProfile?: AudioNoiseProfile | null;
+  /** Profile-based reduction amount (0-100), default: 45 when a profile is supplied */
+  noiseProfileReduction?: number;
+  /** How strongly profile reduction protects speech-range bands (0-100), default: 85 */
+  noiseProfileVoiceProtection?: number;
   /** Dynamics smoothing and make-up gain amount (0-100), default: 0 */
   smartNormalization?: number;
   /** Harmonic saturation amount (0-100), default: 0 */
@@ -109,6 +181,9 @@ export interface AudioEnhancementOptions {
 export interface ResolvedAudioEnhancementOptions {
   enabled: boolean;
   noiseReduction: number;
+  noiseProfile: AudioNoiseProfile | null;
+  noiseProfileReduction: number;
+  noiseProfileVoiceProtection: number;
   smartNormalization: number;
   saturation: number;
   saturationFrequencyRange: { min: number; max: number };

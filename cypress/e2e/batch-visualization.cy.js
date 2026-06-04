@@ -32,4 +32,38 @@ describe('Batch Visualization Mode', () => {
       .and('be.disabled')
       .and('contain.text', 'Save All');
   });
+
+  it('uses one Electron batch save request for Save All', () => {
+    cy.window().then((win) => {
+      const calls = [];
+      win.electronAPI = {
+        isElectron: true,
+        saveVideoAndShow: cy.stub().as('singleSave'),
+        saveAllVideosAndShow: cy.stub().callsFake((recordings) => {
+          calls.push(recordings);
+          return Promise.resolve({ success: true });
+        }).as('batchSave'),
+      };
+
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['one'], { type: 'video/webm' }),
+        { sourceName: 'first-track.mp3', format: 'webm' }
+      );
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['two'], { type: 'video/webm' }),
+        { sourceName: 'second-track.wav', format: 'webm' }
+      );
+    });
+
+    cy.get('#saveAllRecordings').click({ force: true });
+
+    cy.get('@batchSave').should('have.been.calledOnce');
+    cy.get('@singleSave').should('not.have.been.called');
+    cy.get('@batchSave').then((stub) => {
+      const recordings = stub.firstCall.args[0];
+      expect(recordings).to.have.length(2);
+      expect(recordings[0].fileName).to.equal('first-track.webm');
+      expect(recordings[1].fileName).to.equal('second-track.webm');
+    });
+  });
 });
