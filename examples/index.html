@@ -299,6 +299,55 @@
             </div>
           </div>
 
+          <!-- Audio Enhancement Section -->
+          <div class="settings-section" data-section="audioEnhancement">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🎚️</span>
+                <span>Audio Enhancement</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+                <label style="flex-direction: row; align-items: center;" data-tooltip="Process microphone and converted-file audio before visualization and recording.">
+                  <input type="checkbox" id="audioEnhancementEnabled" aria-label="Enable audio enhancement"> Enable Audio Enhancement
+                </label>
+              </div>
+              <div class="option-group" id="audioEnhancementControls" style="display: none;">
+                <label data-tooltip="Attenuates very quiet signal levels and filters low rumble before recording.">
+                  Noise Reduction: <span id="noiseReductionValue">0%</span>
+                  <input type="range" id="noiseReduction" min="0" max="100" value="0" aria-label="Adjust noise reduction">
+                </label>
+                <label data-tooltip="Smooths loud and quiet sections with compression and make-up gain.">
+                  Smart Normalization: <span id="smartNormalizationValue">0%</span>
+                  <input type="range" id="smartNormalization" min="0" max="100" value="0" aria-label="Adjust smart normalization">
+                </label>
+                <label data-tooltip="Adds controlled harmonic saturation before recording.">
+                  Saturation: <span id="saturationValue">0%</span>
+                  <input type="range" id="saturation" min="0" max="100" value="0" aria-label="Adjust saturation">
+                </label>
+                <label data-tooltip="Choose the saturation curve character.">
+                  Saturation Type
+                  <select id="saturationMode" aria-label="Select saturation type">
+                    <option value="soft-clip" selected>Soft Clip</option>
+                    <option value="hard-clip">Hard Clip</option>
+                    <option value="tape">Tape</option>
+                    <option value="tube">Tube</option>
+                  </select>
+                </label>
+                <label data-tooltip="Lower frequency limit for the saturation wet path.">
+                  Saturation Min Hz: <span id="saturationMinValue">20</span>
+                  <input type="range" id="saturationMin" min="20" max="20000" value="20" step="10" aria-label="Adjust saturation minimum frequency">
+                </label>
+                <label data-tooltip="Upper frequency limit for the saturation wet path.">
+                  Saturation Max Hz: <span id="saturationMaxValue">20000</span>
+                  <input type="range" id="saturationMax" min="20" max="20000" value="20000" step="10" aria-label="Adjust saturation maximum frequency">
+                </label>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Right Column: Background, Transform, Effects -->

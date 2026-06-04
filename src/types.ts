@@ -80,6 +80,42 @@ export type ImageBlinkStyle = 'gradient-sweep' | 'negative-flash' | 'brightness-
 export type ImageBlinkTarget = 'background' | 'foreground' | 'both';
 
 /**
+ * Saturation curve styles for audio enhancement
+ */
+export type SaturationMode = 'soft-clip' | 'hard-clip' | 'tape' | 'tube';
+
+/**
+ * Audio enhancement settings. All processing is bypassed unless enabled is true
+ * and at least one amount is greater than 0.
+ */
+export interface AudioEnhancementOptions {
+  /** Master switch for audio enhancement, default: false */
+  enabled?: boolean;
+  /** Low-level noise attenuation amount (0-100), default: 0 */
+  noiseReduction?: number;
+  /** Dynamics smoothing and make-up gain amount (0-100), default: 0 */
+  smartNormalization?: number;
+  /** Harmonic saturation amount (0-100), default: 0 */
+  saturation?: number;
+  /** Frequency range in Hz used by the saturation wet path, default: 20-20000 */
+  saturationFrequencyRange?: { min: number; max: number };
+  /** Saturation curve style, default: soft-clip */
+  saturationMode?: SaturationMode;
+}
+
+/**
+ * Fully resolved audio enhancement settings
+ */
+export interface ResolvedAudioEnhancementOptions {
+  enabled: boolean;
+  noiseReduction: number;
+  smartNormalization: number;
+  saturation: number;
+  saturationFrequencyRange: { min: number; max: number };
+  saturationMode: SaturationMode;
+}
+
+/**
  * Options for visualizer configuration
  */
 export interface VisualizerOptions {
@@ -198,6 +234,8 @@ export interface AudioRecorderConfig {
   visualizer?: Visualizer | string;
   /** Visualizer options */
   visualizerOptions?: VisualizerOptions;
+  /** Optional audio enhancement applied before visualization and recording */
+  audioEnhancement?: AudioEnhancementOptions;
   /** Enable verbose logging */
   debug?: boolean;
 }
@@ -214,6 +252,8 @@ export interface ConversionConfig {
   visualizer?: Visualizer | string;
   /** Visualizer options */
   visualizerOptions?: VisualizerOptions;
+  /** Optional audio enhancement applied before visualization and recording */
+  audioEnhancement?: AudioEnhancementOptions;
   /** Target frames per second */
   fps?: number;
   /** Video width in pixels */

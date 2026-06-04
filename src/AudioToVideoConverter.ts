@@ -156,6 +156,7 @@ export class AudioToVideoConverter {
       audioBitrate = 192000,
       format = 'webm',
       onProgress,
+      audioEnhancement,
     } = config;
 
     // Get canvas element
@@ -225,6 +226,7 @@ export class AudioToVideoConverter {
     const analyzer = new AudioAnalyzer({
       fftSize: 2048,
       smoothingTimeConstant: 0.8,
+      audioEnhancement,
       debug: this.debug,
     });
 
@@ -237,15 +239,20 @@ export class AudioToVideoConverter {
     // Create a new stream from the audio element for recording
     let audioStream: MediaStream | undefined;
 
-    try {
-      // Try to capture audio using captureStream if available
-      if ('captureStream' in audioElement) {
-        audioStream = (audioElement as HTMLMediaElement & { captureStream(): MediaStream }).captureStream();
-      } else if ('mozCaptureStream' in audioElement) {
-        audioStream = (audioElement as HTMLMediaElement & { mozCaptureStream(): MediaStream }).mozCaptureStream();
+    if (analyzer.isAudioEnhancementActive) {
+      audioStream = analyzer.getProcessedStream() ?? undefined;
+      this.log('Using enhanced audio stream for conversion');
+    } else {
+      try {
+        // Try to capture audio using captureStream if available
+        if ('captureStream' in audioElement) {
+          audioStream = (audioElement as HTMLMediaElement & { captureStream(): MediaStream }).captureStream();
+        } else if ('mozCaptureStream' in audioElement) {
+          audioStream = (audioElement as HTMLMediaElement & { mozCaptureStream(): MediaStream }).mozCaptureStream();
+        }
+      } catch (e) {
+        this.log('Could not capture stream from audio element, video will have no audio');
       }
-    } catch (e) {
-      this.log('Could not capture stream from audio element, video will have no audio');
     }
 
     // Render loop with improved timing and reliability
