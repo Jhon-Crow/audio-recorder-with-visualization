@@ -65,11 +65,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.preset-edge-trigger {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 249;
+  width: 18px;
+}
+
 .preset-sidebar {
   position: fixed;
   top: var(--spacing-lg);
   bottom: var(--spacing-lg);
-  left: var(--spacing-lg);
+  left: 0;
   z-index: 250;
   width: 56px;
   display: flex;
@@ -80,6 +89,17 @@ body {
   border-radius: var(--radius-md);
   background: rgba(10, 14, 39, 0.92);
   box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(-100% - var(--spacing-sm)));
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.preset-sidebar.is-open,
+.preset-sidebar:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(var(--spacing-lg));
 }
 
 .preset-list {
@@ -108,10 +128,60 @@ body {
 .preset-load-btn {
   font-size: 13px;
   font-weight: 700;
+  cursor: grab;
+  user-select: none;
+}
+
+.preset-load-btn:active {
+  cursor: grabbing;
+}
+
+.preset-load-btn.is-dragging {
+  opacity: 0.45;
+}
+
+.preset-load-btn.is-drop-target {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .preset-settings-btn {
   margin-top: auto;
+}
+
+.preset-context-menu {
+  position: fixed;
+  z-index: 550;
+  display: none;
+  min-width: 140px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-lg);
+}
+
+.preset-context-menu.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-context-menu button {
+  width: 100%;
+  min-height: 34px;
+  justify-content: flex-start;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.preset-context-menu button:hover,
+.preset-context-menu button:focus {
+  background: rgba(255, 255, 255, 0.08);
+  transform: none;
 }
 
 .modal-overlay {
@@ -943,10 +1013,15 @@ button:focus-visible {
     top: var(--spacing-sm);
     right: var(--spacing-sm);
     bottom: auto;
-    left: var(--spacing-sm);
+    left: 0;
     width: auto;
     height: 48px;
     flex-direction: row;
+  }
+
+  .preset-sidebar.is-open,
+  .preset-sidebar:focus-within {
+    transform: translateX(var(--spacing-sm));
   }
 
   .preset-list {

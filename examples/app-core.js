@@ -162,6 +162,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const savePresetBtn = document.getElementById('savePresetBtn');
   const presetList = document.getElementById('presetList');
   const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  const presetEdgeTrigger = document.getElementById('presetEdgeTrigger');
+  const presetSidebar = document.getElementById('presetSidebar');
+  const presetContextMenu = document.getElementById('presetContextMenu');
+  const presetRenameBtn = document.getElementById('presetRenameBtn');
+  const presetDeleteBtn = document.getElementById('presetDeleteBtn');
   const presetSaveModal = document.getElementById('presetSaveModal');
   const presetNameInput = document.getElementById('presetNameInput');
   const presetFolderInput = document.getElementById('presetFolderInput');
@@ -389,6 +394,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   let currentPresentationY = null;
   let presets = loadPresets();
   let presetOptions = loadPresetOptions();
+  let activePresetMenuId = null;
+  let draggedPresetId = null;
+  let presetSidebarCloseTimer = null;
 
   // Get current settings from UI
   function getCurrentSettings() {
@@ -1168,6 +1176,82 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     modal.setAttribute('aria-hidden', 'true');
   }
 
+  function openPresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebar.classList.add('is-open');
+  }
+
+  function scheduleClosePresetSidebar() {
+    clearTimeout(presetSidebarCloseTimer);
+    presetSidebarCloseTimer = setTimeout(() => {
+      if (!presetSidebar.matches(':hover') && !presetContextMenu.classList.contains('active')) {
+        presetSidebar.classList.remove('is-open');
+      }
+    }, 180);
+  }
+
+  function hidePresetContextMenu() {
+    presetContextMenu.classList.remove('active');
+    presetContextMenu.setAttribute('aria-hidden', 'true');
+    activePresetMenuId = null;
+  }
+
+  function showPresetContextMenu(presetId, x, y) {
+    activePresetMenuId = presetId;
+    presetContextMenu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
+    presetContextMenu.style.top = `${Math.min(y, window.innerHeight - 88)}px`;
+    presetContextMenu.classList.add('active');
+    presetContextMenu.setAttribute('aria-hidden', 'false');
+    openPresetSidebar();
+  }
+
+  function renamePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    const nextName = window.prompt('Rename preset', preset.name || '');
+    const trimmedName = nextName ? nextName.trim() : '';
+    if (!trimmedName) return;
+
+    presets = presets.map(item => (
+      item.id === presetId ? { ...item, name: trimmedName } : item
+    ));
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset renamed to "${trimmedName}"`, 'ready');
+  }
+
+  function deletePreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    if (!window.confirm(`Delete preset "${preset.name}"?`)) return;
+
+    presets = presets.filter(item => item.id !== presetId);
+    savePresets(presets);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" deleted`, 'ready');
+  }
+
+  function movePresetBefore(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+
+    const source = presets.find(item => item.id === sourceId);
+    if (!source) return;
+
+    const withoutSource = presets.filter(item => item.id !== sourceId);
+    const targetIndex = withoutSource.findIndex(item => item.id === targetId);
+    if (targetIndex === -1) return;
+
+    presets = [
+      ...withoutSource.slice(0, targetIndex),
+      source,
+      ...withoutSource.slice(targetIndex),
+    ];
+    savePresets(presets);
+    renderPresets();
+  }
+
   async function choosePresetFolder() {
     if (window.electronAPI && window.electronAPI.choosePresetFolder) {
       const result = await window.electronAPI.choosePresetFolder();
@@ -1207,7 +1291,38 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       button.textContent = preset.name || String(index + 1);
       button.setAttribute('aria-label', `Load preset ${preset.name || index + 1}`);
       button.dataset.presetId = preset.id;
+      button.draggable = true;
       button.addEventListener('click', () => loadPreset(preset.id));
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        showPresetContextMenu(preset.id, event.clientX, event.clientY);
+      });
+      button.addEventListener('dragstart', event => {
+        draggedPresetId = preset.id;
+        button.classList.add('is-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', preset.id);
+      });
+      button.addEventListener('dragend', () => {
+        draggedPresetId = null;
+        button.classList.remove('is-dragging');
+        presetList.querySelectorAll('.is-drop-target').forEach(item => item.classList.remove('is-drop-target'));
+      });
+      button.addEventListener('dragover', event => {
+        if (draggedPresetId && draggedPresetId !== preset.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          button.classList.add('is-drop-target');
+        }
+      });
+      button.addEventListener('dragleave', () => {
+        button.classList.remove('is-drop-target');
+      });
+      button.addEventListener('drop', event => {
+        event.preventDefault();
+        button.classList.remove('is-drop-target');
+        movePresetBefore(event.dataTransfer.getData('text/plain') || draggedPresetId, preset.id);
+      });
       presetList.appendChild(button);
     });
   }
@@ -1287,6 +1402,33 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     });
     presetSettingsChooseFolderBtn.addEventListener('click', choosePresetFolder);
     presetSettingsCloseBtn.addEventListener('click', () => closeModal(presetSettingsModal));
+
+    presetEdgeTrigger.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerenter', openPresetSidebar);
+    presetSidebar.addEventListener('pointerleave', scheduleClosePresetSidebar);
+    presetEdgeTrigger.addEventListener('pointerleave', scheduleClosePresetSidebar);
+
+    presetRenameBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      renamePreset(presetId);
+    });
+    presetDeleteBtn.addEventListener('click', () => {
+      const presetId = activePresetMenuId;
+      hidePresetContextMenu();
+      deletePreset(presetId);
+    });
+
+    document.addEventListener('click', event => {
+      if (!presetContextMenu.contains(event.target)) {
+        hidePresetContextMenu();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        hidePresetContextMenu();
+      }
+    });
 
     [presetSaveModal, presetSettingsModal].forEach(modal => {
       modal.addEventListener('click', event => {

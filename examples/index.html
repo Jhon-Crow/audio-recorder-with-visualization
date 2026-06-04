@@ -7,11 +7,16 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="preset-edge-trigger" id="presetEdgeTrigger" aria-hidden="true"></div>
   <aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">
     <button type="button" class="preset-icon-btn" id="savePresetBtn" data-tooltip="Save preset" aria-label="Save preset">💾</button>
     <div class="preset-list" id="presetList" aria-label="Saved presets"></div>
     <button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Preset settings" aria-label="Preset settings">⚙️</button>
   </aside>
+  <div class="preset-context-menu" id="presetContextMenu" role="menu" aria-hidden="true">
+    <button type="button" id="presetRenameBtn" role="menuitem">Rename</button>
+    <button type="button" id="presetDeleteBtn" role="menuitem">Delete</button>
+  </div>
 
   <div class="container">
     <h1>Audio Recorder with Visualization</h1>
