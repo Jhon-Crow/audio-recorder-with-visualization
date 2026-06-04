@@ -158,10 +158,26 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const presentationVisualizationOpacityValue = document.getElementById('presentationVisualizationOpacityValue');
   const presentationClickThrough = document.getElementById('presentationClickThrough');
   const presentationElectronOnly = document.getElementById('presentationElectronOnly');
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const presetList = document.getElementById('presetList');
+  const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  const presetSaveModal = document.getElementById('presetSaveModal');
+  const presetNameInput = document.getElementById('presetNameInput');
+  const presetFolderInput = document.getElementById('presetFolderInput');
+  const presetChooseFolderBtn = document.getElementById('presetChooseFolderBtn');
+  const presetDontShowAgain = document.getElementById('presetDontShowAgain');
+  const presetCancelSaveBtn = document.getElementById('presetCancelSaveBtn');
+  const presetConfirmSaveBtn = document.getElementById('presetConfirmSaveBtn');
+  const presetSettingsModal = document.getElementById('presetSettingsModal');
+  const presetSettingsPathInput = document.getElementById('presetSettingsPathInput');
+  const presetSettingsChooseFolderBtn = document.getElementById('presetSettingsChooseFolderBtn');
+  const presetSettingsCloseBtn = document.getElementById('presetSettingsCloseBtn');
 
   // Settings persistence
   const SETTINGS_KEY = 'audio-recorder-settings';
   const ACCORDION_STATE_KEY = 'audio-recorder-accordion-states';
+  const PRESETS_KEY = 'audio-recorder-presets';
+  const PRESET_OPTIONS_KEY = 'audio-recorder-preset-options';
 
   // Default settings
   const defaultSettings = {
@@ -254,6 +270,42 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   }
 
+  function loadPresets() {
+    try {
+      const saved = localStorage.getItem(PRESETS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn('Failed to load presets:', error);
+      return [];
+    }
+  }
+
+  function savePresets(presets) {
+    try {
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+    } catch (error) {
+      console.warn('Failed to save presets:', error);
+    }
+  }
+
+  function loadPresetOptions() {
+    try {
+      const saved = localStorage.getItem(PRESET_OPTIONS_KEY);
+      return saved ? JSON.parse(saved) : { savePath: '', skipDialog: false };
+    } catch (error) {
+      console.warn('Failed to load preset options:', error);
+      return { savePath: '', skipDialog: false };
+    }
+  }
+
+  function savePresetOptions(options) {
+    try {
+      localStorage.setItem(PRESET_OPTIONS_KEY, JSON.stringify(options));
+    } catch (error) {
+      console.warn('Failed to save preset options:', error);
+    }
+  }
+
   // Accordion state management
   function loadAccordionStates() {
     try {
@@ -334,6 +386,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Track presentation window position (null = auto-center)
   let currentPresentationX = null;
   let currentPresentationY = null;
+  let presets = loadPresets();
+  let presetOptions = loadPresetOptions();
 
   // Get current settings from UI
   function getCurrentSettings() {
@@ -719,6 +773,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
   // Initialize converter
   const converter = new AudioToVideoConverter({ debug: true });
+  initializePresetControls();
 
   // Recording counter
   let recordingCount = 0;
@@ -1041,6 +1096,153 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     if (!recorder.sourceType) {
       recorder.showDemoVisualization(500);
     }
+  }
+
+  function getNextPresetName() {
+    let index = presets.length + 1;
+    const names = new Set(presets.map(preset => preset.name));
+    while (names.has(String(index))) {
+      index++;
+    }
+    return String(index);
+  }
+
+  function openModal(modal) {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  async function choosePresetFolder() {
+    if (window.electronAPI && window.electronAPI.choosePresetFolder) {
+      const result = await window.electronAPI.choosePresetFolder();
+      if (result && result.success && result.folderPath) {
+        presetOptions = { ...presetOptions, savePath: result.folderPath };
+        savePresetOptions(presetOptions);
+        presetFolderInput.value = result.folderPath;
+        presetSettingsPathInput.value = result.folderPath;
+      }
+      return;
+    }
+
+    presetOptions = { ...presetOptions, savePath: 'Browser local storage' };
+    savePresetOptions(presetOptions);
+    presetFolderInput.value = presetOptions.savePath;
+    presetSettingsPathInput.value = presetOptions.savePath;
+  }
+
+  async function persistPresetToFolder(preset) {
+    if (!window.electronAPI || !window.electronAPI.savePresetFile || !presetOptions.savePath) {
+      return;
+    }
+
+    const result = await window.electronAPI.savePresetFile(presetOptions.savePath, preset);
+    if (!result.success) {
+      console.warn('Failed to export preset file:', result.error);
+    }
+  }
+
+  function renderPresets() {
+    presetList.innerHTML = '';
+
+    presets.forEach((preset, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset-icon-btn preset-load-btn';
+      button.textContent = preset.name || String(index + 1);
+      button.setAttribute('aria-label', `Load preset ${preset.name || index + 1}`);
+      button.dataset.presetId = preset.id;
+      button.addEventListener('click', () => loadPreset(preset.id));
+      presetList.appendChild(button);
+    });
+  }
+
+  async function savePreset(name) {
+    const preset = {
+      id: `preset-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: name || getNextPresetName(),
+      createdAt: new Date().toISOString(),
+      settings: getCurrentSettings(),
+    };
+
+    presets = [...presets, preset];
+    savePresets(presets);
+    await persistPresetToFolder(preset);
+    renderPresets();
+    updateStatus(`Preset "${preset.name}" saved`, 'ready');
+  }
+
+  async function loadPreset(presetId) {
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) {
+      updateStatus('Preset not found', 'error');
+      return;
+    }
+
+    const settings = { ...defaultSettings, ...preset.settings };
+    applySettings(settings);
+    saveSettings(settings);
+    await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
+    recorder.setAudioEnhancement(getCurrentAudioEnhancement());
+    applyVideoDimensions();
+    updateSliderColors();
+    updateButtonStates();
+    updateStatus(`Preset "${preset.name}" loaded`, 'ready');
+  }
+
+  function openPresetSaveDialog() {
+    presetNameInput.value = getNextPresetName();
+    presetFolderInput.value = presetOptions.savePath || 'Browser local storage';
+    presetDontShowAgain.checked = presetOptions.skipDialog || false;
+    openModal(presetSaveModal);
+    presetNameInput.focus();
+    presetNameInput.select();
+  }
+
+  function initializePresetControls() {
+    presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+    renderPresets();
+
+    savePresetBtn.addEventListener('click', async () => {
+      if (presetOptions.skipDialog) {
+        await savePreset(getNextPresetName());
+      } else {
+        openPresetSaveDialog();
+      }
+    });
+
+    presetConfirmSaveBtn.addEventListener('click', async () => {
+      presetOptions = {
+        ...presetOptions,
+        savePath: presetFolderInput.value,
+        skipDialog: presetDontShowAgain.checked,
+      };
+      savePresetOptions(presetOptions);
+      await savePreset(presetNameInput.value.trim() || getNextPresetName());
+      closeModal(presetSaveModal);
+    });
+
+    presetCancelSaveBtn.addEventListener('click', () => closeModal(presetSaveModal));
+    presetChooseFolderBtn.addEventListener('click', choosePresetFolder);
+
+    presetSettingsBtn.addEventListener('click', () => {
+      presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
+      openModal(presetSettingsModal);
+    });
+    presetSettingsChooseFolderBtn.addEventListener('click', choosePresetFolder);
+    presetSettingsCloseBtn.addEventListener('click', () => closeModal(presetSettingsModal));
+
+    [presetSaveModal, presetSettingsModal].forEach(modal => {
+      modal.addEventListener('click', event => {
+        if (event.target === modal) {
+          closeModal(modal);
+        }
+      });
+    });
   }
 
   // Function to update slider colors based on current primary/secondary colors

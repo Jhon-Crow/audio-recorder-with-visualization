@@ -11,6 +11,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const uint8Array = new Uint8Array(arrayBuffer);
     return ipcRenderer.invoke('save-video-and-show', uint8Array, fileName);
   },
+  choosePresetFolder: async () => {
+    return ipcRenderer.invoke('preset-choose-folder');
+  },
+  savePresetFile: async (folderPath, preset) => {
+    return ipcRenderer.invoke('preset-save-file', folderPath, preset);
+  },
   isElectron: true,
 
   // ==================== PRESENTATION MODE APIs ====================
