@@ -38,6 +38,7 @@
   const titleInput = document.getElementById('youtubeTitle');
   const descriptionInput = document.getElementById('youtubeDescription');
   const tagsInput = document.getElementById('youtubeTags');
+  const thumbnailInput = document.getElementById('youtubeThumbnail');
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
   const publishAtInput = document.getElementById('youtubePublishAt');
@@ -54,7 +55,7 @@
   const requiredElements = [
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authStatus,
-    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput,
+    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, thumbnailInput,
     categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
@@ -302,6 +303,7 @@
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
     descriptionInput.value = '';
     tagsInput.value = 'audio, visualizer';
+    thumbnailInput.value = '';
     categorySelect.value = '10';
     privacySelect.value = 'private';
     privacySelect.disabled = false;
@@ -480,6 +482,7 @@
     try {
       const result = await uploader.upload({
         video: pendingUpload.blob,
+        thumbnail: thumbnailInput.files && thumbnailInput.files[0] ? thumbnailInput.files[0] : undefined,
         accessToken,
         metadata: collectMetadata(),
         notifySubscribers: notifySubscribersCheckbox.checked,

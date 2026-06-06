@@ -188,6 +188,16 @@ describe('YouTube Upload UI', () => {
       });
     }).as('finishYouTubeUpload');
 
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=video-abc', (req) => {
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(req.headers['content-type']).to.contain('image/png');
+
+      req.reply({
+        statusCode: 200,
+        body: { items: [{ default: true }] },
+      });
+    }).as('setYouTubeThumbnail');
+
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
         win.google = {
@@ -222,6 +232,11 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeTitle').clear().type('Published visualizer');
     cy.get('#youtubeDescription').type('Rendered from Cypress');
     cy.get('#youtubeTags').clear().type('audio, visualizer, cypress');
+    cy.get('#youtubeThumbnail').selectFile({
+      contents: Cypress.Buffer.from('preview-image'),
+      fileName: 'preview.png',
+      mimeType: 'image/png',
+    });
     cy.get('#youtubePrivacy').select('unlisted');
     cy.get('#youtubePublishAt').type('2026-07-01T12:30');
     cy.get('#youtubePrivacy').should('be.disabled').and('have.value', 'private');
@@ -230,6 +245,7 @@ describe('YouTube Upload UI', () => {
 
     cy.wait('@startYouTubeUpload');
     cy.wait('@finishYouTubeUpload');
+    cy.wait('@setYouTubeThumbnail');
     cy.get('#youtubeUploadStatus')
       .should('contain.text', 'Uploaded:')
       .find('a')
