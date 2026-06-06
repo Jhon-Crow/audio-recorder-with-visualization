@@ -165,7 +165,7 @@ describe('YouTube Upload UI', () => {
 
       expect(req.headers.authorization).to.equal('Bearer test-token');
       expect(body.snippet.title).to.equal('Published visualizer');
-      expect(body.snippet.description).to.equal('Rendered from Cypress\n\n#short');
+      expect(body.snippet.description).to.equal('Rendered from Cypress\n\n#shorts');
       expect(body.snippet.tags).to.deep.equal(['audio', 'visualizer', 'cypress']);
       expect(body.status.privacyStatus).to.equal('unlisted');
       expect(body.status.selfDeclaredMadeForKids).to.equal(false);
