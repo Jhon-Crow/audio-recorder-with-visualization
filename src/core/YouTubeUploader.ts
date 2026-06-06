@@ -4,6 +4,7 @@
 
 export const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
 export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos';
+export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
 export const YOUTUBE_SHORT_HASHTAG = '#short';
 
 const DEFAULT_CATEGORY_ID = '10';
@@ -33,6 +34,7 @@ export interface YouTubeUploadProgress {
 
 export interface YouTubeUploadRequest {
   video: Blob;
+  thumbnail?: Blob;
   accessToken: string;
   metadata: YouTubeUploadMetadata;
   notifySubscribers?: boolean;
@@ -44,6 +46,7 @@ export interface YouTubeUploadRequest {
 export interface YouTubeUploadResult {
   id: string;
   url: string;
+  thumbnail?: unknown;
   rawResponse: unknown;
 }
 
@@ -66,6 +69,7 @@ type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
 export interface YouTubeUploaderConfig {
   fetch?: FetchLike;
   uploadEndpoint?: string;
+  thumbnailUploadEndpoint?: string;
 }
 
 export class YouTubeUploadError extends Error {
@@ -169,10 +173,12 @@ export function getYouTubeWatchUrl(videoId: string): string {
 export class YouTubeUploader {
   private readonly fetchImpl?: FetchLike;
   private readonly uploadEndpoint: string;
+  private readonly thumbnailUploadEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
     this.uploadEndpoint = config.uploadEndpoint || YOUTUBE_UPLOAD_ENDPOINT;
+    this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
   }
 
   async upload(request: YouTubeUploadRequest): Promise<YouTubeUploadResult> {
@@ -204,7 +210,19 @@ export class YouTubeUploader {
       stage: 'session',
     });
 
-    return this.uploadChunks(fetchImpl, uploadUrl, request, contentType);
+    const result = await this.uploadChunks(fetchImpl, uploadUrl, request, contentType);
+
+    if (request.thumbnail && request.thumbnail.size > 0) {
+      result.thumbnail = await this.uploadThumbnail(
+        fetchImpl,
+        request.accessToken,
+        result.id,
+        request.thumbnail,
+        request.signal
+      );
+    }
+
+    return result;
   }
 
   private getFetch(): FetchLike {
@@ -317,6 +335,33 @@ export class YouTubeUploader {
     const details = await readResponseBody(response);
     const message = extractErrorMessage(details) || fallbackMessage;
     return new YouTubeUploadError(message, response.status, details);
+  }
+
+  private async uploadThumbnail(
+    fetchImpl: FetchLike,
+    accessToken: string,
+    videoId: string,
+    thumbnail: Blob,
+    signal?: AbortSignal
+  ): Promise<unknown> {
+    const url = new URL(this.thumbnailUploadEndpoint);
+    url.searchParams.set('videoId', videoId);
+
+    const response = await fetchImpl(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': thumbnail.type || 'application/octet-stream',
+      },
+      body: thumbnail,
+      signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to set YouTube video thumbnail');
+    }
+
+    return readResponseBody(response);
   }
 }
 

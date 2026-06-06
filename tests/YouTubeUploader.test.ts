@@ -140,6 +140,45 @@ describe('YouTubeUploader', () => {
       expect(progress[progress.length - 1]).toMatchObject({ percent: 1, stage: 'complete' });
     });
 
+    test('sets a custom video thumbnail after uploading the video', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'video-123' }), {
+          status: 201,
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ items: [{ default: true }] }), {
+          status: 200,
+        }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const thumbnail = new Blob(['image'], { type: 'image/png' });
+
+      const result = await uploader.upload({
+        video: new Blob(['video'], { type: 'video/webm' }),
+        thumbnail,
+        accessToken: 'token-123',
+        metadata: { title: 'Audio visualizer' },
+      });
+
+      expect(result.thumbnail).toEqual({ items: [{ default: true }] });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(String(fetchMock.mock.calls[2][0])).toBe(
+        'https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=video-123',
+      );
+
+      const thumbnailInit = fetchMock.mock.calls[2][1] as RequestInit;
+      expect(thumbnailInit.method).toBe('POST');
+      expect(thumbnailInit.headers).toMatchObject({
+        Authorization: 'Bearer token-123',
+        'Content-Type': 'image/png',
+      });
+      expect(thumbnailInit.body).toBe(thumbnail);
+    });
+
     test('continues after a 308 resumable response', async () => {
       const fetchMock = createFetchMock();
       fetchMock
