@@ -254,7 +254,7 @@ const result = await uploader.upload({
     tags: ['audio', 'visualizer'],
     privacyStatus: 'private',
     publishAt: '2026-07-01T12:30:00.000Z', // optional scheduled release time; upload stays private until then
-    short: true, // appends #short to the description
+    short: true, // appends #shorts to the description
   },
   onProgress: ({ percent }) => {
     console.log(`Uploaded ${Math.round(percent * 100)}%`);

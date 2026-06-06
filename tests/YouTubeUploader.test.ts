@@ -44,9 +44,10 @@ describe('YouTubeUploader', () => {
       ]);
     });
 
-    test('appends #short to descriptions only when enabled and not already present', () => {
-      expect(appendShortHashtag('Demo description', true)).toBe('Demo description\n\n#short');
+    test('appends #shorts to descriptions only when enabled and not already present', () => {
+      expect(appendShortHashtag('Demo description', true)).toBe('Demo description\n\n#shorts');
       expect(appendShortHashtag('Demo #shorts', true)).toBe('Demo #shorts');
+      expect(appendShortHashtag('Demo #short', true)).toBe('Demo #short');
       expect(appendShortHashtag('Demo description', false)).toBe('Demo description');
     });
 
@@ -61,7 +62,7 @@ describe('YouTubeUploader', () => {
       expect(resource).toEqual({
         snippet: {
           title: 'Audio visualizer',
-          description: 'Rendered with the app\n\n#short',
+          description: 'Rendered with the app\n\n#shorts',
           tags: ['audio', 'visualizer'],
           categoryId: '10',
         },
@@ -147,7 +148,7 @@ describe('YouTubeUploader', () => {
       });
 
       const sessionBody = JSON.parse(sessionInit.body as string);
-      expect(sessionBody.snippet.description).toBe('Demo\n\n#short');
+      expect(sessionBody.snippet.description).toBe('Demo\n\n#shorts');
       expect(sessionBody.status.privacyStatus).toBe('unlisted');
 
       const uploadInit = fetchMock.mock.calls[1][1] as RequestInit;

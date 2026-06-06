@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   authorizeYouTube: async (clientId, clientSecret) => {
     return ipcRenderer.invoke('youtube-authorize', { clientId, clientSecret });
   },
+  clearYouTubeAuthorization: async () => {
+    return ipcRenderer.invoke('youtube-clear-authorization');
+  },
   choosePresetFolder: async () => {
     return ipcRenderer.invoke('preset-choose-folder');
   },

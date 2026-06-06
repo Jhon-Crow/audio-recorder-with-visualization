@@ -724,6 +724,14 @@
             <input type="password" id="youtubeClientSecret" autocomplete="off" spellcheck="false" aria-label="Google desktop OAuth client secret">
           </label>
         </div>
+        <div class="youtube-auth-settings">
+          <div>
+            <span class="youtube-auth-settings-title">Google account</span>
+            <span id="youtubeAuthSettingsStatus" class="youtube-auth-settings-status">Not signed in</span>
+          </div>
+          <button id="youtubeSignOutBtn" type="button" class="btn btn-secondary">Sign out</button>
+          <button id="youtubeSignInSettingsBtn" type="button" class="btn">Sign in</button>
+        </div>
         <p id="youtubeAuthStatus" class="youtube-modal-status" aria-live="polite"></p>
       </div>
       <div class="modal-footer">
@@ -783,7 +791,7 @@
               <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">
             </label>
             <label class="youtube-checkbox">
-              <input type="checkbox" id="youtubeShort" aria-label="Mark as YouTube Short"> Short (#short)
+              <input type="checkbox" id="youtubeShort" aria-label="Mark as YouTube Short"> Short (#shorts)
             </label>
             <label class="youtube-checkbox">
               <input type="checkbox" id="youtubeMadeForKids" aria-label="Made for kids"> Made for kids
