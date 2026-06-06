@@ -195,6 +195,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const ACCORDION_STATE_KEY = 'audio-recorder-accordion-states';
   const PRESETS_KEY = 'audio-recorder-presets';
   const PRESET_OPTIONS_KEY = 'audio-recorder-preset-options';
+  const ACTIVE_PRESET_KEY = 'audio-recorder-active-preset-id';
 
   // Default settings
   const defaultSettings = {
@@ -328,6 +329,27 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   }
 
+  function loadActivePresetId() {
+    try {
+      return localStorage.getItem(ACTIVE_PRESET_KEY);
+    } catch (error) {
+      console.warn('Failed to load active preset:', error);
+      return null;
+    }
+  }
+
+  function saveActivePresetId(presetId) {
+    try {
+      if (presetId) {
+        localStorage.setItem(ACTIVE_PRESET_KEY, presetId);
+      } else {
+        localStorage.removeItem(ACTIVE_PRESET_KEY);
+      }
+    } catch (error) {
+      console.warn('Failed to save active preset:', error);
+    }
+  }
+
   // Accordion state management
   function loadAccordionStates() {
     try {
@@ -413,7 +435,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   let presets = loadPresets();
   let presetOptions = loadPresetOptions();
   let activePresetMenuId = null;
-  let activeLoadedPresetId = null;
+  let activeLoadedPresetId = loadActivePresetId();
   let presetRenameTargetId = null;
   let draggedPresetId = null;
   let presetSidebarCloseTimer = null;
@@ -515,17 +537,35 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       JSON.stringify(sortSerializableValue(normalizeSettings(rightSettings)));
   }
 
+  function savedPresetFieldsMatch(currentSettings, presetSettings = {}) {
+    if (Object.keys(presetSettings || {}).length === 0) {
+      return settingsMatch(currentSettings, presetSettings);
+    }
+
+    const normalizedCurrent = sortSerializableValue(normalizeSettings(currentSettings));
+    const normalizedPreset = sortSerializableValue(presetSettings || {});
+
+    return Object.keys(normalizedPreset).every(key => (
+      JSON.stringify(normalizedCurrent[key]) === JSON.stringify(normalizedPreset[key])
+    ));
+  }
+
   function isPresetCurrentlyActive(preset) {
     return Boolean(
       activeLoadedPresetId &&
       preset &&
       preset.id === activeLoadedPresetId &&
-      settingsMatch(getCurrentSettings(), preset.settings)
+      savedPresetFieldsMatch(getCurrentSettings(), preset.settings)
     );
   }
 
   function updateActivePresetIndicator() {
     const buttons = presetList.querySelectorAll('.preset-load-btn');
+    const activePreset = presets.find(item => item.id === activeLoadedPresetId);
+    if (activeLoadedPresetId && !isPresetCurrentlyActive(activePreset)) {
+      activeLoadedPresetId = null;
+      saveActivePresetId(null);
+    }
 
     buttons.forEach(button => {
       const preset = presets.find(item => item.id === button.dataset.presetId);
@@ -1343,6 +1383,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     presets = presets.filter(item => item.id !== presetId);
     if (activeLoadedPresetId === presetId) {
       activeLoadedPresetId = null;
+      saveActivePresetId(null);
     }
     savePresets(presets);
     renderPresets();
@@ -1458,6 +1499,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
     presets = [...presets, preset];
     activeLoadedPresetId = preset.id;
+    saveActivePresetId(activeLoadedPresetId);
     savePresets(presets);
     await persistPresetToFolder(preset);
     renderPresets();
@@ -1472,6 +1514,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
 
     const settings = { ...defaultSettings, ...preset.settings };
+    activeLoadedPresetId = preset.id;
+    saveActivePresetId(activeLoadedPresetId);
     applySettings(settings);
     saveSettings(settings);
     await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
@@ -1480,7 +1524,6 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     updateSliderColors();
     updateButtonStates();
     updatePreview();
-    activeLoadedPresetId = preset.id;
     updateActivePresetIndicator();
     updateStatus(`Preset "${preset.name}" loaded`, 'ready');
   }

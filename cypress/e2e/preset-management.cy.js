@@ -1,4 +1,12 @@
 describe('Preset Management', () => {
+  function visitWithPresets(presets) {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-presets', JSON.stringify(presets));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+  }
+
   beforeEach(() => {
     cy.clearLocalStorage();
     cy.visit('/examples/index.html');
@@ -49,15 +57,11 @@ describe('Preset Management', () => {
   });
 
   it('renames, deletes, and reorders presets from the sidebar', () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem('audio-recorder-presets', JSON.stringify([
-        { id: 'preset-a', name: 'A', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
-        { id: 'preset-b', name: 'B', createdAt: '2026-06-04T00:00:01.000Z', settings: {} },
-        { id: 'preset-c', name: 'C', createdAt: '2026-06-04T00:00:02.000Z', settings: {} },
-      ]));
-    });
-    cy.reload();
-    cy.waitForVisualization();
+    visitWithPresets([
+      { id: 'preset-a', name: 'A', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+      { id: 'preset-b', name: 'B', createdAt: '2026-06-04T00:00:01.000Z', settings: {} },
+      { id: 'preset-c', name: 'C', createdAt: '2026-06-04T00:00:02.000Z', settings: {} },
+    ]);
     cy.window().then((win) => {
       cy.stub(win, 'confirm').returns(true);
     });
@@ -98,19 +102,15 @@ describe('Preset Management', () => {
   });
 
   it('highlights the loaded preset until settings change', () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem('audio-recorder-presets', JSON.stringify([
-        { id: 'preset-a', name: 'A', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
-        {
-          id: 'preset-b',
-          name: 'B',
-          createdAt: '2026-06-04T00:00:01.000Z',
-          settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
-        },
-      ]));
-    });
-    cy.reload();
-    cy.waitForVisualization();
+    visitWithPresets([
+      { id: 'preset-a', name: 'A', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+      {
+        id: 'preset-b',
+        name: 'B',
+        createdAt: '2026-06-04T00:00:01.000Z',
+        settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
+      },
+    ]);
     cy.get('#presetEdgeTrigger').trigger('pointerenter');
 
     cy.get('#presetList .preset-load-btn').first().click();
@@ -122,5 +122,45 @@ describe('Preset Management', () => {
     cy.get('#presetList .preset-load-btn').first()
       .should('not.have.class', 'is-active')
       .and('not.have.attr', 'aria-current');
+  });
+
+  it('restores the active preset highlight after reload when settings still match', () => {
+    visitWithPresets([
+      {
+        id: 'preset-a',
+        name: 'A',
+        createdAt: '2026-06-04T00:00:00.000Z',
+        settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
+      },
+      {
+        id: 'preset-b',
+        name: 'B',
+        createdAt: '2026-06-04T00:00:01.000Z',
+        settings: { visualizer: 'bars', primaryColor: '#00ff88' },
+      },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().click();
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'is-active')
+      .and('have.attr', 'aria-current', 'true');
+
+    cy.reload();
+    cy.waitForVisualization();
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'is-active')
+      .and('have.attr', 'aria-current', 'true');
+
+    cy.get('#visualizerSelect').select('bars');
+    cy.get('#presetList .preset-load-btn').first()
+      .should('not.have.class', 'is-active')
+      .and('not.have.attr', 'aria-current');
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('audio-recorder-active-preset-id')).to.equal(null);
+    });
   });
 });
