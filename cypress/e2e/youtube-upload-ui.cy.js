@@ -292,6 +292,71 @@ describe('YouTube Upload UI', () => {
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=video-abc');
   });
 
+  it('remembers upload tags and checkbox states from the last upload attempt', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', {
+      statusCode: 200,
+      headers: { Location: 'https://upload.example/session' },
+      body: '',
+    }).as('startYouTubeUpload');
+
+    cy.intercept('PUT', 'https://upload.example/session', {
+      statusCode: 201,
+      body: { id: 'video-memory' },
+    }).as('finishYouTubeUpload');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      access_token: 'test-token',
+                      expires_in: 3600,
+                      scope: 'https://www.googleapis.com/auth/youtube.upload',
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTags').clear().type('ambient, saved, cypress');
+    cy.get('#youtubeShort').check();
+    cy.get('#youtubeMadeForKids').check();
+    cy.get('#youtubeSyntheticMedia').check();
+    cy.get('#youtubeNotifySubscribers').check();
+    cy.get('#submitYouTubeUploadBtn').click();
+
+    cy.wait('@startYouTubeUpload');
+    cy.wait('@finishYouTubeUpload');
+    cy.get('#closeYouTubeUploadBtn').click();
+
+    addSyntheticRecording();
+    cy.contains('.recording-item', 'Recording 2').within(() => {
+      cy.contains('button', 'Upload to YouTube').click();
+    });
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTags').should('have.value', 'ambient, saved, cypress');
+    cy.get('#youtubeShort').should('be.checked');
+    cy.get('#youtubeMadeForKids').should('be.checked');
+    cy.get('#youtubeSyntheticMedia').should('be.checked');
+    cy.get('#youtubeNotifySubscribers').should('be.checked');
+  });
+
   it('keeps the upload form open when text selection ends outside the form', () => {
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {

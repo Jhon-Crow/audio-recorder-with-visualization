@@ -17,6 +17,7 @@
   }
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
+  const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
@@ -267,6 +268,53 @@
     return dimensions.height > dimensions.width;
   }
 
+  function getDefaultUploadFormState() {
+    return {
+      description: '',
+      tags: 'audio, visualizer',
+      categoryId: '10',
+      privacyStatus: 'private',
+      short: shouldDefaultToShort(),
+      madeForKids: false,
+      syntheticMedia: false,
+      notifySubscribers: false,
+    };
+  }
+
+  function loadUploadFormState() {
+    const defaults = getDefaultUploadFormState();
+    const savedState = localStorage.getItem(UPLOAD_FORM_STATE_KEY);
+
+    if (!savedState) {
+      return defaults;
+    }
+
+    try {
+      const parsedState = JSON.parse(savedState);
+      return {
+        ...defaults,
+        ...parsedState,
+      };
+    } catch (error) {
+      return defaults;
+    }
+  }
+
+  function saveUploadFormState() {
+    const state = {
+      description: descriptionInput.value,
+      tags: tagsInput.value,
+      categoryId: categorySelect.value,
+      privacyStatus: privacySelect.value,
+      short: shortCheckbox.checked,
+      madeForKids: madeForKidsCheckbox.checked,
+      syntheticMedia: syntheticMediaCheckbox.checked,
+      notifySubscribers: notifySubscribersCheckbox.checked,
+    };
+
+    localStorage.setItem(UPLOAD_FORM_STATE_KEY, JSON.stringify(state));
+  }
+
   function resetProgress() {
     progressBar.style.display = 'none';
     progressBar.setAttribute('aria-valuenow', '0');
@@ -326,15 +374,17 @@
       return;
     }
 
+    const savedState = loadUploadFormState();
+
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
-    descriptionInput.value = '';
-    tagsInput.value = 'audio, visualizer';
-    categorySelect.value = '10';
-    privacySelect.value = 'private';
-    shortCheckbox.checked = shouldDefaultToShort();
-    madeForKidsCheckbox.checked = false;
-    syntheticMediaCheckbox.checked = false;
-    notifySubscribersCheckbox.checked = false;
+    descriptionInput.value = savedState.description;
+    tagsInput.value = savedState.tags;
+    categorySelect.value = savedState.categoryId;
+    privacySelect.value = savedState.privacyStatus;
+    shortCheckbox.checked = savedState.short;
+    madeForKidsCheckbox.checked = savedState.madeForKids;
+    syntheticMediaCheckbox.checked = savedState.syntheticMedia;
+    notifySubscribersCheckbox.checked = savedState.notifySubscribers;
     submitUploadBtn.disabled = false;
     submitUploadBtn.textContent = 'Upload';
     cancelUploadBtn.textContent = 'Cancel';
@@ -496,6 +546,7 @@
       return;
     }
 
+    saveUploadFormState();
     activeUploadController = new AbortController();
     submitUploadBtn.disabled = true;
     submitUploadBtn.textContent = 'Uploading...';
