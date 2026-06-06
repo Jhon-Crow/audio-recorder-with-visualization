@@ -42,8 +42,10 @@
   const titleInput = document.getElementById('youtubeTitle');
   const descriptionInput = document.getElementById('youtubeDescription');
   const tagsInput = document.getElementById('youtubeTags');
+  const thumbnailInput = document.getElementById('youtubeThumbnail');
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
+  const publishAtInput = document.getElementById('youtubePublishAt');
   const shortCheckbox = document.getElementById('youtubeShort');
   const madeForKidsCheckbox = document.getElementById('youtubeMadeForKids');
   const syntheticMediaCheckbox = document.getElementById('youtubeSyntheticMedia');
@@ -57,8 +59,8 @@
   const requiredElements = [
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
-    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput,
-    categorySelect, privacySelect, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
+    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, thumbnailInput,
+    categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
   ];
@@ -273,6 +275,32 @@
     progressFill.style.width = '0%';
   }
 
+  function setMinimumPublishAt() {
+    const minimumDate = new Date(Date.now() + 15 * 60 * 1000);
+    publishAtInput.min = toDateTimeLocalValue(minimumDate);
+  }
+
+  function toDateTimeLocalValue(date) {
+    const offsetMs = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+  }
+
+  function getScheduledPublishAt() {
+    if (!publishAtInput.value) {
+      return undefined;
+    }
+
+    return new Date(publishAtInput.value).toISOString();
+  }
+
+  function updateScheduleState() {
+    const hasSchedule = Boolean(publishAtInput.value);
+    privacySelect.disabled = hasSchedule;
+    if (hasSchedule) {
+      privacySelect.value = 'private';
+    }
+  }
+
   function updateProgress(progress) {
     const percentage = Math.round(progress.percent * 100);
     progressBar.style.display = 'block';
@@ -329,8 +357,12 @@
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
     descriptionInput.value = '';
     tagsInput.value = 'audio, visualizer';
+    thumbnailInput.value = '';
     categorySelect.value = '10';
     privacySelect.value = 'private';
+    privacySelect.disabled = false;
+    publishAtInput.value = '';
+    setMinimumPublishAt();
     shortCheckbox.checked = shouldDefaultToShort();
     madeForKidsCheckbox.checked = false;
     syntheticMediaCheckbox.checked = false;
@@ -476,6 +508,7 @@
       tags: tagsInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
+      publishAt: getScheduledPublishAt(),
       selfDeclaredMadeForKids: madeForKidsCheckbox.checked,
       containsSyntheticMedia: syntheticMediaCheckbox.checked,
       short: shortCheckbox.checked,
@@ -505,6 +538,7 @@
     try {
       const result = await uploader.upload({
         video: pendingUpload.blob,
+        thumbnail: thumbnailInput.files && thumbnailInput.files[0] ? thumbnailInput.files[0] : undefined,
         accessToken,
         metadata: collectMetadata(),
         notifySubscribers: notifySubscribersCheckbox.checked,
@@ -562,6 +596,8 @@
     }
   });
   uploadForm.addEventListener('submit', submitUpload);
+  publishAtInput.addEventListener('input', updateScheduleState);
+  publishAtInput.addEventListener('change', updateScheduleState);
   updateAuthSettingsStatus();
 
   authModal.addEventListener('click', (event) => {
