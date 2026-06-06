@@ -741,6 +741,36 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
   }
 });
 
+ipcMain.handle('save-all-videos-and-show', async (event, recordings) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    const folderPath = result.filePaths[0];
+    const savedFiles = [];
+
+    for (const recording of recordings) {
+      const filePath = path.join(folderPath, recording.fileName);
+      fs.writeFileSync(filePath, Buffer.from(recording.blob));
+      savedFiles.push(filePath);
+    }
+
+    if (savedFiles.length > 0) {
+      shell.showItemInFolder(savedFiles[0]);
+    }
+
+    return { success: true, folderPath, filePaths: savedFiles };
+  } catch (error) {
+    console.error('Error saving files:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('youtube-authorize', async (event, credentials) => {
   try {
     return await authorizeYouTubeWithDesktopOAuth(
