@@ -329,7 +329,6 @@ describe('YouTube Upload UI', () => {
 
     addSyntheticRecording();
     cy.contains('button', 'Upload to YouTube').click();
-
     cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
     cy.get('#authorizeYouTubeBtn').click();
 
@@ -356,5 +355,43 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeMadeForKids').should('be.checked');
     cy.get('#youtubeSyntheticMedia').should('be.checked');
     cy.get('#youtubeNotifySubscribers').should('be.checked');
+  });
+
+  it('keeps the upload form open when text selection ends outside the form', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      access_token: 'test-token',
+                      expires_in: 3600,
+                      scope: 'https://www.googleapis.com/auth/youtube.upload',
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeDescription').type('Rendered from Cypress');
+    cy.get('#youtubeDescription').trigger('mousedown');
+    cy.get('#youtubeUploadModal').trigger('mouseup').click('topLeft');
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeDescription').should('have.value', 'Rendered from Cypress');
   });
 });

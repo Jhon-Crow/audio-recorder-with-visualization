@@ -615,15 +615,9 @@
   uploadForm.addEventListener('submit', submitUpload);
   updateAuthSettingsStatus();
 
-  [authModal, uploadModal].forEach((modal) => {
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        if (modal === authModal) {
-          closeAuthModal();
-        } else {
-          closeUploadModal();
-        }
-      }
-    });
+  authModal.addEventListener('click', (event) => {
+    if (event.target === authModal) {
+      closeAuthModal();
+    }
   });
 })();
