@@ -167,7 +167,8 @@ describe('YouTube Upload UI', () => {
       expect(body.snippet.title).to.equal('Published visualizer');
       expect(body.snippet.description).to.equal('Rendered from Cypress\n\n#short');
       expect(body.snippet.tags).to.deep.equal(['audio', 'visualizer', 'cypress']);
-      expect(body.status.privacyStatus).to.equal('unlisted');
+      expect(body.status.privacyStatus).to.equal('private');
+      expect(body.status.publishAt).to.equal('2026-07-01T12:30:00.000Z');
       expect(body.status.selfDeclaredMadeForKids).to.equal(false);
 
       req.reply({
@@ -222,6 +223,8 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeDescription').type('Rendered from Cypress');
     cy.get('#youtubeTags').clear().type('audio, visualizer, cypress');
     cy.get('#youtubePrivacy').select('unlisted');
+    cy.get('#youtubePublishAt').type('2026-07-01T12:30');
+    cy.get('#youtubePrivacy').should('be.disabled').and('have.value', 'private');
     cy.get('#youtubeShort').check();
     cy.get('#submitYouTubeUploadBtn').click();
 

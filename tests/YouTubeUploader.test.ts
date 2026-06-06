@@ -75,6 +75,27 @@ describe('YouTubeUploader', () => {
     test('requires a non-empty video title', () => {
       expect(() => buildYouTubeVideoResource({ title: '   ' })).toThrow(YouTubeUploadError);
     });
+
+    test('sets scheduled publish date and keeps scheduled videos private', () => {
+      const resource = buildYouTubeVideoResource({
+        title: 'Scheduled visualizer',
+        privacyStatus: 'public',
+        publishAt: '2026-07-01T12:30:00.000Z',
+      });
+
+      expect(resource.status).toMatchObject({
+        privacyStatus: 'private',
+        selfDeclaredMadeForKids: false,
+        publishAt: '2026-07-01T12:30:00.000Z',
+      });
+    });
+
+    test('rejects invalid scheduled publish dates', () => {
+      expect(() => buildYouTubeVideoResource({
+        title: 'Scheduled visualizer',
+        publishAt: 'not a date',
+      })).toThrow('Scheduled publish date is invalid');
+    });
   });
 
   describe('upload()', () => {

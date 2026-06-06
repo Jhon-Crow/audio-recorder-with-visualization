@@ -21,6 +21,7 @@ export interface YouTubeUploadMetadata {
   privacyStatus?: YouTubePrivacyStatus;
   selfDeclaredMadeForKids?: boolean;
   containsSyntheticMedia?: boolean;
+  publishAt?: string | Date;
   short?: boolean;
 }
 
@@ -58,6 +59,7 @@ export interface YouTubeVideoResource {
     privacyStatus: YouTubePrivacyStatus;
     selfDeclaredMadeForKids: boolean;
     containsSyntheticMedia?: boolean;
+    publishAt?: string;
   };
 }
 
@@ -139,6 +141,7 @@ export function buildYouTubeVideoResource(metadata: YouTubeUploadMetadata): YouT
   }
 
   const tags = normalizeYouTubeTags(metadata.tags);
+  const publishAt = normalizePublishAt(metadata.publishAt);
   const resource: YouTubeVideoResource = {
     snippet: {
       title,
@@ -146,7 +149,7 @@ export function buildYouTubeVideoResource(metadata: YouTubeUploadMetadata): YouT
       categoryId: (metadata.categoryId || DEFAULT_CATEGORY_ID).trim() || DEFAULT_CATEGORY_ID,
     },
     status: {
-      privacyStatus: metadata.privacyStatus || 'private',
+      privacyStatus: publishAt ? 'private' : metadata.privacyStatus || 'private',
       selfDeclaredMadeForKids: metadata.selfDeclaredMadeForKids === true,
     },
   };
@@ -157,6 +160,10 @@ export function buildYouTubeVideoResource(metadata: YouTubeUploadMetadata): YouT
 
   if (metadata.containsSyntheticMedia !== undefined) {
     resource.status.containsSyntheticMedia = metadata.containsSyntheticMedia === true;
+  }
+
+  if (publishAt) {
+    resource.status.publishAt = publishAt;
   }
 
   return resource;
@@ -326,6 +333,19 @@ function normalizeChunkSize(chunkSize: number): number {
   }
 
   return Math.floor(chunkSize / MIN_CHUNK_SIZE) * MIN_CHUNK_SIZE;
+}
+
+function normalizePublishAt(publishAt?: string | Date): string | undefined {
+  if (!publishAt) {
+    return undefined;
+  }
+
+  const date = publishAt instanceof Date ? publishAt : new Date(publishAt);
+  if (Number.isNaN(date.getTime())) {
+    throw new YouTubeUploadError('Scheduled publish date is invalid');
+  }
+
+  return date.toISOString();
 }
 
 function getNextOffset(rangeHeader: string | null, fallbackEnd: number): number {

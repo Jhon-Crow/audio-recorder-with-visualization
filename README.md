@@ -252,6 +252,7 @@ const result = await uploader.upload({
     description: 'Rendered with audio-recorder-with-visualization',
     tags: ['audio', 'visualizer'],
     privacyStatus: 'private',
+    publishAt: '2026-07-01T12:30:00.000Z', // optional scheduled release time; upload stays private until then
     short: true, // appends #short to the description
   },
   onProgress: ({ percent }) => {
