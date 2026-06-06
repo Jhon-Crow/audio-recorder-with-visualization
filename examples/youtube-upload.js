@@ -20,7 +20,7 @@
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
   const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve or Electron, then use the localhost page.';
-  const WEB_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
+  const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
 
   const authModal = document.getElementById('youtubeAuthModal');
   const closeAuthBtn = document.getElementById('closeYouTubeAuthBtn');
@@ -28,6 +28,8 @@
   const openGoogleCloudOAuthBtn = document.getElementById('openGoogleCloudOAuthBtn');
   const authorizeBtn = document.getElementById('authorizeYouTubeBtn');
   const clientIdInput = document.getElementById('youtubeClientId');
+  const clientSecretField = document.getElementById('youtubeClientSecretField');
+  const clientSecretInput = document.getElementById('youtubeClientSecret');
   const authStatus = document.getElementById('youtubeAuthStatus');
 
   const uploadModal = document.getElementById('youtubeUploadModal');
@@ -49,7 +51,8 @@
   const submitUploadBtn = document.getElementById('submitYouTubeUploadBtn');
 
   const requiredElements = [
-    authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn, clientIdInput, authStatus,
+    authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
+    clientIdInput, clientSecretField, clientSecretInput, authStatus,
     uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput,
     categorySelect, privacySelect, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
@@ -101,6 +104,26 @@
     }
   }
 
+  function isElectronYouTubeOAuthAvailable() {
+    return Boolean(
+      window.electronAPI &&
+      window.electronAPI.isElectron &&
+      typeof window.electronAPI.authorizeYouTube === 'function'
+    );
+  }
+
+  function updateAuthModeFields() {
+    if (isElectronYouTubeOAuthAvailable()) {
+      clientSecretField.style.display = '';
+      openGoogleCloudOAuthBtn.textContent = 'OAuth Setup';
+      return;
+    }
+
+    clientSecretField.style.display = 'none';
+    clientSecretInput.value = '';
+    openGoogleCloudOAuthBtn.textContent = 'OAuth Setup';
+  }
+
   function hasValidAccessToken() {
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
   }
@@ -122,10 +145,12 @@
 
   function getOAuthClientSetupMessage(clientId) {
     const origin = getCurrentOriginText();
-    const details = `Create a Web application OAuth Client ID in Google Cloud Console, enable YouTube Data API v3, and add exactly ${origin} to Authorized JavaScript origins, without a path or trailing slash. Electron uses ${LOCALHOST_EXAMPLE_ORIGIN} unless that port is already busy.`;
+    const details = isElectronYouTubeOAuthAvailable()
+      ? 'Create a Desktop app OAuth Client ID in Google Cloud Console, enable YouTube Data API v3 for the same project, paste the Desktop Client ID here, and paste the Desktop Client Secret too if Google generated one. Browser mode uses a Web application client instead.'
+      : `Create a Web application OAuth Client ID in Google Cloud Console, enable YouTube Data API v3, and add exactly ${origin} to Authorized JavaScript origins, without a path or trailing slash. Electron uses a Desktop app OAuth Client ID and system-browser loopback sign-in.`;
 
-    if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
-      return `This does not look like a Google Web OAuth Client ID. Use a value ending in .apps.googleusercontent.com. ${details}`;
+    if (!GOOGLE_CLIENT_ID_PATTERN.test(clientId)) {
+      return `This does not look like a Google OAuth Client ID. Use a value ending in .apps.googleusercontent.com. ${details}`;
     }
 
     return details;
@@ -147,12 +172,16 @@
 
   async function openGoogleCloudOAuthSetup() {
     const origin = getCurrentOriginText();
-    const copied = await copyOriginToClipboard();
+    const isElectronOAuth = isElectronYouTubeOAuthAvailable();
+    const copied = isElectronOAuth ? false : await copyOriginToClipboard();
     const copyStatus = copied ? ` Copied ${origin} to clipboard.` : ` Add exactly ${origin}.`;
+    const setupMessage = isElectronOAuth
+      ? 'Opening Google Cloud OAuth clients. Create or edit a Desktop app OAuth Client ID and enable YouTube Data API v3 for the same project. Paste the Desktop Client ID here, and paste the Desktop Client Secret too if Google generated one.'
+      : `Opening Google Cloud OAuth clients. Create or edit a Web application OAuth Client ID, enable YouTube Data API v3, and add the Authorized JavaScript origin without a path or trailing slash.${copyStatus}`;
 
     setStatus(
       authStatus,
-      `Opening Google Cloud OAuth clients. Create or edit a Web application OAuth Client ID, enable YouTube Data API v3, and add the Authorized JavaScript origin without a path or trailing slash.${copyStatus}`,
+      setupMessage,
       ''
     );
 
@@ -200,9 +229,16 @@
   }
 
   function openAuthModal() {
+    updateAuthModeFields();
     authorizeBtn.textContent = 'Sign in with Google';
     showModal(authModal);
     clientIdInput.focus();
+
+    if (isElectronYouTubeOAuthAvailable()) {
+      setStatus(authStatus, 'Electron sign-in opens Google in your default browser. Use a Desktop app OAuth Client ID.');
+      authorizeBtn.disabled = false;
+      return;
+    }
 
     if (!isSupportedGoogleSignInOrigin()) {
       const localUrl = getLocalhostExampleUrl();
@@ -287,6 +323,22 @@
   }
 
   async function requestAccessToken(clientId) {
+    if (isElectronYouTubeOAuthAvailable()) {
+      const result = await window.electronAPI.authorizeYouTube(clientId, clientSecretInput.value.trim());
+
+      if (!result || result.success === false) {
+        throw new Error(result && result.error ? result.error : 'Google authorization failed.');
+      }
+
+      if (!result.accessToken) {
+        throw new Error('Google authorization did not return an access token.');
+      }
+
+      accessToken = result.accessToken;
+      accessTokenExpiresAt = Date.now() + Number(result.expiresIn || 3600) * 1000;
+      return accessToken;
+    }
+
     if (!isSupportedGoogleSignInOrigin()) {
       throw new Error(UNSUPPORTED_ORIGIN_MESSAGE);
     }
@@ -339,7 +391,7 @@
       return;
     }
 
-    if (!WEB_CLIENT_ID_PATTERN.test(clientId)) {
+    if (!GOOGLE_CLIENT_ID_PATTERN.test(clientId)) {
       setStatus(authStatus, getOAuthClientSetupMessage(clientId), 'error');
       return;
     }

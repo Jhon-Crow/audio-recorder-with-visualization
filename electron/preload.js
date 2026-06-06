@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const uint8Array = new Uint8Array(arrayBuffer);
     return ipcRenderer.invoke('save-video-and-show', uint8Array, fileName);
   },
+  authorizeYouTube: async (clientId, clientSecret) => {
+    return ipcRenderer.invoke('youtube-authorize', { clientId, clientSecret });
+  },
   choosePresetFolder: async () => {
     return ipcRenderer.invoke('preset-choose-folder');
   },

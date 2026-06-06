@@ -16,6 +16,16 @@
 - Current PR review comments snapshot: `logs/pr-104-review-comments-2026-06-04.json`
 - Current PR reviews snapshot: `logs/pr-104-reviews-2026-06-04.json`
 - Current CI runs snapshot: `logs/ci-runs-2026-06-04.json`
+- June 6 issue snapshot: `logs/issue-102-2026-06-06.json`
+- June 6 issue comments snapshot: `logs/issue-102-comments-2026-06-06.json`
+- June 6 PR snapshot: `logs/pr-104-2026-06-06.json`
+- June 6 PR conversation comments snapshot: `logs/pr-104-conversation-comments-2026-06-06.json`
+- June 6 PR review comments snapshot: `logs/pr-104-review-comments-2026-06-06.json`
+- June 6 PR reviews snapshot: `logs/pr-104-reviews-2026-06-06.json`
+- June 6 CI runs snapshot: `logs/ci-runs-2026-06-06.json`
+- Reported CI build log: `logs/ci-build-26973431562-2026-06-06.log`
+- Latest CI build log: `logs/ci-build-26976074883-2026-06-06.log`
+- Electron desktop OAuth modal screenshot: `electron-oauth-auth-modal.png`
 - Issue URL: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/102
 
 The issue asks for an upload-to-YouTube button next to the existing save action. If the user has not signed in with Google, clicking upload should open Google sign-in first; after authorization, the YouTube upload form should open. If authorization is already available, the form should open immediately. The form should expose video metadata, including a Short checkbox that appends `#short` to the description.
@@ -35,6 +45,8 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - Google Identity Services setup requires a Web application OAuth Client ID and Authorized JavaScript origins. For local testing, Google documents adding both `http://localhost` and `http://localhost:<port_number>`. Source: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
 - Google's OAuth troubleshooting docs map `invalid_client` to an unauthorized request origin and `origin_mismatch` to a scheme, domain, or port mismatch against Authorized JavaScript origins. Source: https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
 - Google Account Authorization JavaScript API documents `initTokenClient`, the browser token-flow entry point used by this implementation. Source: https://developers.google.com/identity/oauth2/web/reference/js-reference
+- Google documents that desktop apps should use the OAuth 2.0 Desktop app client type. The loopback IP redirect method is recommended for macOS, Linux, and Windows desktop apps that can listen on a local web server. Source: https://developers.google.com/identity/protocols/oauth2/native-app
+- Google documents that loopback redirects continue to be supported for Desktop app OAuth clients, while the deprecation applies to Android, iOS, and Chrome app client types. Source: https://developers.google.com/identity/protocols/oauth2/resources/loopback-migration
 - YouTube `videos.insert` uploads a video and can set metadata. It requires an authorized scope such as `https://www.googleapis.com/auth/youtube.upload`, supports media upload, and accepts `video/*` or `application/octet-stream`. Source: https://developers.google.com/youtube/v3/docs/videos/insert
 - YouTube resumable uploads start with `POST /upload/youtube/v3/videos?uploadType=resumable&part=...`; a successful session returns a `Location` header, then the binary data is uploaded with `PUT` requests. Chunk sizes must be multiples of 256 KB except the final chunk. Source: https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol
 - The YouTube video resource supports `snippet.title`, `snippet.description`, `snippet.tags`, `snippet.categoryId`, `status.privacyStatus`, `status.selfDeclaredMadeForKids`, and `status.containsSyntheticMedia`. Source: https://developers.google.com/youtube/v3/docs/videos
@@ -53,19 +65,22 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - Follow-up fix blocked direct `file://` authorization and showed a localhost/HTTPS requirement. That avoided Google's raw error page, but desktop users opening the packaged app were left with a blocked sign-in path.
 - Electron follow-up started a loopback static server and loaded the app from `http://localhost:<port>/index.html`, so desktop OAuth requests now originate from HTTP localhost instead of `file://`.
 - PR feedback then reported `401 invalid_client` with `flowName=GeneralOAuthLite`. Root cause analysis: after the origin fix, the remaining failure is OAuth client configuration, not the recording/upload code. The likely causes are a missing/wrong OAuth Client ID, using a non-Web client type, using a deleted/disabled client, or not adding the exact `http://localhost:<port>` origin used by the app to Authorized JavaScript origins.
-- Latest PR feedback repeated `401 invalid_client`. The additional root cause found in this follow-up is that Electron used port `0`, which means a random localhost port on each launch. Because Google validates JavaScript origins by scheme, host, and port, users could not reliably pre-register one stable Electron origin.
-- Latest PR feedback still reports `401 invalid_client` after the stable origin change. With the app origin stabilized at `http://localhost:8080`, the remaining client-side root cause is Google Cloud project setup: the entered OAuth Client ID must be a Web application client from a project with YouTube Data API v3 enabled and exactly `http://localhost:8080` registered under Authorized JavaScript origins.
+- Earlier PR feedback repeated `401 invalid_client`. The additional root cause found in that follow-up was that Electron used port `0`, which means a random localhost port on each launch. Because Google validates JavaScript origins by scheme, host, and port, users could not reliably pre-register one stable Electron origin.
+- The next PR feedback still reported `401 invalid_client` after the stable origin change. With the app origin stabilized at `http://localhost:8080`, the remaining browser-flow root cause was Google Cloud project setup: the entered OAuth Client ID had to be a Web application client from a project with YouTube Data API v3 enabled and exactly `http://localhost:8080` registered under Authorized JavaScript origins.
+- June 6 PR feedback reports the same `401 invalid_client` in the latest packaged build. The new root cause is that Electron was still using the browser Google Identity Services token model. A user testing a desktop app is likely to create or paste a Desktop app OAuth Client ID, but that client type is not valid for the browser JavaScript token flow and can fail before the app receives a callback. The packaged app now uses the desktop OAuth authorization-code flow with PKCE, opens Google in the system browser, receives the code on `127.0.0.1:<random-port>`, exchanges it in the Electron main process, and returns the short-lived access token to the renderer.
 - The same feedback linked a CI warning from the Windows build. This is not a test failure; it is a GitHub Actions runtime deprecation warning for JavaScript actions that still execute on Node.js 20.
 
 ## OAuth Root Causes
 
-- Google Identity Services is browser-origin sensitive. `file://` is not a valid web origin for its token flow.
-- The Electron app must run the renderer from localhost or HTTPS before calling Google OAuth; loading the same HTML as a local file will produce request-origin errors.
-- `invalid_client` is not recoverable by retrying upload code. It requires a valid Web application OAuth Client ID configured in Google Cloud Console.
+- Google Identity Services is browser-origin sensitive. `file://` is not a valid web origin for its token flow, so browser-mode sign-in must run from localhost or HTTPS.
+- Electron can avoid browser-origin validation by using the desktop authorization-code flow from the main process, with the system browser and a loopback callback.
+- `invalid_client` is not recoverable by retrying upload code. It requires a valid OAuth Client ID of the correct client type configured in Google Cloud Console.
 - Authorized JavaScript origins are exact at the scheme, host, and port level. For example, `http://localhost:8080` and `http://localhost:51234` are different origins.
-- A random Electron app-server port turns the required OAuth origin into a moving target. Even a correctly configured Web OAuth client can fail if it was authorized for `http://localhost:8080` but the app launches from `http://localhost:51234`.
+- A random Electron app-server port turned the previous browser-flow OAuth origin into a moving target. Even a correctly configured Web OAuth client could fail if it was authorized for `http://localhost:8080` but the app launched from `http://localhost:51234`.
+- Web application OAuth Client IDs and Desktop app OAuth Client IDs are not interchangeable. Google Identity Services `initTokenClient()` is a browser JavaScript flow, while packaged desktop apps should use a Desktop app client and loopback redirect.
+- Errors such as `invalid_client` can happen on Google's own authorization page before the renderer callback is invoked. Treating only callback errors is therefore insufficient for packaged Electron sign-in.
 - A user-pasted value that is not shaped like `*.apps.googleusercontent.com` can be rejected locally before opening Google's popup.
-- Once origin and format are correct, a persistent `invalid_client` means Google has rejected the selected OAuth client record. The app cannot bypass that server-side validation; the practical fix is to guide the user to create or edit the correct Web application OAuth client and register the exact current origin.
+- Once origin, flow, and client ID format are correct, a persistent `invalid_client` means Google has rejected the selected OAuth client record. The app cannot bypass that server-side validation; the practical fix is to guide browser users toward a Web application client with the exact Authorized JavaScript origin and Electron users toward a Desktop app client with loopback authorization.
 - The CI warning root cause is workflow/runtime drift, not application code. The workflow can opt JavaScript actions into Node.js 24 while continuing to install the project's tested package runtime with `actions/setup-node`.
 
 ## Considered Solutions
@@ -76,7 +91,7 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 
 2. Electron main-process OAuth with system-browser loopback callback
 
-   Pros: more appropriate for a packaged desktop app and avoids embedded OAuth concerns. Cons: much larger implementation, requires local callback plumbing, and does not help the browser example.
+   Pros: appropriate for a packaged desktop app, avoids the browser JavaScript origin flow, lets users create a Desktop app OAuth Client ID, and uses Google's documented loopback callback pattern for Windows/macOS/Linux desktop apps. Cons: it requires IPC and a short-lived local callback server, so the browser example still needs the existing Google Identity Services path.
 
 3. Backend upload proxy
 
@@ -119,6 +134,8 @@ The issue asks for an upload-to-YouTube button next to the existing save action.
 - Updated Electron to prefer `http://localhost:8080` for the internal static server, falling back to a random port only when 8080 is already busy.
 - Added an OAuth Setup action in the Google sign-in modal that opens the Google Cloud OAuth client page and shows the exact current origin to add. When browser clipboard access is available, the origin is copied for pasting into Authorized JavaScript origins.
 - Opted the GitHub Actions workflow into the Node.js 24 JavaScript action runtime to address the Node 20 deprecation warning reported from the Windows build logs.
+- Added an Electron-specific desktop OAuth path. The renderer calls `window.electronAPI.authorizeYouTube()`, the Electron main process opens Google sign-in in the default browser, receives the loopback callback on `127.0.0.1`, exchanges the code with PKCE, and returns the short-lived access token to the existing upload form.
+- The auth modal now tells Electron users to create a Desktop app OAuth Client ID and optionally paste the Desktop Client Secret, while browser users still get Web application origin guidance.
 
 ## Follow-up: OAuth Origin Handling
 
@@ -146,8 +163,19 @@ The next feedback still reported `401 invalid_client`, which confirms the code h
 
 The feedback also linked a GitHub Actions warning about Node.js 20 JavaScript actions. The workflow now sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope. This opts official JavaScript actions into the newer runtime while keeping the app's dependency installation controlled by `actions/setup-node`.
 
+## Follow-up: Electron Desktop OAuth
+
+The June 6 feedback repeated `401 invalid_client` in the latest packaged build, which showed that origin guidance was not enough. The packaged app was still using the browser token model inside Electron. That path requires a Web application OAuth Client ID and can fail as a Google-hosted error page before the renderer callback runs.
+
+The fix is to split OAuth by runtime:
+
+- Browser/local web example: continue using Google Identity Services with a Web application OAuth Client ID and `http://localhost:8080` Authorized JavaScript origin.
+- Packaged Electron app: use a Desktop app OAuth Client ID, open Google sign-in in the default browser, receive the authorization code on a temporary `127.0.0.1` loopback listener, exchange the code in the main process with PKCE, and pass only the access token back to the renderer.
+
+This preserves the existing upload helper and form while removing Electron from the browser JavaScript origin validation path that produced the repeated `invalid_client` report.
+
 ## Verification Plan
 
 - Unit tests cover metadata generation, Short tag behavior, resumable session requests, chunk continuation after HTTP 308, API error handling, and empty-video validation.
-- Cypress coverage creates a synthetic recording, verifies the YouTube button beside the download action, verifies the file-origin localhost handoff, verifies invalid OAuth Client ID guidance, stubs Google sign-in, stubs YouTube API requests, and verifies that the Short checkbox adds `#short` to the submitted description.
+- Cypress coverage creates a synthetic recording, verifies the YouTube button beside the download action, verifies the file-origin localhost handoff, verifies invalid OAuth Client ID guidance, verifies Electron uses native IPC auth instead of browser GIS, stubs Google sign-in, stubs YouTube API requests, and verifies that the Short checkbox adds `#short` to the submitted description.
 - Local checks should include `npm run typecheck`, `npm test -- --runInBand`, `npm run build`, and the new Cypress spec.

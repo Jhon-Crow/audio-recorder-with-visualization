@@ -55,7 +55,7 @@ describe('YouTube Upload UI', () => {
 
     cy.get('#youtubeAuthStatus')
       .should('have.class', 'error')
-      .and('contain.text', 'This does not look like a Google Web OAuth Client ID')
+      .and('contain.text', 'This does not look like a Google OAuth Client ID')
       .and('contain.text', 'Authorized JavaScript origins')
       .and('contain.text', 'exactly http://localhost:8080')
       .and('contain.text', 'without a path or trailing slash');
@@ -117,6 +117,46 @@ describe('YouTube Upload UI', () => {
       .and('contain.text', 'Authorized JavaScript origins')
       .and('contain.text', 'exactly http://localhost:8080')
       .and('contain.text', 'without a path or trailing slash');
+  });
+
+  it('uses Electron native OAuth instead of the browser Google token flow', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        const initTokenClient = cy.stub().as('initTokenClient');
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient,
+            },
+          },
+        };
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            accessToken: 'electron-token',
+            expiresIn: 3600,
+          }),
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeAuthModal').should('be.visible');
+    cy.get('#youtubeAuthStatus')
+      .should('contain.text', 'Electron sign-in opens Google in your default browser')
+      .and('contain.text', 'Desktop app OAuth Client ID');
+    cy.get('#youtubeClientSecretField').should('be.visible');
+    cy.get('#youtubeClientId').type('123-desktop-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('@authorizeYouTube')
+      .should('have.been.calledOnce')
+      .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
+    cy.get('@initTokenClient').should('not.have.been.called');
+    cy.get('#youtubeUploadModal').should('be.visible');
   });
 
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {

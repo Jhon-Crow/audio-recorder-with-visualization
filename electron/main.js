@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut } = r
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 
 // Keep a global reference of the window objects to prevent garbage collection
@@ -12,6 +13,13 @@ let appServerUrl = null;
 
 const APP_SERVER_HOST = 'localhost';
 const APP_SERVER_PORT = 8080;
+const OAUTH_LOOPBACK_HOST = '127.0.0.1';
+const OAUTH_FLOW_TIMEOUT_MS = 180000;
+const GOOGLE_OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
+let activeYouTubeOAuthCleanup = null;
 
 // Presentation window settings
 let presentationSettings = {
@@ -89,7 +97,7 @@ function createAppServer(examplesDir, distDir) {
   });
 }
 
-function listenAppServer(server, port) {
+function listenHttpServer(server, port, host) {
   return new Promise((resolve, reject) => {
     const cleanup = () => {
       server.off('error', handleError);
@@ -106,8 +114,12 @@ function listenAppServer(server, port) {
 
     server.once('error', handleError);
     server.once('listening', handleListening);
-    server.listen(port, APP_SERVER_HOST);
+    server.listen(port, host);
   });
+}
+
+function listenAppServer(server, port) {
+  return listenHttpServer(server, port, APP_SERVER_HOST);
 }
 
 async function startAppServer() {
@@ -136,6 +148,259 @@ async function startAppServer() {
   return appServerUrl;
 }
 
+function base64UrlEncode(buffer) {
+  return Buffer.from(buffer)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function createRandomBase64Url(byteLength = 32) {
+  return base64UrlEncode(crypto.randomBytes(byteLength));
+}
+
+function createCodeChallenge(codeVerifier) {
+  return base64UrlEncode(crypto.createHash('sha256').update(codeVerifier).digest());
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sendOAuthCallbackPage(response, title, message) {
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  response.end(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; color: #1f2937; }
+    main { max-width: 560px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>${escapeHtml(title)}</h1>
+    <p>${escapeHtml(message)}</p>
+  </main>
+</body>
+</html>`);
+}
+
+function closeServer(server) {
+  return new Promise((resolve) => {
+    if (!server.listening) {
+      resolve();
+      return;
+    }
+
+    server.close(() => resolve());
+  });
+}
+
+function waitForYouTubeOAuthCode(server, expectedState) {
+  let finish = null;
+  const promise = new Promise((resolve, reject) => {
+    let finished = false;
+    let timeout = null;
+
+    finish = (error, code) => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      clearTimeout(timeout);
+      server.off('request', handleRequest);
+
+      if (error) {
+        reject(error);
+      } else {
+        resolve(code);
+      }
+    };
+
+    const handleRequest = (request, response) => {
+      const requestUrl = new URL(request.url, `http://${OAUTH_LOOPBACK_HOST}`);
+      const state = requestUrl.searchParams.get('state');
+      const code = requestUrl.searchParams.get('code');
+      const error = requestUrl.searchParams.get('error');
+      const errorDescription = requestUrl.searchParams.get('error_description');
+
+      if (!state && !code && !error) {
+        response.writeHead(404);
+        response.end('Not found');
+        return;
+      }
+
+      if (state !== expectedState) {
+        sendOAuthCallbackPage(response, 'Google Sign In Failed', 'The authorization response did not match this app session. Return to the app and try again.');
+        finish(new Error('Google sign-in failed because the authorization state did not match this app session.'));
+        return;
+      }
+
+      if (error) {
+        const message = errorDescription || error;
+        sendOAuthCallbackPage(response, 'Google Sign In Failed', message);
+        finish(new Error(message));
+        return;
+      }
+
+      if (!code) {
+        sendOAuthCallbackPage(response, 'Google Sign In Failed', 'Google did not return an authorization code.');
+        finish(new Error('Google did not return an authorization code.'));
+        return;
+      }
+
+      sendOAuthCallbackPage(response, 'Google Sign In Complete', 'You can close this browser tab and return to Audio Recorder with Visualization.');
+      finish(null, code);
+    };
+
+    timeout = setTimeout(() => {
+      finish(new Error('Google sign-in timed out. Try again and complete authorization in the browser window.'));
+    }, OAUTH_FLOW_TIMEOUT_MS);
+    server.on('request', handleRequest);
+  });
+
+  return {
+    promise,
+    cancel(message = 'Google sign-in was cancelled.') {
+      if (finish) {
+        finish(new Error(message));
+      }
+    },
+  };
+}
+
+function getOAuthTokenErrorMessage(details, status) {
+  const errorCode = details && typeof details.error === 'string' ? details.error : '';
+  const description = details && typeof details.error_description === 'string' ? details.error_description : '';
+  const detailText = description || errorCode;
+
+  if (errorCode === 'invalid_client' || /invalid_client/i.test(detailText)) {
+    return 'Google rejected this Desktop OAuth Client ID. Create a Desktop app OAuth Client ID in Google Cloud Console for a project with YouTube Data API v3 enabled, paste that Client ID here, and paste the Desktop Client Secret too if Google generated one.';
+  }
+
+  if (errorCode === 'redirect_uri_mismatch' || /redirect_uri_mismatch/i.test(detailText)) {
+    return 'Google rejected the loopback redirect URI. Use a Desktop app OAuth Client ID for the packaged Electron app; Web application client IDs are only for browser localhost usage.';
+  }
+
+  return detailText || `Google token exchange failed with status ${status}.`;
+}
+
+async function exchangeYouTubeOAuthCode({ clientId, clientSecret, code, redirectUri, codeVerifier }) {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    code,
+    code_verifier: codeVerifier,
+    grant_type: 'authorization_code',
+    redirect_uri: redirectUri,
+  });
+
+  if (clientSecret) {
+    body.set('client_secret', clientSecret);
+  }
+
+  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+  const text = await response.text();
+  let details = null;
+
+  if (text) {
+    try {
+      details = JSON.parse(text);
+    } catch {
+      details = { error_description: text };
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(getOAuthTokenErrorMessage(details, response.status));
+  }
+
+  if (!details || typeof details.access_token !== 'string') {
+    throw new Error('Google token exchange did not return an access token.');
+  }
+
+  return {
+    accessToken: details.access_token,
+    expiresIn: Number(details.expires_in || 3600),
+    scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_SCOPE,
+  };
+}
+
+async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
+  const trimmedClientId = String(clientId || '').trim();
+  const trimmedClientSecret = String(clientSecret || '').trim();
+
+  if (!GOOGLE_CLIENT_ID_PATTERN.test(trimmedClientId)) {
+    throw new Error('Use a Google OAuth Client ID ending in .apps.googleusercontent.com.');
+  }
+
+  if (activeYouTubeOAuthCleanup) {
+    throw new Error('A Google sign-in flow is already in progress.');
+  }
+
+  const server = http.createServer();
+  let codeWaiter = null;
+  activeYouTubeOAuthCleanup = () => {
+    if (codeWaiter) {
+      codeWaiter.cancel();
+    }
+    return closeServer(server);
+  };
+
+  try {
+    const address = await listenHttpServer(server, 0, OAUTH_LOOPBACK_HOST);
+    const redirectUri = `http://${OAUTH_LOOPBACK_HOST}:${address.port}/`;
+    const state = createRandomBase64Url();
+    const codeVerifier = createRandomBase64Url(64);
+    const codeChallenge = createCodeChallenge(codeVerifier);
+    codeWaiter = waitForYouTubeOAuthCode(server, state);
+    const authUrl = new URL(GOOGLE_OAUTH_AUTH_URL);
+
+    authUrl.searchParams.set('client_id', trimmedClientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', YOUTUBE_UPLOAD_SCOPE);
+    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('code_challenge', codeChallenge);
+    authUrl.searchParams.set('code_challenge_method', 'S256');
+
+    await shell.openExternal(authUrl.toString());
+    const code = await codeWaiter.promise;
+
+    return exchangeYouTubeOAuthCode({
+      clientId: trimmedClientId,
+      clientSecret: trimmedClientSecret,
+      code,
+      redirectUri,
+      codeVerifier,
+    });
+  } finally {
+    if (codeWaiter) {
+      codeWaiter.cancel();
+      await codeWaiter.promise.catch(() => {});
+    }
+    await closeServer(server);
+    if (activeYouTubeOAuthCleanup) {
+      activeYouTubeOAuthCleanup = null;
+    }
+  }
+}
+
 async function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
@@ -153,7 +418,7 @@ async function createWindow() {
     backgroundColor: '#1a1a2e',
   });
 
-  // Load through localhost so Google OAuth receives a web origin instead of file://.
+  // Load through localhost so browser APIs and static assets use an HTTP origin.
   const serverUrl = await startAppServer();
   mainWindow.loadURL(`${serverUrl}/index.html`);
 
@@ -362,6 +627,18 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
     return { success: true, filePath: result.filePath };
   } catch (error) {
     console.error('Error saving file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('youtube-authorize', async (event, credentials) => {
+  try {
+    return await authorizeYouTubeWithDesktopOAuth(
+      credentials && credentials.clientId,
+      credentials && credentials.clientSecret
+    );
+  } catch (error) {
+    console.error('Error authorizing YouTube upload:', error);
     return { success: false, error: error.message };
   }
 });
