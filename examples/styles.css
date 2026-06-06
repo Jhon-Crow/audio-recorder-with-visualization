@@ -439,6 +439,22 @@ h1 {
   animation: fadeIn var(--transition-slow) ease-out 0.2s both;
 }
 
+.recordings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.recordings-header h3 {
+  margin: 0;
+}
+
+.recordings-header button {
+  min-width: 120px;
+}
+
 button {
   padding: 14px 28px;
   border: none;

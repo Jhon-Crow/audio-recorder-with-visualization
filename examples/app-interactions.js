@@ -306,8 +306,11 @@ function initInteractions() {
 
   // Update progress bar with accessibility
   const progressBar = document.querySelector('.progress-bar');
-  const updateProgress = (progress) => {
-    const percentage = Math.round(progress * 100);
+  const updateProgress = (progress, fileIndex = 0, fileCount = 1) => {
+    const combinedProgress = fileCount > 1
+      ? (fileIndex + progress) / fileCount
+      : progress;
+    const percentage = Math.round(combinedProgress * 100);
     progressBar.setAttribute('aria-valuenow', percentage);
     el.progressFill.style.width = percentage + '%';
   };
@@ -380,8 +383,8 @@ function initInteractions() {
 
   // Convert audio to video
   el.convertBtn.addEventListener('click', async () => {
-    const file = el.audioFile.files[0];
-    if (!file) return;
+    const files = Array.from(el.audioFile.files || []);
+    if (!files.length) return;
 
     // Stop preview if running
     if (app.isPreviewing) {
@@ -404,27 +407,53 @@ function initInteractions() {
 
     try {
       const dimensions = app.getVideoDimensions();
+      const totalFiles = files.length;
+      const fallbackMessages = [];
+      const requestedFormat = el.videoFormat.value;
 
-      const result = await converter.convertWithFallback({
-        audioSource: file,
-        canvas,
-        visualizer: el.visualizerSelect.value,
-        visualizerOptions: getCurrentOptions(),
-        audioEnhancement: getCurrentAudioEnhancement(),
-        fps: 30,
-        videoWidth: dimensions.width,
-        videoHeight: dimensions.height,
-        format: el.videoFormat.value,
-        onProgress: updateProgress,
-      });
+      for (let index = 0; index < totalFiles; index++) {
+        const file = files[index];
+        updateStatus(
+          totalFiles > 1
+            ? `Converting ${index + 1} of ${totalFiles}: ${file.name}`
+            : 'Converting audio to video...',
+          'recording'
+        );
+
+        const result = await converter.convertWithFallback({
+          audioSource: file,
+          canvas,
+          visualizer: el.visualizerSelect.value,
+          visualizerOptions: getCurrentOptions(),
+          audioEnhancement: getCurrentAudioEnhancement(),
+          fps: 30,
+          videoWidth: dimensions.width,
+          videoHeight: dimensions.height,
+          format: requestedFormat,
+          onProgress: progress => updateProgress(progress, index, totalFiles),
+        });
+
+        if (result.usedFallback && result.fallbackMessage && !fallbackMessages.includes(result.fallbackMessage)) {
+          fallbackMessages.push(result.fallbackMessage);
+        }
+
+        addRecording(result.blob, {
+          sourceName: file.name,
+          format: result.format,
+        });
+      }
 
       // Check if fallback to WebM occurred
-      if (result.usedFallback) {
-        updateStatus('Conversion complete! ' + result.fallbackMessage, 'ready');
+      if (fallbackMessages.length) {
+        updateStatus('Conversion complete! ' + fallbackMessages.join(' '), 'ready');
       } else {
-        updateStatus('Conversion complete!', 'ready');
+        updateStatus(
+          totalFiles > 1
+            ? `Batch conversion complete: ${totalFiles} videos rendered.`
+            : 'Conversion complete!',
+          'ready'
+        );
       }
-      addRecording(result.blob);
     } catch (error) {
       if (error.message.includes('cancelled')) {
         updateStatus('Conversion cancelled', 'ready');

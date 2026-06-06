@@ -64,7 +64,7 @@
         <div class="option-group">
           <label>
             Audio File
-            <input type="file" id="audioFile" accept="audio/*" aria-label="Select audio file to convert">
+            <input type="file" id="audioFile" accept="audio/*" multiple aria-label="Select audio files to convert">
           </label>
           <label>
             Video Quality
@@ -102,7 +102,7 @@
           <button id="stopPreviewBtn" class="btn-secondary" style="display: none;" data-tooltip="Stop preview playback" aria-label="Stop preview">
             <span>Stop Preview</span>
           </button>
-          <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio file to video with visualization" aria-label="Convert audio to video">
+          <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio files to separate videos with the current visualization settings" aria-label="Convert audio to video">
             <span>Convert to Video</span>
           </button>
           <button id="cancelConvertBtn" class="btn-danger" style="display: none;" data-tooltip="Cancel video conversion" aria-label="Cancel conversion">
@@ -701,7 +701,12 @@
     </div>
 
     <div class="recordings" id="recordings">
-      <h3>Recordings</h3>
+      <div class="recordings-header">
+        <h3>Recordings</h3>
+        <button id="saveAllRecordings" class="btn-info" disabled data-tooltip="Save every rendered video" aria-label="Save all rendered videos">
+          <span>Save All</span>
+        </button>
+      </div>
       <div id="recordingsList"></div>
     </div>
   </div>

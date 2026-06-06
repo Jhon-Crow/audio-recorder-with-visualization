@@ -11,6 +11,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const uint8Array = new Uint8Array(arrayBuffer);
     return ipcRenderer.invoke('save-video-and-show', uint8Array, fileName);
   },
+  saveAllVideosAndShow: async (recordings) => {
+    const serializedRecordings = await Promise.all(recordings.map(async (recording) => {
+      const arrayBuffer = await recording.blob.arrayBuffer();
+      return {
+        blob: new Uint8Array(arrayBuffer),
+        fileName: recording.fileName
+      };
+    }));
+    return ipcRenderer.invoke('save-all-videos-and-show', serializedRecordings);
+  },
   authorizeYouTube: async (clientId, clientSecret) => {
     return ipcRenderer.invoke('youtube-authorize', { clientId, clientSecret });
   },
