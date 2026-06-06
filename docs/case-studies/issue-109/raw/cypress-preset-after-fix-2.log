@@ -1,0 +1,61 @@
+
+DevTools listening on ws://127.0.0.1:40637/devtools/browser/455b2dda-2754-41ad-aaf6-4a670ef85237
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (preset-management.cy.js)                                              │
+  │ Searched:       cypress/e2e/preset-management.cy.js                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preset-management.cy.js                                                         (1 of 1)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (2049ms)
+    ✓ uses skip dialog mode with numbered default names (1142ms)
+    ✓ renames, deletes, and reorders presets from the sidebar (2416ms)
+    ✓ highlights the loaded preset until settings change (1788ms)
+
+
+  4 passing (8s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     7 seconds                                                                        │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preset-management.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  preset-management.cy.js                  00:07        4        4        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:07        4        4        -        -        -

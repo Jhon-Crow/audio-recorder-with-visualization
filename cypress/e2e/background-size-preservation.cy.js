@@ -66,7 +66,7 @@ describe('Background Size Mode Preservation', () => {
       modes.forEach((mode) => {
         // Load a test background image
         cy.window().then(async (win) => {
-          const recorder = win.recorder;
+          const recorder = win.AudioRecorderApp && win.AudioRecorderApp.recorder;
           if (recorder) {
             await recorder.setVisualizerOptions({
               backgroundImage: testImage.dataUrl,
@@ -93,7 +93,8 @@ describe('Background Size Mode Preservation', () => {
     cy.fixture('test-image.json').then((testImage) => {
       // Set background image and mode
       cy.window().then(async (win) => {
-        const recorder = win.recorder;
+        const app = win.AudioRecorderApp;
+        const recorder = app && app.recorder;
         if (recorder) {
           await recorder.setVisualizerOptions({
             backgroundImage: testImage.dataUrl,
@@ -101,8 +102,10 @@ describe('Background Size Mode Preservation', () => {
           });
           recorder.showDemoVisualization(500);
         }
-        // Manually trigger save via the UI
-        win.currentBackgroundImageUrl = testImage.dataUrl;
+        // Manually inject the image into app state before saving through the UI.
+        if (app) {
+          app.currentBackgroundImageUrl = testImage.dataUrl;
+        }
       });
 
       // Set the dropdown value
