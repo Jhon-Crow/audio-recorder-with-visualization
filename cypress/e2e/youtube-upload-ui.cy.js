@@ -159,6 +159,65 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('be.visible');
   });
 
+  it('restores saved Google authorization after a restart', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-test-client-id.apps.googleusercontent.com');
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeAuthModal').should('not.be.visible');
+    cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+  });
+
+  it('signs out from Google authorization settings', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+        }));
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            accessToken: 'electron-token',
+            expiresIn: 3600,
+          }),
+          clearYouTubeAuthorization: cy.stub().as('clearYouTubeAuthorization').resolves({ success: true }),
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeUploadModal .close-btn').click();
+
+    cy.get('#youtubeAuthModal').invoke('show');
+    cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+    cy.get('#youtubeSignOutBtn').click();
+
+    cy.get('@clearYouTubeAuthorization').should('have.been.calledOnce');
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('audio-recorder-youtube-token-state')).to.equal(null);
+    });
+    cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Not signed in');
+  });
+
   it('authorizes with Google and uploads metadata with the short tag enabled', () => {
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;

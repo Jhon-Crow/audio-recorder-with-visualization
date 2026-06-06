@@ -19,6 +19,7 @@ const GOOGLE_OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
 const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
+const YOUTUBE_AUTH_STORE_FILE = 'youtube-auth.json';
 let activeYouTubeOAuthCleanup = null;
 
 // Presentation window settings
@@ -116,6 +117,43 @@ function listenHttpServer(server, port, host) {
     server.once('listening', handleListening);
     server.listen(port, host);
   });
+}
+
+function getYouTubeAuthStorePath() {
+  return path.join(app.getPath('userData'), YOUTUBE_AUTH_STORE_FILE);
+}
+
+function readStoredYouTubeAuth() {
+  try {
+    const filePath = getYouTubeAuthStorePath();
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.warn('Failed to read stored YouTube authorization:', error);
+    return null;
+  }
+}
+
+function writeStoredYouTubeAuth(authState) {
+  try {
+    fs.mkdirSync(path.dirname(getYouTubeAuthStorePath()), { recursive: true });
+    fs.writeFileSync(getYouTubeAuthStorePath(), JSON.stringify(authState, null, 2));
+  } catch (error) {
+    console.warn('Failed to store YouTube authorization:', error);
+  }
+}
+
+function clearStoredYouTubeAuth() {
+  try {
+    const filePath = getYouTubeAuthStorePath();
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.warn('Failed to clear stored YouTube authorization:', error);
+  }
 }
 
 function listenAppServer(server, port) {
@@ -337,6 +375,56 @@ async function exchangeYouTubeOAuthCode({ clientId, clientSecret, code, redirect
   return {
     accessToken: details.access_token,
     expiresIn: Number(details.expires_in || 3600),
+    refreshToken: typeof details.refresh_token === 'string' ? details.refresh_token : '',
+    scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_SCOPE,
+  };
+}
+
+async function refreshYouTubeAccessToken(authState) {
+  if (!authState || !authState.clientId || !authState.refreshToken) {
+    throw new Error('Stored Google authorization is incomplete.');
+  }
+
+  const body = new URLSearchParams({
+    client_id: authState.clientId,
+    grant_type: 'refresh_token',
+    refresh_token: authState.refreshToken,
+  });
+
+  if (authState.clientSecret) {
+    body.set('client_secret', authState.clientSecret);
+  }
+
+  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+  const text = await response.text();
+  let details = null;
+
+  if (text) {
+    try {
+      details = JSON.parse(text);
+    } catch {
+      details = { error_description: text };
+    }
+  }
+
+  if (!response.ok) {
+    clearStoredYouTubeAuth();
+    throw new Error(getOAuthTokenErrorMessage(details, response.status));
+  }
+
+  if (!details || typeof details.access_token !== 'string') {
+    throw new Error('Google token refresh did not return an access token.');
+  }
+
+  return {
+    accessToken: details.access_token,
+    expiresIn: Number(details.expires_in || 3600),
     scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_SCOPE,
   };
 }
@@ -347,6 +435,16 @@ async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
 
   if (!GOOGLE_CLIENT_ID_PATTERN.test(trimmedClientId)) {
     throw new Error('Use a Google OAuth Client ID ending in .apps.googleusercontent.com.');
+  }
+
+  const storedAuth = readStoredYouTubeAuth();
+  if (
+    storedAuth &&
+    storedAuth.clientId === trimmedClientId &&
+    storedAuth.clientSecret === trimmedClientSecret &&
+    storedAuth.refreshToken
+  ) {
+    return refreshYouTubeAccessToken(storedAuth);
   }
 
   if (activeYouTubeOAuthCleanup) {
@@ -378,17 +476,29 @@ async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('code_challenge', codeChallenge);
     authUrl.searchParams.set('code_challenge_method', 'S256');
+    authUrl.searchParams.set('access_type', 'offline');
+    authUrl.searchParams.set('prompt', 'consent');
 
     await shell.openExternal(authUrl.toString());
     const code = await codeWaiter.promise;
 
-    return exchangeYouTubeOAuthCode({
+    const tokenResult = await exchangeYouTubeOAuthCode({
       clientId: trimmedClientId,
       clientSecret: trimmedClientSecret,
       code,
       redirectUri,
       codeVerifier,
     });
+
+    if (tokenResult.refreshToken) {
+      writeStoredYouTubeAuth({
+        clientId: trimmedClientId,
+        clientSecret: trimmedClientSecret,
+        refreshToken: tokenResult.refreshToken,
+      });
+    }
+
+    return tokenResult;
   } finally {
     if (codeWaiter) {
       codeWaiter.cancel();
@@ -641,6 +751,11 @@ ipcMain.handle('youtube-authorize', async (event, credentials) => {
     console.error('Error authorizing YouTube upload:', error);
     return { success: false, error: error.message };
   }
+});
+
+ipcMain.handle('youtube-clear-authorization', async () => {
+  clearStoredYouTubeAuth();
+  return { success: true };
 });
 
 ipcMain.handle('preset-choose-folder', async () => {

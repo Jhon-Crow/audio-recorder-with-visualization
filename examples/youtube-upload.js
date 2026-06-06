@@ -18,6 +18,7 @@
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
+  const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
   const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve or Electron, then use the localhost page.';
@@ -31,6 +32,9 @@
   const clientIdInput = document.getElementById('youtubeClientId');
   const clientSecretField = document.getElementById('youtubeClientSecretField');
   const clientSecretInput = document.getElementById('youtubeClientSecret');
+  const authSettingsStatus = document.getElementById('youtubeAuthSettingsStatus');
+  const signOutBtn = document.getElementById('youtubeSignOutBtn');
+  const signInSettingsBtn = document.getElementById('youtubeSignInSettingsBtn');
   const authStatus = document.getElementById('youtubeAuthStatus');
 
   const uploadModal = document.getElementById('youtubeUploadModal');
@@ -53,7 +57,7 @@
 
   const requiredElements = [
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
-    clientIdInput, clientSecretField, clientSecretInput, authStatus,
+    clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
     uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput,
     categorySelect, privacySelect, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
@@ -73,6 +77,7 @@
   let activeUploadController = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+  restoreStoredTokenState();
 
   function showModal(modal) {
     modal.style.display = 'flex';
@@ -127,6 +132,54 @@
 
   function hasValidAccessToken() {
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
+  }
+
+  function saveTokenState() {
+    try {
+      if (accessToken && accessTokenExpiresAt) {
+        localStorage.setItem(TOKEN_STATE_KEY, JSON.stringify({ accessToken, accessTokenExpiresAt }));
+      } else {
+        localStorage.removeItem(TOKEN_STATE_KEY);
+      }
+    } catch (error) {
+      console.warn('Failed to save YouTube token state:', error);
+    }
+    updateAuthSettingsStatus();
+  }
+
+  function restoreStoredTokenState() {
+    try {
+      const saved = localStorage.getItem(TOKEN_STATE_KEY);
+      if (!saved) {
+        return;
+      }
+      const state = JSON.parse(saved);
+      if (state && typeof state.accessToken === 'string' && Number.isFinite(Number(state.accessTokenExpiresAt))) {
+        accessToken = state.accessToken;
+        accessTokenExpiresAt = Number(state.accessTokenExpiresAt);
+      }
+    } catch (error) {
+      console.warn('Failed to load YouTube token state:', error);
+    }
+  }
+
+  function clearYouTubeAuth() {
+    accessToken = '';
+    accessTokenExpiresAt = 0;
+    saveTokenState();
+
+    if (isElectronYouTubeOAuthAvailable() && typeof window.electronAPI.clearYouTubeAuthorization === 'function') {
+      window.electronAPI.clearYouTubeAuthorization().catch((error) => {
+        console.warn('Failed to clear Electron YouTube authorization:', error);
+      });
+    }
+  }
+
+  function updateAuthSettingsStatus() {
+    const signedIn = hasValidAccessToken();
+    authSettingsStatus.textContent = signedIn ? 'Signed in' : 'Not signed in';
+    signOutBtn.style.display = signedIn ? '' : 'none';
+    signInSettingsBtn.style.display = signedIn ? 'none' : '';
   }
 
   function isSupportedGoogleSignInOrigin() {
@@ -278,6 +331,7 @@
 
   function openAuthModal() {
     updateAuthModeFields();
+    updateAuthSettingsStatus();
     authorizeBtn.textContent = 'Sign in with Google';
     showModal(authModal);
     clientIdInput.focus();
@@ -386,6 +440,7 @@
 
       accessToken = result.accessToken;
       accessTokenExpiresAt = Date.now() + Number(result.expiresIn || 3600) * 1000;
+      saveTokenState();
       return accessToken;
     }
 
@@ -420,6 +475,7 @@
 
           accessToken = response.access_token;
           accessTokenExpiresAt = Date.now() + Number(response.expires_in || 3600) * 1000;
+          saveTokenState();
           resolve(accessToken);
         },
       });
@@ -515,8 +571,7 @@
         updateAppStatus('YouTube upload cancelled', 'ready');
       } else {
         if (error.status === 401 || error.status === 403) {
-          accessToken = '';
-          accessTokenExpiresAt = 0;
+          clearYouTubeAuth();
         }
         setStatus(uploadStatus, error.message || 'YouTube upload failed.', 'error');
         updateAppStatus('YouTube upload failed', 'error');
@@ -543,6 +598,11 @@
   cancelAuthBtn.addEventListener('click', closeAuthModal);
   openGoogleCloudOAuthBtn.addEventListener('click', openGoogleCloudOAuthSetup);
   authorizeBtn.addEventListener('click', authorizeYouTube);
+  signOutBtn.addEventListener('click', () => {
+    clearYouTubeAuth();
+    setStatus(authStatus, 'Signed out of Google.');
+  });
+  signInSettingsBtn.addEventListener('click', authorizeYouTube);
 
   closeUploadBtn.addEventListener('click', closeUploadModal);
   cancelUploadBtn.addEventListener('click', () => {
@@ -553,6 +613,7 @@
     }
   });
   uploadForm.addEventListener('submit', submitUpload);
+  updateAuthSettingsStatus();
 
   [authModal, uploadModal].forEach((modal) => {
     modal.addEventListener('click', (event) => {
