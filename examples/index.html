@@ -13,6 +13,11 @@
     <div class="preset-list" id="presetList" aria-label="Saved presets"></div>
     <button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Preset settings" aria-label="Preset settings">⚙️</button>
   </aside>
+  <aside class="pipeline-sidebar" id="pipelineSidebar" aria-label="Pipeline sidebar">
+    <button type="button" class="preset-icon-btn" id="savePipelineBtn" data-tooltip="Save pipeline" aria-label="Save pipeline">💾</button>
+    <div class="pipeline-list" id="pipelineList" aria-label="Saved pipelines"></div>
+    <button type="button" class="preset-icon-btn preset-settings-btn" id="pipelineSettingsBtn" data-tooltip="Pipeline settings" aria-label="Pipeline settings">⚙️</button>
+  </aside>
   <div class="preset-context-menu" id="presetContextMenu" role="menu" aria-hidden="true">
     <button type="button" id="presetRenameBtn" role="menuitem">Rename</button>
     <button type="button" id="presetDeleteBtn" role="menuitem">Delete</button>
@@ -186,9 +191,13 @@
 
       <div id="pipeline" class="tab-content">
         <div class="pipeline-toolbar">
-          <button type="button" id="addPipelineStageBtn" class="btn-primary">Add Stage</button>
+          <button type="button" id="resetPipelineFieldsBtn" class="btn-secondary" style="display: none;">Reset Fields</button>
+          <button type="button" id="runPipelineBtn" class="btn-primary" disabled>RUN</button>
+          <button type="button" id="addPipelineStageBtn" class="btn-primary">+</button>
           <button type="button" id="clearPipelineBtn" class="btn-secondary">Clear</button>
+          <button type="button" id="pipelineTimezoneBtn" class="btn-info">Timezone: Set timezone</button>
         </div>
+        <p id="pipelineValidationStatus" class="pipeline-validation-status" aria-live="polite"></p>
         <div id="pipelineStages" class="pipeline-stages" aria-live="polite"></div>
       </div>
     </div>
@@ -871,6 +880,61 @@
       <div class="modal-footer">
         <button id="cancelPipelineDeleteBtn" type="button" class="btn">Cancel</button>
         <button id="confirmPipelineDeleteBtn" type="button" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineResetModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineResetTitle">
+      <div class="modal-header">
+        <h3 id="pipelineResetTitle">Reset Pipeline Fields</h3>
+        <button id="cancelPipelineResetXBtn" class="close-btn" type="button" aria-label="Cancel field reset">&times;</button>
+      </div>
+      <div class="modal-body pipeline-reset-options">
+        <label><input type="checkbox" id="resetPipelineNames"> Names</label>
+        <label><input type="checkbox" id="resetPipelineFiles"> Files</label>
+        <label><input type="checkbox" id="resetPipelineDescriptions"> Descriptions and tags</label>
+        <label><input type="checkbox" id="resetPipelineDates"> Publication dates</label>
+        <label><input type="checkbox" id="resetPipelinePresets"> Presets and resolution</label>
+        <label><input type="checkbox" id="resetPipelineActions"> Actions</label>
+        <label><input type="checkbox" id="resetPipelinePrivacy"> Privacy</label>
+        <label><input type="checkbox" id="resetPipelineYouTubeFlags"> YouTube checkboxes</label>
+        <label><input type="checkbox" id="resetPipelineAlbum"> Album tracks and cover</label>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineResetBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineResetHoldBtn" type="button" class="btn btn-danger pipeline-hold-btn">
+          <span class="pipeline-hold-progress"></span>
+          <span>Hold to Reset</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineTimezoneModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineTimezoneTitle">
+      <div class="modal-header">
+        <h3 id="pipelineTimezoneTitle">Pipeline Timezone</h3>
+        <button id="cancelPipelineTimezoneXBtn" class="close-btn" type="button" aria-label="Cancel timezone settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="pipeline-modal-field">
+          Timezone
+          <select id="pipelineTimezoneSelect" aria-label="Pipeline publication timezone">
+            <option value="UTC">UTC</option>
+            <option value="Europe/Moscow">Europe/Moscow</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Chicago">America/Chicago</option>
+            <option value="America/Denver">America/Denver</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Asia/Yekaterinburg">Asia/Yekaterinburg</option>
+            <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineTimezoneBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineTimezoneBtn" type="button" class="btn btn-primary">Save</button>
       </div>
     </div>
   </div>

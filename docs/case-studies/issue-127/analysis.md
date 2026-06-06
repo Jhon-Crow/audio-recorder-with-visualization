@@ -8,7 +8,7 @@
 
 ## Request Summary
 
-The requested work is not implementation yet. The issue asks to detail a plan, identify missing requirements, and attach a UI sketch for a new "Pipeline" mode placed to the right of Presentation mode.
+The first request asked to detail a plan, identify missing requirements, and attach a UI sketch for a new "Pipeline" mode placed to the right of Presentation mode. Follow-up feedback requested implementation of the critical Pipeline elements after the planning pass.
 
 The target mode is a batch constructor for preparing a sequence of video jobs:
 
@@ -126,3 +126,21 @@ Pipeline
 
 Start with a non-executing UI prototype behind the new tab plus persistence and validation. Then add API scheduling support with unit tests. Only after those are stable should the actual sequential runner be wired, because execution combines rendering, OAuth, large file memory pressure, and YouTube quota usage.
 
+## Implemented Critical Slice
+
+The current PR implements the non-executing critical Pipeline UI slice:
+
+- Pipeline tab after Presentation Mode with a default three-stage release scenario: pre-save short, release, and post-album short.
+- Right Pipeline sidebar visible only in Pipeline mode, with save/load buttons persisted in `localStorage`.
+- Per-stage file picker button before the stage number; RUN stays disabled until every stage has selected files.
+- Per-stage video name, action, conditional visualization resolution/preset, publish date, immediate checkbox, privacy, and expanded YouTube details.
+- Album release metadata editor with release type, shared YouTube cover input, album preset, editable track list, and drag/drop track ordering.
+- Delete button on each stage with a confirmation modal.
+- Per-stage YouTube upload modal state key so PR #126's upload-form memory behavior works independently per stage.
+- Timezone modal shown on first delayed-publication use and available from Pipeline settings.
+- Post-run Reset Fields button with remembered checkbox choices and a 600 ms hold-to-reset confirmation.
+- PR #108's batch visualization work is merged from latest upstream `main` so later album execution can reuse the batch conversion path.
+
+Implementation screenshot:
+
+![Implemented Pipeline mode](./screenshots/pipeline-mode-implemented.png)
