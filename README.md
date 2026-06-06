@@ -246,12 +246,14 @@ import { YouTubeUploader, YOUTUBE_UPLOAD_SCOPE } from 'audio-recorder-with-visua
 const uploader = new YouTubeUploader();
 const result = await uploader.upload({
   video: videoBlob,
+  thumbnail: thumbnailBlob, // optional JPEG, PNG, or WebP preview image
   accessToken,
   metadata: {
     title: 'Audio visualizer',
     description: 'Rendered with audio-recorder-with-visualization',
     tags: ['audio', 'visualizer'],
     privacyStatus: 'private',
+    publishAt: '2026-07-01T12:30:00.000Z', // optional scheduled release time; upload stays private until then
     short: true, // appends #shorts to the description
   },
   onProgress: ({ percent }) => {

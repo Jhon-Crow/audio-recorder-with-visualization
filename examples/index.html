@@ -783,6 +783,10 @@
                 <option value="28">Science & Technology</option>
               </select>
             </label>
+            <label>
+              Publish at
+              <input type="datetime-local" id="youtubePublishAt" aria-label="Scheduled YouTube publish date and time">
+            </label>
             <label class="youtube-wide-field">
               Description
               <textarea id="youtubeDescription" rows="5" aria-label="YouTube video description"></textarea>
@@ -790,6 +794,10 @@
             <label class="youtube-wide-field">
               Tags
               <input type="text" id="youtubeTags" aria-label="YouTube video tags">
+            </label>
+            <label class="youtube-wide-field">
+              Video Preview
+              <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">
             </label>
             <label class="youtube-checkbox">
               <input type="checkbox" id="youtubeShort" aria-label="Mark as YouTube Short"> Short (#shorts)
