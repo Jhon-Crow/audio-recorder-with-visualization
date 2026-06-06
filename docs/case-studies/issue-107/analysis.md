@@ -13,6 +13,7 @@ The app needed a batch mode for the "Audio to Video" flow:
 
 Raw issue data is stored in `logs/issue-107.json` and `logs/issue-107-comments.json`.
 PR data and review feedback are stored in `logs/pr-108.json` and `logs/pr-108-comments.json`.
+Latest resumed-session artifacts are stored under `artifacts/`, including PR/issue API exports, CI log `artifacts/ci-logs/build-portable-exe-26972695786.log`, and the owner-provided screenshot `artifacts/images/pr-comment-4638214822-mp4-webm-mixed.png`.
 
 ## Existing Behavior
 
@@ -30,6 +31,7 @@ The converter already accepts a single `File` as `audioSource` and renders with 
 - Owner feedback reported that Electron "Save All" still opened a save dialog for each track.
 - The Electron save path was changed to select one destination folder and write every rendered video into that folder.
 - Owner feedback then reported that when MP4 was selected, only one visualization was MP4 and the rest were WebM.
+- On 2026-06-06 the owner reported the MP4/WebM mix still reproduced on a system with confirmed MP4 support and provided a screenshot showing one `.mp4` file and several `.webm` files from the same batch.
 
 ## External Notes
 
@@ -50,9 +52,12 @@ References:
 
 ## Root Cause: Mixed MP4/WebM Batch Output
 
-The batch conversion loop read `#videoFormat.value` inside the loop for each file. That meant the selected requested format was not treated as a batch-level invariant. If conversion or surrounding UI state changed the select value while the batch was running, later files could be requested as WebM even though the user started the batch with MP4 selected.
+Two separate issues contributed to the mixed-extension symptom:
 
-The correct behavior is to capture the requested format once when the user clicks "Convert to Video" and pass that same requested format to every file in the batch. Individual files can still fall back to WebM through `convertWithFallback()` when MP4 encoding is genuinely unavailable, but a UI setting mutation must not silently change the requested format for later files.
+1. The initial batch conversion loop read `#videoFormat.value` inside the loop for each file. That meant the selected requested format was not treated as a batch-level invariant. If conversion or surrounding UI state changed the select value while the batch was running, later files could be requested as WebM even though the user started the batch with MP4 selected.
+2. The rendered recording filename trusted the `format` metadata passed into `addRecording()` before checking the actual `Blob.type`. If stale or fallback metadata said `webm`, the UI and Save All path could name an MP4 blob as `.webm`. The 2026-06-06 screenshot matched this remaining app-boundary failure: the batch save/listing result could show mixed extensions even when the encoder produced MP4 blobs.
+
+The correct behavior is to capture the requested format once when the user clicks "Convert to Video" and pass that same requested format to every file in the batch. Individual files can still fall back to WebM through `convertWithFallback()` when MP4 encoding is genuinely unavailable. After each conversion, the app should prefer the actual rendered blob MIME type for display and save filenames, using the requested/result format only when the blob MIME type is unavailable.
 
 ## Implemented Solution
 
@@ -66,6 +71,7 @@ The correct behavior is to capture the requested format once when the user click
   - Electron: calls `window.electronAPI.saveAllVideosAndShow()` once, asks for one folder, and writes all rendered videos into that folder.
   - Browser: triggers one download per generated video.
 - Captured the requested output format once per batch so every selected file receives the same requested format.
+- Changed recording filename extension detection to prefer the actual rendered `Blob.type` (`video/mp4` or `video/webm`) before falling back to metadata.
 
 ## Verification
 
@@ -76,3 +82,4 @@ Added Cypress coverage for:
 - The `Save All` control existing and staying disabled until recordings are available.
 - Electron `Save All` using one batch save request.
 - MP4 selected at batch start being passed to every file even if the UI select changes mid-batch.
+- Every MP4 blob in a batch being listed and downloaded with an `.mp4` filename, even when stale metadata says `webm`.

@@ -30,14 +30,16 @@ Cypress.Commands.add('loadTestBackgroundImage', () => {
     // Simulate loading the background image by setting it directly
     win.eval(`
       (async () => {
-        const recorder = window.recorder;
+        const app = window.AudioRecorderApp;
+        const recorder = app && app.recorder;
         if (recorder) {
           await recorder.setVisualizerOptions({
             backgroundImage: '${testImageDataUrl}'
           });
         }
-        // Also update the global variable
-        window.currentBackgroundImageUrl = '${testImageDataUrl}';
+        if (app) {
+          app.currentBackgroundImageUrl = '${testImageDataUrl}';
+        }
       })();
     `);
   });
@@ -48,8 +50,9 @@ Cypress.Commands.add('loadTestBackgroundImage', () => {
  */
 Cypress.Commands.add('getVisualizerOptions', () => {
   return cy.window().then((win) => {
-    if (win.recorder && win.recorder.visualizer) {
-      return win.recorder.visualizer.options;
+    const recorder = win.AudioRecorderApp && win.AudioRecorderApp.recorder;
+    if (recorder && recorder.visualizer) {
+      return recorder.visualizer.options;
     }
     return null;
   });
@@ -60,9 +63,10 @@ Cypress.Commands.add('getVisualizerOptions', () => {
  */
 Cypress.Commands.add('saveAppSettings', () => {
   cy.window().then((win) => {
-    if (typeof win.getCurrentSettings === 'function' && typeof win.saveSettings === 'function') {
-      const settings = win.getCurrentSettings();
-      win.saveSettings(settings);
+    const app = win.AudioRecorderApp;
+    if (app && typeof app.getCurrentSettings === 'function' && typeof app.saveSettings === 'function') {
+      const settings = app.getCurrentSettings();
+      app.saveSettings(settings);
     }
   });
 });

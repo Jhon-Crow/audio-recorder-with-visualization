@@ -1,0 +1,263 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run
+
+
+DevTools listening on ws://127.0.0.1:36143/devtools/browser/ee867ae0-898d-4efe-a042-c735e0be8dbc
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          5 found (aspect-ratio-settings.cy.js, background-size-preservation.cy.js, larg │
+  │                 e-file-handling.cy.js, preset-management.cy.js, preview-alignment-guides.cy.js │
+  │                 )                                                                              │
+  │ Searched:       cypress/e2e/**/*.cy.{js,jsx,ts,tsx}                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  aspect-ratio-settings.cy.js                                                     (1 of 5)
+
+
+  Aspect Ratio Settings
+    ✓ defaults to 16:9 and preserves the existing 1080p canvas size (912ms)
+    ✓ switches 1080p output to 9:16 shorts dimensions (743ms)
+    ✓ calculates portrait dimensions from the selected quality height (699ms)
+    ✓ restores the selected aspect ratio after reload (1644ms)
+
+
+  4 passing (4s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     4 seconds                                                                        │
+  │ Spec Ran:     aspect-ratio-settings.cy.js                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/aspect-ratio-settings.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  background-size-preservation.cy.js                                              (2 of 5)
+
+
+  Background Size Mode Preservation
+    ✓ should load with default background size mode (cover) (913ms)
+    ✓ should persist background size mode to localStorage when changed (1500ms)
+    1) should restore background size mode after page reload
+    2) should apply background size mode correctly with a background image
+    3) should preserve background size mode with background image after reload
+    ✓ should show custom size controls when custom mode is selected (1645ms)
+
+
+  3 passing (11s)
+  3 failing
+
+  1) Background Size Mode Preservation
+       should restore background size mode after page reload:
+     AssertionError: expected null not to be null
+      at Object.proxyGetter [as get] (http://localhost:8080/__cypress/runner/cypress_runner.js:80949:22)
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/background-size-preservation.cy.js:56:34)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+
+  2) Background Size Mode Preservation
+       should apply background size mode correctly with a background image:
+     TypeError: Cannot read properties of null (reading 'backgroundSizeMode')
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/background-size-preservation.cy.js:83:25)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151996:15)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+
+  3) Background Size Mode Preservation
+       should preserve background size mode with background image after reload:
+     AssertionError: expected null to equal 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA2ElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOBXA8/NAAFRU2lOAAAAAElFTkSuQmCC'
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/background-size-preservation.cy.js:116:41)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      3                                                                                │
+  │ Failing:      3                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  3                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     10 seconds                                                                       │
+  │ Spec Ran:     background-size-preservation.cy.js                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat     (1280x720)
+     ion.cy.js/Background Size Mode Preservation -- should restore background size mo
+     de after page reload (failed).png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat     (1280x720)
+     ion.cy.js/Background Size Mode Preservation -- should apply background size mode
+      correctly with a background image (failed).png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat     (1280x720)
+     ion.cy.js/Background Size Mode Preservation -- should preserve background size m
+     ode with background image after reload (failed).png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/background-size-preservation.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  large-file-handling.cy.js                                                       (3 of 5)
+
+
+  Large File Handling
+    ✓ should handle Uint8Array conversion for file transfer (724ms)
+    ✓ should not use Array.from for blob conversion (644ms)
+    ✓ should handle Blob.arrayBuffer() conversion (14738ms)
+    ✓ should demonstrate Array.from limitation for documentation (3255ms)
+
+
+  4 passing (20s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     19 seconds                                                                       │
+  │ Spec Ran:     large-file-handling.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/large-file-handling.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preset-management.cy.js                                                         (4 of 5)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (1778ms)
+    ✓ uses skip dialog mode with numbered default names (1146ms)
+    ✓ renames, deletes, and reorders presets from the sidebar (2322ms)
+    ✓ highlights the loaded preset until settings change (1654ms)
+
+
+  4 passing (7s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     7 seconds                                                                        │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preset-management.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preview-alignment-guides.cy.js                                                  (5 of 5)
+
+
+  Preview Alignment Guides
+    ✓ shows a preview-only mounting-area outline for portrait output (926ms)
+    ✓ reveals grid and smart guides only while dragging visualization offsets (1096ms)
+
+
+  2 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     2 seconds                                                                        │
+  │ Spec Ran:     preview-alignment-guides.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preview-alignment-guides.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  aspect-ratio-settings.cy.js              00:04        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✖  background-size-preservation.cy.js       00:10        6        3        3        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  large-file-handling.cy.js                00:19        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preset-management.cy.js                  00:07        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preview-alignment-guides.cy.js           00:02        2        2        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 5 failed (20%)                      00:43       20       17        3        -        -

@@ -1,0 +1,77 @@
+
+DevTools listening on ws://127.0.0.1:35909/devtools/browser/2d390f16-744b-4fae-813c-efca4b5febc5
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (background-size-preservation.cy.js)                                   │
+  │ Searched:       cypress/e2e/background-size-preservation.cy.js                                 │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  background-size-preservation.cy.js                                              (1 of 1)
+
+
+  Background Size Mode Preservation
+    ✓ should load with default background size mode (cover) (859ms)
+    ✓ should persist background size mode to localStorage when changed (1353ms)
+    ✓ should restore background size mode after page reload (8462ms)
+    ✓ should apply background size mode correctly with a background image (8146ms)
+    ✓ should preserve background size mode with background image after reload (3449ms)
+    ✓ should show custom size controls when custom mode is selected (1700ms)
+
+
+  6 passing (24s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      6                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  5                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     24 seconds                                                                       │
+  │ Spec Ran:     background-size-preservation.cy.js                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-cover.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-contain.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-stretch.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-center.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-contain-after-reload.png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/background-size-preservation.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  background-size-preservation.cy.js       00:24        6        6        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:24        6        6        -        -        -

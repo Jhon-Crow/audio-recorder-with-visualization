@@ -1,0 +1,987 @@
+build	UNKNOWN STEP	﻿2026-06-04T18:52:39.0208363Z Current runner version: '2.334.0'
+build	UNKNOWN STEP	2026-06-04T18:52:39.0236765Z ##[group]Runner Image Provisioner
+build	UNKNOWN STEP	2026-06-04T18:52:39.0237580Z Hosted Compute Agent
+build	UNKNOWN STEP	2026-06-04T18:52:39.0238262Z Version: 20260520.533
+build	UNKNOWN STEP	2026-06-04T18:52:39.0238865Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+build	UNKNOWN STEP	2026-06-04T18:52:39.0239552Z Build Date: 2026-05-20T17:44:04Z
+build	UNKNOWN STEP	2026-06-04T18:52:39.0240190Z Worker ID: {17ad11a5-9f76-48be-bfba-93eac4fa7f48}
+build	UNKNOWN STEP	2026-06-04T18:52:39.0240932Z Azure Region: eastus
+build	UNKNOWN STEP	2026-06-04T18:52:39.0241472Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:39.0243045Z ##[group]Operating System
+build	UNKNOWN STEP	2026-06-04T18:52:39.0243728Z Microsoft Windows Server 2025
+build	UNKNOWN STEP	2026-06-04T18:52:39.0244336Z 10.0.26100
+build	UNKNOWN STEP	2026-06-04T18:52:39.0244823Z Datacenter
+build	UNKNOWN STEP	2026-06-04T18:52:39.0245314Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:39.0245826Z ##[group]Runner Image
+build	UNKNOWN STEP	2026-06-04T18:52:39.0246383Z Image: windows-2025
+build	UNKNOWN STEP	2026-06-04T18:52:39.0246902Z Version: 20260525.149.1
+build	UNKNOWN STEP	2026-06-04T18:52:39.0248286Z Included Software: https://github.com/actions/runner-images/blob/win25/20260525.149/images/windows/Windows2025-Readme.md
+build	UNKNOWN STEP	2026-06-04T18:52:39.0249779Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260525.149
+build	UNKNOWN STEP	2026-06-04T18:52:39.0250939Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:39.0252086Z ##[group]GITHUB_TOKEN Permissions
+build	UNKNOWN STEP	2026-06-04T18:52:39.0253978Z Contents: read
+build	UNKNOWN STEP	2026-06-04T18:52:39.0254544Z Metadata: read
+build	UNKNOWN STEP	2026-06-04T18:52:39.0255048Z Packages: read
+build	UNKNOWN STEP	2026-06-04T18:52:39.0255547Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:39.0257483Z Secret source: None
+build	UNKNOWN STEP	2026-06-04T18:52:39.0258139Z Prepare workflow directory
+build	UNKNOWN STEP	2026-06-04T18:52:39.0610554Z Prepare all required actions
+build	UNKNOWN STEP	2026-06-04T18:52:39.0648061Z Getting action download info
+build	UNKNOWN STEP	2026-06-04T18:52:39.3816772Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	UNKNOWN STEP	2026-06-04T18:52:39.5083846Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+build	UNKNOWN STEP	2026-06-04T18:52:39.6645796Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	UNKNOWN STEP	2026-06-04T18:52:39.9973206Z Complete job name: build
+build	UNKNOWN STEP	2026-06-04T18:52:40.1156461Z ##[group]Run actions/checkout@v4
+build	UNKNOWN STEP	2026-06-04T18:52:40.1157533Z with:
+build	UNKNOWN STEP	2026-06-04T18:52:40.1158108Z   repository: Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:40.1163456Z   token: ***
+build	UNKNOWN STEP	2026-06-04T18:52:40.1164146Z   ssh-strict: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1164617Z   ssh-user: git
+build	UNKNOWN STEP	2026-06-04T18:52:40.1165082Z   persist-credentials: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1165590Z   clean: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1166046Z   sparse-checkout-cone-mode: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1166590Z   fetch-depth: 1
+build	UNKNOWN STEP	2026-06-04T18:52:40.1167036Z   fetch-tags: false
+build	UNKNOWN STEP	2026-06-04T18:52:40.1167504Z   show-progress: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1167962Z   lfs: false
+build	UNKNOWN STEP	2026-06-04T18:52:40.1168386Z   submodules: false
+build	UNKNOWN STEP	2026-06-04T18:52:40.1168858Z   set-safe-directory: true
+build	UNKNOWN STEP	2026-06-04T18:52:40.1169621Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:40.2863609Z Syncing repository: Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:40.2866199Z ##[group]Getting Git version info
+build	UNKNOWN STEP	2026-06-04T18:52:40.2867289Z Working directory is 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	UNKNOWN STEP	2026-06-04T18:52:40.3700018Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	UNKNOWN STEP	2026-06-04T18:52:40.5370959Z git version 2.54.0.windows.1
+build	UNKNOWN STEP	2026-06-04T18:52:40.5426865Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:40.5446828Z Temporarily overriding HOME='D:\a\_temp\3dcdd98f-6bd3-44ba-95d9-ee1a5e7fb051' before making global git config changes
+build	UNKNOWN STEP	2026-06-04T18:52:40.5448153Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-06-04T18:52:40.5458660Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:40.5799204Z Deleting the contents of 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	UNKNOWN STEP	2026-06-04T18:52:40.5805636Z ##[group]Initializing the repository
+build	UNKNOWN STEP	2026-06-04T18:52:40.5815704Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:40.6272758Z Initialized empty Git repository in D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/.git/
+build	UNKNOWN STEP	2026-06-04T18:52:40.6313912Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:40.6625731Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:40.6626514Z ##[group]Disabling automatic garbage collection
+build	UNKNOWN STEP	2026-06-04T18:52:40.6635753Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+build	UNKNOWN STEP	2026-06-04T18:52:40.6910728Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:40.6911422Z ##[group]Setting up auth
+build	UNKNOWN STEP	2026-06-04T18:52:40.6929605Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-06-04T18:52:40.7212927Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	UNKNOWN STEP	2026-06-04T18:52:41.8503796Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-06-04T18:52:41.8787148Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	UNKNOWN STEP	2026-06-04T18:52:42.4290666Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-06-04T18:52:42.4587746Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	UNKNOWN STEP	2026-06-04T18:52:42.9710174Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+build	UNKNOWN STEP	2026-06-04T18:52:43.0009973Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:43.0013161Z ##[group]Fetching the repository
+build	UNKNOWN STEP	2026-06-04T18:52:43.0024094Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +568610f3f4138629f1d6644c28a98ff2a9d03e0f:refs/remotes/pull/108/merge
+build	UNKNOWN STEP	2026-06-04T18:52:43.7172796Z From https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:52:43.7173859Z  * [new ref]         568610f3f4138629f1d6644c28a98ff2a9d03e0f -> pull/108/merge
+build	UNKNOWN STEP	2026-06-04T18:52:43.7530181Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:43.7530852Z ##[group]Determining the checkout info
+build	UNKNOWN STEP	2026-06-04T18:52:43.7533448Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:43.7544357Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+build	UNKNOWN STEP	2026-06-04T18:52:43.7883796Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+build	UNKNOWN STEP	2026-06-04T18:52:43.8182203Z ##[group]Checking out the ref
+build	UNKNOWN STEP	2026-06-04T18:52:43.8191169Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/108/merge
+build	UNKNOWN STEP	2026-06-04T18:52:43.9098632Z Note: switching to 'refs/remotes/pull/108/merge'.
+build	UNKNOWN STEP	2026-06-04T18:52:43.9099125Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9099534Z You are in 'detached HEAD' state. You can look around, make experimental
+build	UNKNOWN STEP	2026-06-04T18:52:43.9100489Z changes and commit them, and you can discard any commits you make in this
+build	UNKNOWN STEP	2026-06-04T18:52:43.9101439Z state without impacting any branches by switching back to a branch.
+build	UNKNOWN STEP	2026-06-04T18:52:43.9102012Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9102390Z If you want to create a new branch to retain commits you create, you may
+build	UNKNOWN STEP	2026-06-04T18:52:43.9103353Z do so (now or later) by using -c with the switch command. Example:
+build	UNKNOWN STEP	2026-06-04T18:52:43.9103891Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9104085Z   git switch -c <new-branch-name>
+build	UNKNOWN STEP	2026-06-04T18:52:43.9104441Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9104625Z Or undo this operation with:
+build	UNKNOWN STEP	2026-06-04T18:52:43.9104998Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9105160Z   git switch -
+build	UNKNOWN STEP	2026-06-04T18:52:43.9105388Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9106957Z Turn off this advice by setting config variable advice.detachedHead to false
+build	UNKNOWN STEP	2026-06-04T18:52:43.9107628Z 
+build	UNKNOWN STEP	2026-06-04T18:52:43.9108397Z HEAD is now at 568610f Merge eb53c1e25d9d023a15173e1b3910397b8beccaf7 into e61a3c131475176c7087ed7cc3856e7797d0ad01
+build	UNKNOWN STEP	2026-06-04T18:52:43.9175913Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:43.9500738Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+build	UNKNOWN STEP	2026-06-04T18:52:43.9764863Z 568610f3f4138629f1d6644c28a98ff2a9d03e0f
+build	UNKNOWN STEP	2026-06-04T18:52:44.0254405Z ##[group]Run actions/setup-node@v4
+build	UNKNOWN STEP	2026-06-04T18:52:44.0254728Z with:
+build	UNKNOWN STEP	2026-06-04T18:52:44.0254916Z   node-version: 20
+build	UNKNOWN STEP	2026-06-04T18:52:44.0255106Z   cache: npm
+build	UNKNOWN STEP	2026-06-04T18:52:44.0255285Z   always-auth: false
+build	UNKNOWN STEP	2026-06-04T18:52:44.0255481Z   check-latest: false
+build	UNKNOWN STEP	2026-06-04T18:52:44.0259368Z   token: ***
+build	UNKNOWN STEP	2026-06-04T18:52:44.0259613Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:44.2610647Z Attempting to download 20...
+build	UNKNOWN STEP	2026-06-04T18:52:44.6808415Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-win32-x64.7z
+build	UNKNOWN STEP	2026-06-04T18:52:44.9730653Z Extracting ...
+build	UNKNOWN STEP	2026-06-04T18:52:47.1844274Z Adding to the cache ...
+build	UNKNOWN STEP	2026-06-04T18:52:50.3963698Z ##[group]Environment details
+build	UNKNOWN STEP	2026-06-04T18:52:51.7436651Z node: v20.20.2
+build	UNKNOWN STEP	2026-06-04T18:52:51.7437001Z npm: 10.8.2
+build	UNKNOWN STEP	2026-06-04T18:52:51.7437298Z yarn: 1.22.22
+build	UNKNOWN STEP	2026-06-04T18:52:51.7437979Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:52:51.8194853Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\20.20.2\x64\npm.cmd config get cache"
+build	UNKNOWN STEP	2026-06-04T18:52:52.1469870Z C:\npm\cache
+build	UNKNOWN STEP	2026-06-04T18:52:52.3530510Z Cache hit for: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	UNKNOWN STEP	2026-06-04T18:52:53.2342413Z Received 132340717 of 132340717 (100.0%), 153.2 MBs/sec
+build	UNKNOWN STEP	2026-06-04T18:52:53.2345897Z Cache Size: ~126 MB (132340717 B)
+build	UNKNOWN STEP	2026-06-04T18:52:53.2379146Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/4d4e9c35-e415-42cb-89fc-ecd2c0e14a47/cache.tzst -P -C D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization --force-local --use-compress-program "zstd -d"
+build	UNKNOWN STEP	2026-06-04T18:52:58.5905768Z Cache restored successfully
+build	UNKNOWN STEP	2026-06-04T18:52:58.6038579Z Cache restored from key: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	UNKNOWN STEP	2026-06-04T18:52:58.6498573Z ##[group]Run npm ci
+build	UNKNOWN STEP	2026-06-04T18:52:58.6498869Z ^[[36;1mnpm ci^[[0m
+build	UNKNOWN STEP	2026-06-04T18:52:58.6625587Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	UNKNOWN STEP	2026-06-04T18:52:58.6625949Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:53:10.1671933Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+build	UNKNOWN STEP	2026-06-04T18:53:10.2507391Z npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+build	UNKNOWN STEP	2026-06-04T18:53:10.2902536Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-04T18:53:10.3819431Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+build	UNKNOWN STEP	2026-06-04T18:53:10.6549405Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.6825073Z npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+build	UNKNOWN STEP	2026-06-04T18:53:10.7246713Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7351841Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7402187Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7414898Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7421596Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7431384Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7448120Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7464532Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7470904Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.7489915Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-04T18:53:10.8068778Z npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+build	UNKNOWN STEP	2026-06-04T18:53:11.1520807Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-04T18:53:11.1529490Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+build	UNKNOWN STEP	2026-06-04T18:53:11.5132250Z npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+build	UNKNOWN STEP	2026-06-04T18:53:12.0268364Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-04T18:53:12.0296292Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+build	UNKNOWN STEP	2026-06-04T18:53:16.8749455Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+build	UNKNOWN STEP	2026-06-04T18:54:19.0947121Z 
+build	UNKNOWN STEP	2026-06-04T18:54:19.0947925Z > audio-recorder-with-visualization@1.0.0 prepare
+build	UNKNOWN STEP	2026-06-04T18:54:19.0948877Z > npm run build
+build	UNKNOWN STEP	2026-06-04T18:54:19.0949101Z 
+build	UNKNOWN STEP	2026-06-04T18:54:19.4004308Z 
+build	UNKNOWN STEP	2026-06-04T18:54:19.4004990Z > audio-recorder-with-visualization@1.0.0 build
+build	UNKNOWN STEP	2026-06-04T18:54:19.4005785Z > rollup -c
+build	UNKNOWN STEP	2026-06-04T18:54:19.4006000Z 
+build	UNKNOWN STEP	2026-06-04T18:54:19.6350501Z (node:7912) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	UNKNOWN STEP	2026-06-04T18:54:19.6352316Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	UNKNOWN STEP	2026-06-04T18:54:19.6354101Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	UNKNOWN STEP	2026-06-04T18:54:19.6359120Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	UNKNOWN STEP	2026-06-04T18:54:20.3071493Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:54:20.3072630Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:23.7096241Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m3.4s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:23.7097780Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:54:23.7098410Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:25.9502283Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	UNKNOWN STEP	2026-06-04T18:54:25.9503755Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.2s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:25.9504246Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:54:25.9504616Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:26.0526223Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m102ms^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:54:26.1329934Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.1330755Z added 1134 packages, and audited 1135 packages in 1m
+build	UNKNOWN STEP	2026-06-04T18:54:26.1331257Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.1331511Z 197 packages are looking for funding
+build	UNKNOWN STEP	2026-06-04T18:54:26.1332009Z   run `npm fund` for details
+build	UNKNOWN STEP	2026-06-04T18:54:26.4434670Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.4435386Z 44 vulnerabilities (1 low, 14 moderate, 28 high, 1 critical)
+build	UNKNOWN STEP	2026-06-04T18:54:26.4435802Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.4436056Z To address issues that do not require attention, run:
+build	UNKNOWN STEP	2026-06-04T18:54:26.4436437Z   npm audit fix
+build	UNKNOWN STEP	2026-06-04T18:54:26.4436586Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.4436829Z To address all issues (including breaking changes), run:
+build	UNKNOWN STEP	2026-06-04T18:54:26.4437232Z   npm audit fix --force
+build	UNKNOWN STEP	2026-06-04T18:54:26.4437764Z 
+build	UNKNOWN STEP	2026-06-04T18:54:26.4437900Z Run `npm audit` for details.
+build	UNKNOWN STEP	2026-06-04T18:54:26.7633175Z ##[group]Run npm test
+build	UNKNOWN STEP	2026-06-04T18:54:26.7633467Z ^[[36;1mnpm test^[[0m
+build	UNKNOWN STEP	2026-06-04T18:54:26.7691352Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	UNKNOWN STEP	2026-06-04T18:54:26.7691705Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:54:27.3316357Z 
+build	UNKNOWN STEP	2026-06-04T18:54:27.3317119Z > audio-recorder-with-visualization@1.0.0 test
+build	UNKNOWN STEP	2026-06-04T18:54:27.3317831Z > jest
+build	UNKNOWN STEP	2026-06-04T18:54:27.3318065Z 
+build	UNKNOWN STEP	2026-06-04T18:54:37.6264527Z PASS tests/BaseVisualizer.test.ts (8.035 s)
+build	UNKNOWN STEP	2026-06-04T18:54:39.0236594Z PASS tests/MoreVisualizers.test.ts (9.531 s)
+build	UNKNOWN STEP	2026-06-04T18:54:39.0631505Z PASS tests/Visualizers.test.ts
+build	UNKNOWN STEP	2026-06-04T18:54:39.3129796Z PASS tests/AudioRecorder.test.ts (9.752 s)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4000133Z   ● Console
+build	UNKNOWN STEP	2026-06-04T18:54:39.4166273Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4166712Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4167382Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4383779Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4571094Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4604046Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4630337Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4632676Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4633174Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4633852Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4650909Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4666502Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4667056Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4667485Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4667872Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4668371Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4668585Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4669060Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4669477Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4669855Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4670371Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4670582Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4671080Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4671537Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4671912Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4672411Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4672620Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4673133Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4673591Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4673956Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4674443Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4674650Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4675126Z       [AudioRecorder] Debug visual activated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4675553Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4675930Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4676410Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4676615Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4677104Z       [AudioRecorder] Debug visual deactivated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4685130Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4685708Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4686232Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4686440Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4687007Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4687446Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4687821Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4688329Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4688536Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4689038Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4689440Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4689828Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4690340Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4690546Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4691264Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4691710Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4692067Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4692568Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4692783Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4693258Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4693672Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4694057Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4694556Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4695836Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4699307Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4699915Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4700421Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4700986Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4701235Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4701816Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4702611Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4703036Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4703589Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4703824Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4704631Z       [AudioRecorder] Debug visual activated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4735890Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4736593Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4737208Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4737432Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4737946Z       [AudioRecorder] Debug visual deactivated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4738385Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4738741Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4739235Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4739439Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4739916Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4740649Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4741040Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4741538Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4741740Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4742218Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4742637Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4743019Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4743544Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4743752Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4744207Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4744611Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4744952Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4745424Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4745656Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4746596Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4746990Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4747349Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4747840Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4747994Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4748684Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4749058Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4749334Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4749737Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4749872Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4750347Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4750895Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4751325Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4751898Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4752155Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4752686Z       [AudioRecorder] Debug visual activated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4753143Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4753525Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4754035Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4754267Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4754816Z       [AudioRecorder] Debug visual deactivated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4755349Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4755789Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4756348Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4757594Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4758260Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4758810Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4759275Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4759888Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4760169Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4760781Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4761253Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4761683Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4762291Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4762553Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4763561Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4764051Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4764458Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4765024Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4765273Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4766217Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4767823Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4768497Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4769166Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4769444Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4770054Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4770586Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4771481Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4779296Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4779618Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4780258Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4780827Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4781638Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4782578Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4783003Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4783474Z       [AudioRecorder] Debug visual activated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4783848Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4784173Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4821376Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4821555Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4822000Z       [AudioRecorder] Debug visual deactivated
+build	UNKNOWN STEP	2026-06-04T18:54:39.4822361Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4822650Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4823076Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4823204Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4823608Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4823928Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4824232Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4824655Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4830740Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4831425Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4831801Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4832158Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4832631Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4832778Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4833210Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4833548Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4833843Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4834276Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4834407Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4834821Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4835158Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4835474Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4835912Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4836033Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4836446Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4836792Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4837073Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4837478Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4837600Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4838021Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4838385Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4838666Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4839084Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4839223Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4839641Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4839977Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4840297Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4840733Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4840854Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4841379Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	UNKNOWN STEP	2026-06-04T18:54:39.4841820Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4842121Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4842543Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4842660Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4843300Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	UNKNOWN STEP	2026-06-04T18:54:39.4843873Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4844174Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4844598Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4844715Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4845219Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	UNKNOWN STEP	2026-06-04T18:54:39.4845648Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4845955Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4846670Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4846807Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4847802Z       [AudioAnalyzer] Connected MediaStream source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4848216Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4848542Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4848991Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4849117Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4849524Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4849878Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4850171Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4850574Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4850711Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4851139Z       [AudioRecorder] Started microphone capture
+build	UNKNOWN STEP	2026-06-04T18:54:39.4851515Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4851806Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4852206Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4852338Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4852921Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4853438Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4853743Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4854151Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4854289Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4854959Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	UNKNOWN STEP	2026-06-04T18:54:39.4855564Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4855854Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4856251Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4856383Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4856867Z       [AudioRecorder] Stopped timer fallback visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4857292Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4857575Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4857969Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4858104Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4858489Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4858839Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4859128Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4859554Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4859700Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4860113Z       [AudioRecorder] Stopped microphone
+build	UNKNOWN STEP	2026-06-04T18:54:39.4860462Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4860747Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4861149Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4861278Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4861666Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4862004Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4862318Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4862748Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4862879Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4863263Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4863607Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4863903Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4864312Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4864451Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4864847Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4865189Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4865496Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4865924Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4866066Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4866468Z       [AudioAnalyzer] Closed AudioContext
+build	UNKNOWN STEP	2026-06-04T18:54:39.4866805Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4867105Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4867872Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4868006Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4868420Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4868776Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4869054Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4869467Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4869596Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4870021Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4870388Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4870668Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4871073Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4871209Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4871628Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4871976Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4872294Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4872997Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4873274Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4873821Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	UNKNOWN STEP	2026-06-04T18:54:39.4874276Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4874591Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4875043Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4875181Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4875841Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	UNKNOWN STEP	2026-06-04T18:54:39.4876431Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4876749Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4877201Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4877339Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4877875Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	UNKNOWN STEP	2026-06-04T18:54:39.4878359Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4878683Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4879143Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4879285Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4879778Z       [AudioAnalyzer] Connected MediaStream source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4880190Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4880506Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4880955Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4881101Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4881507Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4881856Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4882138Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4882556Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4882685Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4883108Z       [AudioRecorder] Started microphone capture
+build	UNKNOWN STEP	2026-06-04T18:54:39.4883485Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4883769Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4884176Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4884312Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4884902Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4885425Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4885702Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4886118Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4886302Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4886979Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	UNKNOWN STEP	2026-06-04T18:54:39.4887957Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4888252Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4888664Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4888794Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4889366Z       [AudioRecorder] Page visible, switching to requestAnimationFrame
+build	UNKNOWN STEP	2026-06-04T18:54:39.4889891Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4890163Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4890571Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4890703Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4891187Z       [AudioRecorder] Stopped timer fallback visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4891612Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4891889Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4892295Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4892427Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4892823Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4893176Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4893466Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4893873Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4893995Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4894394Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4894743Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4895038Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4895462Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4895592Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4896008Z       [AudioRecorder] Stopped microphone
+build	UNKNOWN STEP	2026-06-04T18:54:39.4896344Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4896630Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4897047Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4897174Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4897581Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4897911Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4898225Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4898654Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4898777Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4900290Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4901422Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4901791Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4902253Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4902390Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4902817Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4903161Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4903495Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4903958Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4904097Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4904520Z       [AudioAnalyzer] Closed AudioContext
+build	UNKNOWN STEP	2026-06-04T18:54:39.4904859Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4905184Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4905630Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4905764Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4906249Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4906622Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4906919Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4907359Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4907504Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4908339Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4908732Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4909015Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4909426Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4909558Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4909965Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4910312Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4910615Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4911037Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4911171Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4911673Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	UNKNOWN STEP	2026-06-04T18:54:39.4912120Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4912427Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4912865Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4912996Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4913639Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	UNKNOWN STEP	2026-06-04T18:54:39.4914238Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4914551Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4914980Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4915103Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4915606Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	UNKNOWN STEP	2026-06-04T18:54:39.4916047Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4916351Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4916787Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4916915Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4917355Z       [AudioAnalyzer] Connected MediaStream source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4917731Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4918041Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4918470Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4918593Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4918984Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4919327Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4919607Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4920022Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4920156Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4920612Z       [AudioRecorder] Started microphone capture
+build	UNKNOWN STEP	2026-06-04T18:54:39.4920995Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4921277Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4921679Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4921810Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4922203Z       [AudioRecorder] Stopped microphone
+build	UNKNOWN STEP	2026-06-04T18:54:39.4922538Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4922816Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4923214Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4923342Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4923720Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4924041Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4924337Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4924749Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4924872Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4925252Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4925587Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4925856Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4926241Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4926616Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4927169Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4927525Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4927809Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4928543Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4928675Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4929197Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4929597Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4929964Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4930417Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4930607Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4931077Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4931456Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4931790Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4932213Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4932400Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4932864Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4933523Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4933904Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4934367Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4934567Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4935051Z       [AudioAnalyzer] Closed AudioContext
+build	UNKNOWN STEP	2026-06-04T18:54:39.4935476Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4935864Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4936326Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4936530Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4937007Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4937390Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4937712Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4938127Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4938535Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4939052Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4939473Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4939819Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4940252Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4940439Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4940899Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4941287Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4941654Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4942085Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4942265Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4942857Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	UNKNOWN STEP	2026-06-04T18:54:39.4943366Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4943732Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4944179Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4944349Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4945074Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	UNKNOWN STEP	2026-06-04T18:54:39.4945702Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4946029Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4946479Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4946661Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4947236Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	UNKNOWN STEP	2026-06-04T18:54:39.4947742Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4948057Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4948474Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4948603Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4949078Z       [AudioAnalyzer] Connected MediaStream source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4949497Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4949823Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4950240Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4950429Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4950886Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4951258Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4951558Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4952010Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4952192Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4952663Z       [AudioRecorder] Started microphone capture
+build	UNKNOWN STEP	2026-06-04T18:54:39.4953062Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4953357Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4953805Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4953977Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4954644Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4955202Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4955496Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4956408Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4956634Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4957449Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	UNKNOWN STEP	2026-06-04T18:54:39.4958124Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4958765Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4959274Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4959475Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4960060Z       [AudioRecorder] Stopped timer fallback visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4960540Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4960856Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4961314Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4961497Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4961995Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4962406Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4962718Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4963188Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4963376Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4963785Z       [AudioRecorder] Stopped microphone
+build	UNKNOWN STEP	2026-06-04T18:54:39.4964133Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4964413Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4964829Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4964960Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4965347Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4965690Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4966003Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4966453Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4966586Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4966981Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.4967319Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4967603Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4968016Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4968150Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4968549Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4968910Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4969237Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4969695Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4969854Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4970269Z       [AudioAnalyzer] Closed AudioContext
+build	UNKNOWN STEP	2026-06-04T18:54:39.4970623Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4970939Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4971384Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4971518Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4971939Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.4972293Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4972584Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4972998Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4973122Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4973554Z       [AudioRecorder] AudioRecorder initialized
+build	UNKNOWN STEP	2026-06-04T18:54:39.4973920Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4974205Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4974613Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4974737Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4975154Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4975487Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4975812Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4976283Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4976418Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4976937Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	UNKNOWN STEP	2026-06-04T18:54:39.4977377Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4977694Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4978126Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4978253Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4979186Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	UNKNOWN STEP	2026-06-04T18:54:39.4979783Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4980120Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4980572Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4980700Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4981238Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	UNKNOWN STEP	2026-06-04T18:54:39.4981691Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4982002Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4982434Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4982561Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4983010Z       [AudioAnalyzer] Connected MediaStream source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4983626Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4984067Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4984505Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4984632Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4985038Z       [AudioRecorder] Started visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4985368Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4985656Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4986115Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4986239Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4986675Z       [AudioRecorder] Started microphone capture
+build	UNKNOWN STEP	2026-06-04T18:54:39.4987033Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4987310Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4987717Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4987846Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4988450Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4988975Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4989266Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4989687Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4989814Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4990505Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	UNKNOWN STEP	2026-06-04T18:54:39.4991114Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4991396Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4991797Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4991919Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4992501Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4993024Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4993302Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4993706Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4993826Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4994298Z       [AudioRecorder] Stopped timer fallback visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4994711Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4994985Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4995391Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4995509Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4995905Z       [AudioRecorder] Stopped visualization
+build	UNKNOWN STEP	2026-06-04T18:54:39.4996273Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4996563Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4996968Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4997094Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4997480Z       [AudioRecorder] Stopped microphone
+build	UNKNOWN STEP	2026-06-04T18:54:39.4997816Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4998098Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.4998495Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4998621Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.4999002Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.4999338Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.4999639Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.5000052Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5000183Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.5000569Z       [AudioRecorder] Cancelled recording
+build	UNKNOWN STEP	2026-06-04T18:54:39.5000909Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5001193Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.5001597Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5001725Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.5002116Z       [AudioAnalyzer] Disconnected source
+build	UNKNOWN STEP	2026-06-04T18:54:39.5002448Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5002765Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.5003201Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5003337Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.5003716Z       [AudioAnalyzer] Closed AudioContext
+build	UNKNOWN STEP	2026-06-04T18:54:39.5004333Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5004640Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.5005053Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5005183Z     console.log
+build	UNKNOWN STEP	2026-06-04T18:54:39.5005581Z       [AudioRecorder] Destroyed AudioRecorder
+build	UNKNOWN STEP	2026-06-04T18:54:39.5005932Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.5006212Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	UNKNOWN STEP	2026-06-04T18:54:39.5006600Z 
+build	UNKNOWN STEP	2026-06-04T18:54:39.8406122Z PASS tests/EventEmitter.test.ts
+build	UNKNOWN STEP	2026-06-04T18:54:40.2257068Z PASS tests/VideoRecorder.test.ts
+build	UNKNOWN STEP	2026-06-04T18:54:40.2915688Z PASS tests/AudioAnalyzer.test.ts
+build	UNKNOWN STEP	2026-06-04T18:54:56.1457795Z PASS tests/AudioToVideoConverter.test.ts (17.068 s)
+build	UNKNOWN STEP	2026-06-04T18:54:56.2181434Z 
+build	UNKNOWN STEP	2026-06-04T18:54:56.2187113Z Test Suites: 8 passed, 8 total
+build	UNKNOWN STEP	2026-06-04T18:54:56.2188478Z Tests:       324 passed, 324 total
+build	UNKNOWN STEP	2026-06-04T18:54:56.2188790Z Snapshots:   0 total
+build	UNKNOWN STEP	2026-06-04T18:54:56.2189012Z Time:        28.211 s
+build	UNKNOWN STEP	2026-06-04T18:54:56.2189225Z Ran all test suites.
+build	UNKNOWN STEP	2026-06-04T18:54:56.3729533Z ##[group]Run npm run build
+build	UNKNOWN STEP	2026-06-04T18:54:56.3729854Z ^[[36;1mnpm run build^[[0m
+build	UNKNOWN STEP	2026-06-04T18:54:56.3788755Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	UNKNOWN STEP	2026-06-04T18:54:56.3789099Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:54:56.9336661Z 
+build	UNKNOWN STEP	2026-06-04T18:54:56.9338262Z > audio-recorder-with-visualization@1.0.0 build
+build	UNKNOWN STEP	2026-06-04T18:54:56.9338885Z > rollup -c
+build	UNKNOWN STEP	2026-06-04T18:54:56.9339067Z 
+build	UNKNOWN STEP	2026-06-04T18:54:57.1282840Z (node:6072) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	UNKNOWN STEP	2026-06-04T18:54:57.1284392Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	UNKNOWN STEP	2026-06-04T18:54:57.1285560Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	UNKNOWN STEP	2026-06-04T18:54:57.1286574Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	UNKNOWN STEP	2026-06-04T18:54:57.7733369Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:54:57.7734043Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:01.2302043Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m3.4s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:01.2303619Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:55:01.2304520Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:03.5166593Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	UNKNOWN STEP	2026-06-04T18:55:03.5168889Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.2s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:03.5170273Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:55:03.5170991Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:03.6212026Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m104ms^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:03.8080035Z ##[group]Run npm run electron:build
+build	UNKNOWN STEP	2026-06-04T18:55:03.8080391Z ^[[36;1mnpm run electron:build^[[0m
+build	UNKNOWN STEP	2026-06-04T18:55:03.8139187Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	UNKNOWN STEP	2026-06-04T18:55:03.8139535Z env:
+build	UNKNOWN STEP	2026-06-04T18:55:03.8142756Z   GH_TOKEN: ***
+build	UNKNOWN STEP	2026-06-04T18:55:03.8142962Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:55:04.3741384Z 
+build	UNKNOWN STEP	2026-06-04T18:55:04.3742181Z > audio-recorder-with-visualization@1.0.0 electron:build
+build	UNKNOWN STEP	2026-06-04T18:55:04.3743161Z > npm run build && electron-builder --win portable
+build	UNKNOWN STEP	2026-06-04T18:55:04.3743645Z 
+build	UNKNOWN STEP	2026-06-04T18:55:04.6855497Z 
+build	UNKNOWN STEP	2026-06-04T18:55:04.6856296Z > audio-recorder-with-visualization@1.0.0 build
+build	UNKNOWN STEP	2026-06-04T18:55:04.6856812Z > rollup -c
+build	UNKNOWN STEP	2026-06-04T18:55:04.6856958Z 
+build	UNKNOWN STEP	2026-06-04T18:55:04.8780488Z (node:3748) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	UNKNOWN STEP	2026-06-04T18:55:04.8782522Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	UNKNOWN STEP	2026-06-04T18:55:04.8784087Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	UNKNOWN STEP	2026-06-04T18:55:04.8785483Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	UNKNOWN STEP	2026-06-04T18:55:05.5272989Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:55:05.5273850Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:08.9860703Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m3.4s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:08.9862052Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:55:08.9862755Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:11.2629508Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	UNKNOWN STEP	2026-06-04T18:55:11.2631746Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.2s^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:11.2632907Z ^[[36m
+build	UNKNOWN STEP	2026-06-04T18:55:11.2633729Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:11.3616668Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m99ms^[[22m^[[39m
+build	UNKNOWN STEP	2026-06-04T18:55:12.2964502Z   • electron-builder  version=25.1.8 os=10.0.26100
+build	UNKNOWN STEP	2026-06-04T18:55:12.2970039Z   • publishing will be skipped  reason=current build is a part of pull request solution=set env PUBLISH_FOR_PULL_REQUEST to true to force code signing
+build	UNKNOWN STEP	2026-06-04T18:55:12.2971707Z There are serious security concerns with PUBLISH_FOR_PULL_REQUEST=true (see the  CircleCI documentation (https://circleci.com/docs/1.0/fork-pr-builds/) for details)
+build	UNKNOWN STEP	2026-06-04T18:55:12.2973235Z If you have SSH keys, sensitive env vars or AWS credentials stored in your project settings and untrusted forks can make pull requests against your repo, then this option isn't for you.
+build	UNKNOWN STEP	2026-06-04T18:55:12.3039169Z   • loaded configuration  file=package.json ("build" field)
+build	UNKNOWN STEP	2026-06-04T18:55:12.4790399Z   • executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false appDir=./
+build	UNKNOWN STEP	2026-06-04T18:55:12.4802394Z   • installing native dependencies  arch=x64
+build	UNKNOWN STEP	2026-06-04T18:55:13.5630998Z   • completed installing native dependencies
+build	UNKNOWN STEP	2026-06-04T18:55:13.5701946Z   • packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=electron-dist\win-unpacked
+build	UNKNOWN STEP	2026-06-04T18:55:13.7942274Z   • downloading     url=https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip size=115 MB parts=8
+build	UNKNOWN STEP	2026-06-04T18:55:14.0247732Z   • downloaded      url=https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip duration=439ms
+build	UNKNOWN STEP	2026-06-04T18:55:16.0503199Z   • updating asar integrity executable resource  executablePath=electron-dist\win-unpacked\Audio Recorder with Visualization.exe
+build	UNKNOWN STEP	2026-06-04T18:55:16.2886516Z   • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+build	UNKNOWN STEP	2026-06-04T18:55:16.3334278Z   • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=246ms
+build	UNKNOWN STEP	2026-06-04T18:55:16.9960933Z   • signing with signtool.exe  path=electron-dist\win-unpacked\Audio Recorder with Visualization.exe
+build	UNKNOWN STEP	2026-06-04T18:55:16.9969755Z   • no signing info identified, signing is skipped  signHook=false cscInfo=null
+build	UNKNOWN STEP	2026-06-04T18:55:16.9990478Z   • building        target=portable file=electron-dist\Audio Recorder with Visualization-1.0.0-portable.exe archs=x64
+build	UNKNOWN STEP	2026-06-04T18:55:17.1605838Z   • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z size=1.3 MB parts=1
+build	UNKNOWN STEP	2026-06-04T18:55:17.1844417Z   • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z duration=169ms
+build	UNKNOWN STEP	2026-06-04T18:55:17.5355545Z   • signing with signtool.exe  path=electron-dist\win-unpacked\resources\elevate.exe
+build	UNKNOWN STEP	2026-06-04T18:55:17.5358309Z   • no signing info identified, signing is skipped  signHook=false cscInfo=null
+build	UNKNOWN STEP	2026-06-04T18:56:27.0513116Z   • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z size=731 kB parts=1
+build	UNKNOWN STEP	2026-06-04T18:56:27.0770941Z   • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z duration=112ms
+build	UNKNOWN STEP	2026-06-04T18:56:27.7365760Z   • signing with signtool.exe  path=electron-dist\Audio Recorder with Visualization-1.0.0-portable.exe
+build	UNKNOWN STEP	2026-06-04T18:56:27.7369678Z   • no signing info identified, signing is skipped  signHook=false cscInfo=null
+build	UNKNOWN STEP	2026-06-04T18:56:27.8788440Z ##[group]Run actions/upload-artifact@v4
+build	UNKNOWN STEP	2026-06-04T18:56:27.8789048Z with:
+build	UNKNOWN STEP	2026-06-04T18:56:27.8789388Z   name: portable-exe
+build	UNKNOWN STEP	2026-06-04T18:56:27.8789788Z   path: electron-dist/*.exe
+build	UNKNOWN STEP	2026-06-04T18:56:27.8790213Z   if-no-files-found: error
+build	UNKNOWN STEP	2026-06-04T18:56:27.8790642Z   compression-level: 6
+build	UNKNOWN STEP	2026-06-04T18:56:27.8791083Z   overwrite: false
+build	UNKNOWN STEP	2026-06-04T18:56:27.8791458Z   include-hidden-files: false
+build	UNKNOWN STEP	2026-06-04T18:56:27.8791885Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-04T18:56:28.1666813Z With the provided path, there will be 1 file uploaded
+build	UNKNOWN STEP	2026-06-04T18:56:28.1672261Z Artifact name is valid!
+build	UNKNOWN STEP	2026-06-04T18:56:28.1675451Z Root directory input is valid!
+build	UNKNOWN STEP	2026-06-04T18:56:28.3115517Z Beginning upload of artifact content to blob storage
+build	UNKNOWN STEP	2026-06-04T18:56:28.8462044Z Uploaded bytes 8388608
+build	UNKNOWN STEP	2026-06-04T18:56:29.0933318Z Uploaded bytes 16777216
+build	UNKNOWN STEP	2026-06-04T18:56:29.4117315Z Uploaded bytes 25165824
+build	UNKNOWN STEP	2026-06-04T18:56:29.6547467Z Uploaded bytes 33554432
+build	UNKNOWN STEP	2026-06-04T18:56:29.9270270Z Uploaded bytes 41943040
+build	UNKNOWN STEP	2026-06-04T18:56:30.2716446Z Uploaded bytes 50331648
+build	UNKNOWN STEP	2026-06-04T18:56:30.5050656Z Uploaded bytes 58720256
+build	UNKNOWN STEP	2026-06-04T18:56:30.7524077Z Uploaded bytes 67108864
+build	UNKNOWN STEP	2026-06-04T18:56:31.0279707Z Uploaded bytes 74503726
+build	UNKNOWN STEP	2026-06-04T18:56:31.0488721Z Finished uploading artifact content to blob storage!
+build	UNKNOWN STEP	2026-06-04T18:56:31.0493582Z SHA256 digest of uploaded artifact zip is 0b4850942b1dcd109e52748f89268b30ac5ac255fe237dddc17a4fe456f9497c
+build	UNKNOWN STEP	2026-06-04T18:56:31.0496220Z Finalizing artifact upload
+build	UNKNOWN STEP	2026-06-04T18:56:31.1962020Z Artifact portable-exe.zip successfully finalized. Artifact ID 7420353595
+build	UNKNOWN STEP	2026-06-04T18:56:31.1963375Z Artifact portable-exe has been successfully uploaded! Final size is 74503726 bytes. Artifact ID is 7420353595
+build	UNKNOWN STEP	2026-06-04T18:56:31.1978996Z Artifact download URL: https://github.com/Jhon-Crow/audio-recorder-with-visualization/actions/runs/26972695786/artifacts/7420353595
+build	UNKNOWN STEP	2026-06-04T18:56:31.2348733Z Post job cleanup.
+build	UNKNOWN STEP	2026-06-04T18:56:31.4558195Z Cache hit occurred on the primary key node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715, not saving cache.
+build	UNKNOWN STEP	2026-06-04T18:56:31.4874783Z Post job cleanup.
+build	UNKNOWN STEP	2026-06-04T18:56:31.7508204Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	UNKNOWN STEP	2026-06-04T18:56:31.7787191Z git version 2.54.0.windows.1
+build	UNKNOWN STEP	2026-06-04T18:56:31.7872082Z Temporarily overriding HOME='D:\a\_temp\6fc27212-e344-46c5-a9f1-0563a87fe9e7' before making global git config changes
+build	UNKNOWN STEP	2026-06-04T18:56:31.7873742Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-06-04T18:56:31.7887226Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-04T18:56:31.8284433Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-06-04T18:56:31.8661554Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	UNKNOWN STEP	2026-06-04T18:56:32.4265647Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-06-04T18:56:32.4537823Z http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-06-04T18:56:32.4589860Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-06-04T18:56:32.4896959Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	UNKNOWN STEP	2026-06-04T18:56:33.0302343Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-06-04T18:56:33.0589370Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	UNKNOWN STEP	2026-06-04T18:56:33.5892215Z Cleaning up orphan processes
+build	UNKNOWN STEP	2026-06-04T18:56:33.5948675Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 16th, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

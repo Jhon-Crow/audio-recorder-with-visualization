@@ -7,6 +7,7 @@ A TypeScript library for audio visualization and recording. Capture audio from m
 - **Real-time audio visualization** from microphone input
 - **Video recording** with audio + visualization (WebM/MP4)
 - **Audio file to video conversion** with visualization
+- **YouTube upload helper** for publishing generated videos through the YouTube Data API
 - **Optional audio enhancement** for profile-based noise reduction, smart normalization, and saturation
 - **Multiple visualization types**:
   - Waveform (oscilloscope)
@@ -231,6 +232,37 @@ const blob = await converter.convert({
   format?: 'webm' | 'mp4',
   onProgress?: (progress: number) => void,
 });
+```
+
+### YouTubeUploader
+
+Browser-friendly helper for uploading a generated video `Blob` with the YouTube Data API resumable upload protocol. Use Google Identity Services to obtain an access token with `YOUTUBE_UPLOAD_SCOPE`, then pass that token to the uploader.
+
+Browser Google sign-in must run from an authorized web origin. For local browser testing, serve the example from `http://localhost:8080` instead of opening `examples/index.html` with a `file://` URL, then add exactly `http://localhost:8080` to the Web application OAuth Client ID's Authorized JavaScript origins. The packaged Electron app uses a Desktop app OAuth Client ID and opens Google sign-in in the default browser with a loopback callback, so it does not use the browser JavaScript origin flow.
+
+```typescript
+import { YouTubeUploader, YOUTUBE_UPLOAD_SCOPE } from 'audio-recorder-with-visualization';
+
+const uploader = new YouTubeUploader();
+const result = await uploader.upload({
+  video: videoBlob,
+  thumbnail: thumbnailBlob, // optional JPEG, PNG, or WebP preview image
+  accessToken,
+  metadata: {
+    title: 'Audio visualizer',
+    description: 'Rendered with audio-recorder-with-visualization',
+    tags: ['audio', 'visualizer'],
+    privacyStatus: 'private',
+    publishAt: '2026-07-01T12:30:00.000Z', // optional scheduled release time; upload stays private until then
+    short: true, // appends #shorts to the description
+  },
+  onProgress: ({ percent }) => {
+    console.log(`Uploaded ${Math.round(percent * 100)}%`);
+  },
+});
+
+console.log(result.url);
+console.log(YOUTUBE_UPLOAD_SCOPE);
 ```
 
 ### Visualizer Options

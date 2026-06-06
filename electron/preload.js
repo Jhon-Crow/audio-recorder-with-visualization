@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }));
     return ipcRenderer.invoke('save-all-videos-and-show', serializedRecordings);
   },
+  authorizeYouTube: async (clientId, clientSecret) => {
+    return ipcRenderer.invoke('youtube-authorize', { clientId, clientSecret });
+  },
+  clearYouTubeAuthorization: async () => {
+    return ipcRenderer.invoke('youtube-clear-authorization');
+  },
   choosePresetFolder: async () => {
     return ipcRenderer.invoke('preset-choose-folder');
   },

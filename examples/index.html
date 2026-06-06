@@ -639,14 +639,23 @@
               </div>
             </div>
             <!-- Manual Configuration (shown when debug mode is disabled) -->
-            <div id="blinkManualControls">
-              <label data-tooltip="Frequency range in Hz to monitor for blinking trigger">
-                Frequency Range (Hz): <span id="blinkFrequencyValue">60 - 250</span>
-                <div style="display: flex; gap: 8px;">
-                  <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" style="flex: 1;">
-                  <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" style="flex: 1;">
+            <div id="blinkManualControls" class="blink-manual-controls">
+              <div class="range-pair" data-tooltip="Frequency range in Hz to monitor for blinking trigger">
+                <div class="range-pair-header">
+                  <span>Frequency Range (Hz):</span>
+                  <span id="blinkFrequencyValue">60 - 250</span>
                 </div>
-              </label>
+                <div class="range-pair-controls">
+                  <label>
+                    Min
+                    <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" aria-label="Adjust blink minimum frequency">
+                  </label>
+                  <label>
+                    Max
+                    <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" aria-label="Adjust blink maximum frequency">
+                  </label>
+                </div>
+              </div>
               <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
                 Volume Threshold: <span id="blinkThresholdValue">200</span>
                 <input type="range" id="blinkThreshold" min="50" max="255" value="200">
@@ -699,6 +708,116 @@
         </button>
       </div>
       <div id="recordingsList"></div>
+    </div>
+  </div>
+
+  <!-- YouTube Auth Modal -->
+  <div id="youtubeAuthModal" class="modal" style="display: none;">
+    <div class="modal-content youtube-modal-content">
+      <div class="modal-header">
+        <h3>Google Sign In</h3>
+        <button id="closeYouTubeAuthBtn" class="close-btn" aria-label="Close Google sign in">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="option-group youtube-form-grid">
+          <label data-tooltip="OAuth 2.0 Client ID from Google Cloud Console with YouTube Data API v3 enabled">
+            OAuth Client ID
+            <input type="text" id="youtubeClientId" autocomplete="off" spellcheck="false" aria-label="Google OAuth client ID">
+          </label>
+          <label id="youtubeClientSecretField" data-tooltip="Optional client secret from a Google Desktop app OAuth client. Leave blank when using a Web application client in browser mode.">
+            Desktop Client Secret
+            <input type="password" id="youtubeClientSecret" autocomplete="off" spellcheck="false" aria-label="Google desktop OAuth client secret">
+          </label>
+        </div>
+        <div class="youtube-auth-settings">
+          <div>
+            <span class="youtube-auth-settings-title">Google account</span>
+            <span id="youtubeAuthSettingsStatus" class="youtube-auth-settings-status">Not signed in</span>
+          </div>
+          <button id="youtubeSignOutBtn" type="button" class="btn btn-secondary">Sign out</button>
+          <button id="youtubeSignInSettingsBtn" type="button" class="btn">Sign in</button>
+        </div>
+        <p id="youtubeAuthStatus" class="youtube-modal-status" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelYouTubeAuthBtn" class="btn">Cancel</button>
+        <button id="openGoogleCloudOAuthBtn" class="btn" type="button">OAuth Setup</button>
+        <button id="authorizeYouTubeBtn" class="btn btn-primary">Sign in with Google</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube Upload Modal -->
+  <div id="youtubeUploadModal" class="modal" style="display: none;">
+    <div class="modal-content youtube-modal-content">
+      <div class="modal-header">
+        <h3>Upload to YouTube</h3>
+        <button id="closeYouTubeUploadBtn" class="close-btn" aria-label="Close YouTube upload">&times;</button>
+      </div>
+      <form id="youtubeUploadForm">
+        <div class="modal-body">
+          <div class="option-group youtube-form-grid">
+            <label>
+              Title
+              <input type="text" id="youtubeTitle" maxlength="100" required aria-label="YouTube video title">
+            </label>
+            <label>
+              Privacy
+              <select id="youtubePrivacy" aria-label="YouTube video privacy">
+                <option value="private" selected>Private</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="public">Public</option>
+              </select>
+            </label>
+            <label>
+              Category
+              <select id="youtubeCategory" aria-label="YouTube video category">
+                <option value="10" selected>Music</option>
+                <option value="1">Film & Animation</option>
+                <option value="22">People & Blogs</option>
+                <option value="24">Entertainment</option>
+                <option value="28">Science & Technology</option>
+              </select>
+            </label>
+            <label>
+              Publish at
+              <input type="datetime-local" id="youtubePublishAt" aria-label="Scheduled YouTube publish date and time">
+            </label>
+            <label class="youtube-wide-field">
+              Description
+              <textarea id="youtubeDescription" rows="5" aria-label="YouTube video description"></textarea>
+            </label>
+            <label class="youtube-wide-field">
+              Tags
+              <input type="text" id="youtubeTags" aria-label="YouTube video tags">
+            </label>
+            <label class="youtube-wide-field">
+              Video Preview
+              <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeShort" aria-label="Mark as YouTube Short"> Short (#shorts)
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeMadeForKids" aria-label="Made for kids"> Made for kids
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeSyntheticMedia" aria-label="Contains synthetic media"> Synthetic media
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeNotifySubscribers" aria-label="Notify subscribers"> Notify subscribers
+            </label>
+          </div>
+          <div id="youtubeUploadProgress" class="progress-bar" style="display: none;" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar-fill" id="youtubeUploadProgressFill"></div>
+          </div>
+          <p id="youtubeUploadStatus" class="youtube-modal-status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelYouTubeUploadBtn" type="button" class="btn">Cancel</button>
+          <button id="submitYouTubeUploadBtn" type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -756,6 +875,20 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="presetRenameModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetRenameTitle">
+      <h2 id="presetRenameTitle">Rename Preset</h2>
+      <label>
+        Preset Name
+        <input type="text" id="presetRenameInput" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="presetCancelRenameBtn">Cancel</button>
+        <button type="button" class="btn-primary compact-btn" id="presetConfirmRenameBtn">Rename</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="presetSettingsModal" aria-hidden="true">
     <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetSettingsTitle">
       <h2 id="presetSettingsTitle">Preset Settings</h2>
@@ -780,5 +913,6 @@
   <script src="app-core.js"></script>
   <script src="app-features.js"></script>
   <script src="app-interactions.js"></script>
+  <script src="youtube-upload.js"></script>
 </body>
 </html>
