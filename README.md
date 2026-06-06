@@ -252,7 +252,7 @@ const result = await uploader.upload({
     description: 'Rendered with audio-recorder-with-visualization',
     tags: ['audio', 'visualizer'],
     privacyStatus: 'private',
-    short: true, // appends #short to the description
+    short: true, // appends #shorts to the description
   },
   onProgress: ({ percent }) => {
     console.log(`Uploaded ${Math.round(percent * 100)}%`);

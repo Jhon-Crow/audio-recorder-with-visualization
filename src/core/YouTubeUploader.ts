@@ -4,7 +4,7 @@
 
 export const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
 export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos';
-export const YOUTUBE_SHORT_HASHTAG = '#short';
+export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
 const DEFAULT_CATEGORY_ID = '10';
 const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024;
