@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" role="img" aria-labelledby="title desc">
+  <title id="title">Pipeline mode UI sketch</title>
+  <desc id="desc">Sketch of a pipeline tab with default album scenario, stage rows, YouTube details, and album track ordering.</desc>
+  <rect width="1280" height="860" fill="#0a0e27"/>
+  <rect x="48" y="36" width="1184" height="788" rx="8" fill="#16213e" stroke="#33415f"/>
+  <text x="78" y="86" fill="#ffffff" font-family="Arial, sans-serif" font-size="34" font-weight="700">Audio Recorder with Visualization</text>
+  <g font-family="Arial, sans-serif" font-size="18">
+    <rect x="78" y="120" width="190" height="44" rx="6" fill="#23304f"/>
+    <text x="100" y="148" fill="#d7def0">Microphone</text>
+    <rect x="278" y="120" width="178" height="44" rx="6" fill="#23304f"/>
+    <text x="300" y="148" fill="#d7def0">Audio to Video</text>
+    <rect x="466" y="120" width="210" height="44" rx="6" fill="#23304f"/>
+    <text x="488" y="148" fill="#d7def0">Presentation Mode</text>
+    <rect x="686" y="120" width="142" height="44" rx="6" fill="#00cc6a"/>
+    <text x="718" y="148" fill="#04140d" font-weight="700">Pipeline</text>
+  </g>
+  <rect x="78" y="190" width="1124" height="84" rx="8" fill="#0f1831" stroke="#33415f"/>
+  <text x="104" y="226" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="700">Default scenario</text>
+  <text x="104" y="256" fill="#b8c3dd" font-family="Arial, sans-serif" font-size="18">Release type</text>
+  <rect x="218" y="232" width="120" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+  <text x="244" y="255" fill="#ffffff" font-family="Arial, sans-serif" font-size="16">Album</text>
+  <text x="382" y="256" fill="#b8c3dd" font-family="Arial, sans-serif" font-size="18">First publish</text>
+  <rect x="500" y="232" width="208" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+  <text x="520" y="255" fill="#ffffff" font-family="Arial, sans-serif" font-size="16">2026-06-13 18:00</text>
+  <rect x="1068" y="220" width="104" height="42" rx="6" fill="#536079"/>
+  <text x="1099" y="247" fill="#ccd3e4" font-family="Arial, sans-serif" font-size="17" font-weight="700">Run</text>
+  <circle cx="640" cy="310" r="25" fill="#00ff88"/>
+  <text x="631" y="319" fill="#04140d" font-family="Arial, sans-serif" font-size="28" font-weight="700">+</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="78" y="350" width="1124" height="162" rx="8" fill="#111b36" stroke="#33415f"/>
+    <text x="104" y="386" fill="#ffffff" font-size="24" font-weight="700">1</text>
+    <rect x="138" y="362" width="178" height="44" rx="6" fill="#ffaa00"/>
+    <text x="154" y="390" fill="#1a1200" font-size="15" font-weight="700">УКАЖИТЕ ФАЙЛ/ФАЙЛЫ</text>
+    <text x="342" y="386" fill="#ffffff" font-size="22" font-weight="700">Pre-save short</text>
+    <rect x="342" y="410" width="250" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="358" y="433" fill="#ffffff" font-size="16">Pre-save short</text>
+    <rect x="612" y="410" width="220" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="628" y="433" fill="#ffffff" font-size="16">Visualization + upload</text>
+    <rect x="852" y="410" width="140" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="868" y="433" fill="#ffffff" font-size="16">1080x1920</text>
+    <rect x="1012" y="410" width="160" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="1028" y="433" fill="#ffffff" font-size="16">Private</text>
+    <rect x="342" y="458" width="830" height="34" rx="6" fill="#0c142a" stroke="#33415f"/>
+    <text x="358" y="481" fill="#b8c3dd" font-size="16">YouTube details: description, tags, made for kids, synthetic media, notify subscribers</text>
+    <rect x="78" y="532" width="1124" height="184" rx="8" fill="#111b36" stroke="#33415f"/>
+    <text x="104" y="568" fill="#ffffff" font-size="24" font-weight="700">2</text>
+    <rect x="138" y="544" width="178" height="44" rx="6" fill="#ffaa00"/>
+    <text x="154" y="572" fill="#1a1200" font-size="15" font-weight="700">УКАЖИТЕ ФАЙЛ/ФАЙЛЫ</text>
+    <text x="342" y="568" fill="#ffffff" font-size="22" font-weight="700">Release</text>
+    <rect x="342" y="594" width="144" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="358" y="617" fill="#ffffff" font-size="16">Album</text>
+    <rect x="506" y="594" width="180" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="522" y="617" fill="#ffffff" font-size="16">Shared image</text>
+    <text x="342" y="656" fill="#b8c3dd" font-size="17">Album tracks</text>
+    <rect x="464" y="636" width="300" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="482" y="659" fill="#ffffff" font-size="16">= 1  Track 01 title</text>
+    <rect x="784" y="636" width="300" height="34" rx="6" fill="#1f2b48" stroke="#425071"/>
+    <text x="802" y="659" fill="#ffffff" font-size="16">= 2  Track 02 title</text>
+    <text x="464" y="694" fill="#b8c3dd" font-size="15">Track 1 uses the first publish time; each next track is +1 minute.</text>
+    <rect x="78" y="736" width="1124" height="58" rx="8" fill="#111b36" stroke="#33415f"/>
+    <text x="104" y="772" fill="#ffffff" font-size="24" font-weight="700">3</text>
+    <rect x="138" y="748" width="178" height="34" rx="6" fill="#ffaa00"/>
+    <text x="154" y="771" fill="#1a1200" font-size="15" font-weight="700">УКАЖИТЕ ФАЙЛ/ФАЙЛЫ</text>
+    <text x="342" y="772" fill="#ffffff" font-size="22" font-weight="700">Post-album short</text>
+  </g>
+</svg>
