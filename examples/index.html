@@ -41,6 +41,7 @@
         <button class="tab active" data-tab="microphone">Microphone Recording</button>
         <button class="tab" data-tab="convert">Audio to Video</button>
         <button class="tab" data-tab="presentation" id="presentationTab">Presentation Mode</button>
+        <button class="tab" data-tab="pipeline" id="pipelineTab">Pipeline</button>
       </div>
 
       <div id="microphone" class="tab-content active">
@@ -181,6 +182,14 @@
           Alt+Q - Close presentation window<br>
           Alt+F4 - Blocked (won't close presentation)
         </p>
+      </div>
+
+      <div id="pipeline" class="tab-content">
+        <div class="pipeline-toolbar">
+          <button type="button" id="addPipelineStageBtn" class="btn-primary">Add Stage</button>
+          <button type="button" id="clearPipelineBtn" class="btn-secondary">Clear</button>
+        </div>
+        <div id="pipelineStages" class="pipeline-stages" aria-live="polite"></div>
       </div>
     </div>
 
@@ -837,6 +846,22 @@
     </div>
   </div>
 
+  <div id="pipelineDeleteModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineDeleteTitle">
+      <div class="modal-header">
+        <h3 id="pipelineDeleteTitle">Delete Stage</h3>
+        <button id="cancelPipelineDeleteXBtn" class="close-btn" type="button" aria-label="Cancel stage deletion">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="pipelineDeleteMessage">Delete this pipeline stage?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineDeleteBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineDeleteBtn" type="button" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="presetSaveModal" aria-hidden="true">
     <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetSaveTitle">
       <h2 id="presetSaveTitle">Save Preset</h2>
@@ -901,5 +926,6 @@
   <script src="app-features.js"></script>
   <script src="app-interactions.js"></script>
   <script src="youtube-upload.js"></script>
+  <script src="pipeline.js"></script>
 </body>
 </html>
