@@ -3,8 +3,11 @@
  */
 
 export const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+export const YOUTUBE_PLAYLIST_SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl';
+export const YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE = `${YOUTUBE_UPLOAD_SCOPE} ${YOUTUBE_PLAYLIST_SCOPE}`;
 export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos';
 export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
+export const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlistItems';
 export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
 const DEFAULT_CATEGORY_ID = '10';
@@ -24,6 +27,8 @@ export interface YouTubeUploadMetadata {
   containsSyntheticMedia?: boolean;
   publishAt?: string | Date;
   short?: boolean;
+  playlistId?: string;
+  playlistIds?: string[] | string;
 }
 
 export interface YouTubeUploadProgress {
@@ -48,6 +53,8 @@ export interface YouTubeUploadResult {
   id: string;
   url: string;
   thumbnail?: unknown;
+  playlistItem?: unknown;
+  playlistItems?: unknown[];
   rawResponse: unknown;
 }
 
@@ -72,6 +79,7 @@ export interface YouTubeUploaderConfig {
   fetch?: FetchLike;
   uploadEndpoint?: string;
   thumbnailUploadEndpoint?: string;
+  playlistItemsEndpoint?: string;
 }
 
 export class YouTubeUploadError extends Error {
@@ -112,6 +120,31 @@ export function normalizeYouTubeTags(tags?: string[] | string): string[] {
     normalized.push(value);
     seen.add(key);
     totalLength = nextTotalLength;
+  });
+
+  return normalized;
+}
+
+export function normalizeYouTubePlaylistIds(playlistIds?: string[] | string): string[] {
+  if (!playlistIds) {
+    return [];
+  }
+
+  const rawIds = Array.isArray(playlistIds)
+    ? playlistIds
+    : playlistIds.split(/[\n,]+/);
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+
+  rawIds.forEach((playlistId) => {
+    const value = String(playlistId).trim();
+
+    if (!value || seen.has(value)) {
+      return;
+    }
+
+    normalized.push(value);
+    seen.add(value);
   });
 
   return normalized;
@@ -181,11 +214,13 @@ export class YouTubeUploader {
   private readonly fetchImpl?: FetchLike;
   private readonly uploadEndpoint: string;
   private readonly thumbnailUploadEndpoint: string;
+  private readonly playlistItemsEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
     this.uploadEndpoint = config.uploadEndpoint || YOUTUBE_UPLOAD_ENDPOINT;
     this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
+    this.playlistItemsEndpoint = config.playlistItemsEndpoint || YOUTUBE_PLAYLIST_ITEMS_ENDPOINT;
   }
 
   async upload(request: YouTubeUploadRequest): Promise<YouTubeUploadResult> {
@@ -227,6 +262,27 @@ export class YouTubeUploader {
         request.thumbnail,
         request.signal
       );
+    }
+
+    const playlistIds = normalizeYouTubePlaylistIds([
+      request.metadata.playlistId || '',
+      ...normalizeYouTubePlaylistIds(request.metadata.playlistIds),
+    ]);
+
+    if (playlistIds.length > 0) {
+      result.playlistItems = [];
+
+      for (const playlistId of playlistIds) {
+        result.playlistItems.push(await this.addVideoToPlaylist(
+          fetchImpl,
+          request.accessToken,
+          playlistId,
+          result.id,
+          request.signal
+        ));
+      }
+
+      result.playlistItem = result.playlistItems[0];
     }
 
     return result;
@@ -366,6 +422,41 @@ export class YouTubeUploader {
 
     if (!response.ok) {
       throw await this.createError(response, 'Unable to set YouTube video thumbnail');
+    }
+
+    return readResponseBody(response);
+  }
+
+  private async addVideoToPlaylist(
+    fetchImpl: FetchLike,
+    accessToken: string,
+    playlistId: string,
+    videoId: string,
+    signal?: AbortSignal
+  ): Promise<unknown> {
+    const url = new URL(this.playlistItemsEndpoint);
+    url.searchParams.set('part', 'snippet');
+
+    const response = await fetchImpl(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        snippet: {
+          playlistId,
+          resourceId: {
+            kind: 'youtube#video',
+            videoId,
+          },
+        },
+      }),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to add YouTube video to playlist');
     }
 
     return readResponseBody(response);

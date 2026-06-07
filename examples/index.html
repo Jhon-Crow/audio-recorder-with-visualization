@@ -810,6 +810,10 @@
               <input type="text" id="youtubeTags" aria-label="YouTube video tags">
             </label>
             <label class="youtube-wide-field">
+              Playlist IDs
+              <input type="text" id="youtubePlaylistIds" aria-label="YouTube playlist IDs">
+            </label>
+            <label class="youtube-wide-field">
               Video Preview
               <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">
             </label>
@@ -914,7 +918,7 @@
   <div id="pipelineTimezoneModal" class="modal" style="display: none;">
     <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineTimezoneTitle">
       <div class="modal-header">
-        <h3 id="pipelineTimezoneTitle">Pipeline Timezone</h3>
+        <h3 id="pipelineTimezoneTitle">Pipeline Settings</h3>
         <button id="cancelPipelineTimezoneXBtn" class="close-btn" type="button" aria-label="Cancel timezone settings">&times;</button>
       </div>
       <div class="modal-body">
@@ -931,10 +935,33 @@
             <option value="Asia/Tbilisi">Asia/Tbilisi</option>
           </select>
         </label>
+        <label class="pipeline-modal-field">
+          Upload order
+          <select id="pipelineUploadOrderSelect" aria-label="Pipeline YouTube upload order policy">
+            <option value="chronological" selected>Each next stage same time or later</option>
+            <option value="manual">Allow manual order</option>
+          </select>
+        </label>
       </div>
       <div class="modal-footer">
         <button id="cancelPipelineTimezoneBtn" type="button" class="btn">Cancel</button>
         <button id="confirmPipelineTimezoneBtn" type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineReportModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content pipeline-report-content" role="dialog" aria-modal="true" aria-labelledby="pipelineReportTitle">
+      <div class="modal-header">
+        <h3 id="pipelineReportTitle">Pipeline Report</h3>
+        <button id="closePipelineReportXBtn" class="close-btn" type="button" aria-label="Close pipeline report">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="pipelineReportSummary"></p>
+        <ol id="pipelineReportList" class="pipeline-report-list"></ol>
+      </div>
+      <div class="modal-footer">
+        <button id="closePipelineReportBtn" type="button" class="btn btn-primary">Done</button>
       </div>
     </div>
   </div>

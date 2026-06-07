@@ -8,6 +8,8 @@
   const library = window.AudioRecorderVisualization || {};
   const {
     YouTubeUploader,
+    YOUTUBE_PLAYLIST_SCOPE,
+    YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE,
     YOUTUBE_UPLOAD_SCOPE,
   } = library;
 
@@ -43,6 +45,7 @@
   const titleInput = document.getElementById('youtubeTitle');
   const descriptionInput = document.getElementById('youtubeDescription');
   const tagsInput = document.getElementById('youtubeTags');
+  const playlistIdsInput = document.getElementById('youtubePlaylistIds');
   const thumbnailInput = document.getElementById('youtubeThumbnail');
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
@@ -60,7 +63,7 @@
   const requiredElements = [
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
-    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, thumbnailInput,
+    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, playlistIdsInput, thumbnailInput,
     categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
@@ -75,6 +78,7 @@
   let pendingUpload = null;
   let accessToken = '';
   let accessTokenExpiresAt = 0;
+  let tokenScope = '';
   let googleIdentityPromise = null;
   let activeUploadController = null;
 
@@ -136,10 +140,27 @@
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
   }
 
+  function getRequiredYouTubeScope() {
+    return YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE || YOUTUBE_UPLOAD_SCOPE;
+  }
+
+  function hasGrantedScope(scope) {
+    if (!scope) {
+      return true;
+    }
+
+    const granted = new Set(String(tokenScope || '').split(/\s+/).filter(Boolean));
+    return String(scope).split(/\s+/).filter(Boolean).every(item => granted.has(item));
+  }
+
+  function hasPlaylistScope() {
+    return hasGrantedScope(YOUTUBE_PLAYLIST_SCOPE);
+  }
+
   function saveTokenState() {
     try {
       if (accessToken && accessTokenExpiresAt) {
-        localStorage.setItem(TOKEN_STATE_KEY, JSON.stringify({ accessToken, accessTokenExpiresAt }));
+        localStorage.setItem(TOKEN_STATE_KEY, JSON.stringify({ accessToken, accessTokenExpiresAt, tokenScope }));
       } else {
         localStorage.removeItem(TOKEN_STATE_KEY);
       }
@@ -159,6 +180,11 @@
       if (state && typeof state.accessToken === 'string' && Number.isFinite(Number(state.accessTokenExpiresAt))) {
         accessToken = state.accessToken;
         accessTokenExpiresAt = Number(state.accessTokenExpiresAt);
+        tokenScope = typeof state.tokenScope === 'string'
+          ? state.tokenScope
+          : typeof state.scope === 'string'
+            ? state.scope
+            : '';
       }
     } catch (error) {
       console.warn('Failed to load YouTube token state:', error);
@@ -168,6 +194,7 @@
   function clearYouTubeAuth() {
     accessToken = '';
     accessTokenExpiresAt = 0;
+    tokenScope = '';
     saveTokenState();
 
     if (isElectronYouTubeOAuthAvailable() && typeof window.electronAPI.clearYouTubeAuthorization === 'function') {
@@ -281,6 +308,7 @@
     return {
       description: '',
       tags: 'audio, visualizer',
+      playlistIds: '',
       categoryId: '10',
       privacyStatus: 'private',
       short: shouldDefaultToShort(),
@@ -312,6 +340,7 @@
     const state = {
       description: descriptionInput.value,
       tags: tagsInput.value,
+      playlistIds: playlistIdsInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
       short: shortCheckbox.checked,
@@ -413,6 +442,7 @@
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
     descriptionInput.value = savedState.description;
     tagsInput.value = savedState.tags;
+    playlistIdsInput.value = savedState.playlistIds || '';
     thumbnailInput.value = '';
     categorySelect.value = savedState.categoryId;
     privacySelect.value = savedState.privacyStatus;
@@ -478,6 +508,7 @@
 
       accessToken = result.accessToken;
       accessTokenExpiresAt = Date.now() + Number(result.expiresIn || 3600) * 1000;
+      tokenScope = result.scope || getRequiredYouTubeScope();
       saveTokenState();
       return accessToken;
     }
@@ -496,7 +527,7 @@
     return new Promise((resolve, reject) => {
       const tokenClient = oauth.initTokenClient({
         client_id: clientId,
-        scope: YOUTUBE_UPLOAD_SCOPE,
+        scope: getRequiredYouTubeScope(),
         callback: (response) => {
           if (!response || response.error) {
             const errorCode = response && response.error ? response.error : '';
@@ -513,6 +544,7 @@
 
           accessToken = response.access_token;
           accessTokenExpiresAt = Date.now() + Number(response.expires_in || 3600) * 1000;
+          tokenScope = response.scope || getRequiredYouTubeScope();
           saveTokenState();
           resolve(accessToken);
         },
@@ -562,6 +594,7 @@
       title: titleInput.value,
       description: descriptionInput.value,
       tags: tagsInput.value,
+      playlistIds: playlistIdsInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
       publishAt: getScheduledPublishAt(),
@@ -582,6 +615,14 @@
     if (!hasValidAccessToken()) {
       hideModal(uploadModal);
       openAuthModal();
+      return;
+    }
+
+    if (playlistIdsInput.value.trim() && !hasPlaylistScope()) {
+      clearYouTubeAuth();
+      hideModal(uploadModal);
+      openAuthModal();
+      setStatus(authStatus, 'Sign in again to grant YouTube playlist access.');
       return;
     }
 
@@ -634,12 +675,18 @@
       throw new Error('No video selected for YouTube upload.');
     }
 
+    const metadata = options.metadata || {};
+    if ((metadata.playlistId || metadata.playlistIds) && !hasPlaylistScope()) {
+      clearYouTubeAuth();
+      throw new Error('Sign in to YouTube again to grant playlist access before adding videos to playlists.');
+    }
+
     try {
       return await uploader.upload({
         video,
         thumbnail: options.thumbnail,
         accessToken,
-        metadata: options.metadata || {},
+        metadata,
         notifySubscribers: options.notifySubscribers,
         signal: options.signal,
         onProgress: options.onProgress,

@@ -1156,12 +1156,27 @@ button:focus-visible {
   background: rgba(0, 0, 0, 0.22);
 }
 
+.pipeline-stage.schedule-relative {
+  border-color: rgba(255, 221, 87, 0.82);
+  border-style: dashed;
+}
+
+.pipeline-stage.schedule-absolute {
+  border-color: rgba(0, 255, 136, 0.7);
+  border-style: solid;
+}
+
+.pipeline-stage.schedule-immediate {
+  border-color: rgba(255, 90, 90, 0.8);
+  border-style: solid;
+}
+
 .pipeline-stage.is-invalid {
-  border-color: rgba(255, 170, 0, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 170, 0, 0.55);
 }
 
 .pipeline-stage.is-running {
-  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.45);
 }
 
 .pipeline-file-cell {
@@ -1273,6 +1288,27 @@ button:focus-visible {
   accent-color: var(--color-primary);
 }
 
+.pipeline-stage-fields input:disabled,
+.pipeline-stage-fields select:disabled,
+.pipeline-stage-fields textarea:disabled {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.pipeline-relative-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 34px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .pipeline-inline-check {
   flex-direction: row;
   align-items: center;
@@ -1368,6 +1404,40 @@ button:focus-visible {
 
 .pipeline-modal-content {
   max-width: 480px;
+}
+
+.pipeline-report-content {
+  max-width: 640px;
+}
+
+.pipeline-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding-left: 0;
+  list-style: none;
+}
+
+.pipeline-report-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pipeline-report-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: baseline;
+  color: var(--color-text-primary);
+}
+
+.pipeline-report-date,
+.pipeline-report-playlists {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
 }
 
 .pipeline-reset-options {
