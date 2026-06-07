@@ -83,6 +83,7 @@
   let tokenScope = '';
   let googleIdentityPromise = null;
   let activeUploadController = null;
+  let playlistRefreshPromise = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   restoreStoredTokenState();
@@ -137,14 +138,38 @@
     }
   }
 
+  function saveYouTubePlaylists(playlists, { merge = false } = {}) {
+    const byId = new Map();
+    const orderedIds = [];
+    const source = merge ? [...loadSavedYouTubePlaylists(), ...playlists] : playlists;
+
+    source.forEach(playlist => {
+      const id = String(playlist?.id || '').trim();
+      if (!id) return;
+      if (!byId.has(id)) {
+        orderedIds.push(id);
+      }
+      byId.set(id, {
+        id,
+        title: String(playlist.title || playlist.name || id).trim() || id,
+      });
+    });
+
+    const normalized = orderedIds.map(id => byId.get(id));
+    localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
+      detail: { playlists: normalized },
+    }));
+    return normalized;
+  }
+
   function saveYouTubePlaylist(playlist) {
     const id = String(playlist.id || '').trim();
     if (!id) return;
-    const next = [
+    return saveYouTubePlaylists([
       ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
       { id, title: String(playlist.title || id).trim() || id },
-    ];
-    localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(next));
+    ]);
   }
 
   function setPlaylistIds(ids) {
@@ -187,34 +212,106 @@
     if (!playlists.length) {
       const empty = document.createElement('div');
       empty.className = 'youtube-playlist-empty';
-      empty.textContent = 'No playlists saved yet';
+      empty.textContent = hasValidAccessToken()
+        ? 'No playlists loaded yet'
+        : 'Sign in to load YouTube playlists';
       list.appendChild(empty);
     }
+
+    const actions = document.createElement('div');
+    actions.className = 'youtube-playlist-actions';
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'btn-secondary compact-btn';
+    refreshButton.textContent = 'Refresh';
+    refreshButton.disabled = !hasValidAccessToken() || !hasPlaylistScope();
+    refreshButton.addEventListener('click', async () => {
+      refreshButton.disabled = true;
+      refreshButton.textContent = 'Refreshing...';
+      try {
+        await refreshYouTubePlaylists({ force: true });
+        renderPlaylistSelector();
+      } catch (error) {
+        setStatus(uploadStatus, error.message || 'Unable to load YouTube playlists.', 'error');
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh';
+      }
+    });
+    actions.appendChild(refreshButton);
 
     const createRow = document.createElement('div');
     createRow.className = 'youtube-playlist-create';
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'New playlist ID';
-    input.setAttribute('aria-label', 'New YouTube playlist ID');
+    input.placeholder = 'New playlist name';
+    input.setAttribute('aria-label', 'New YouTube playlist name');
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-secondary compact-btn';
     button.textContent = 'Create new';
-    button.addEventListener('click', () => {
-      const id = input.value.trim();
-      if (!id) {
+    button.addEventListener('click', async () => {
+      const title = input.value.trim();
+      if (!title) {
         input.focus();
         return;
       }
-      saveYouTubePlaylist({ id, title: id });
-      setPlaylistIds([...selectedIds, id]);
+      button.disabled = true;
+      button.textContent = 'Creating...';
+      try {
+        const playlist = await createYouTubePlaylist(title);
+        setPlaylistIds([...getPlaylistIds(playlistIdsInput.value), playlist.id]);
+        input.value = '';
+        setStatus(uploadStatus, `Playlist "${playlist.title}" created.`, 'success');
+      } catch (error) {
+        setStatus(uploadStatus, error.message || 'Unable to create YouTube playlist.', 'error');
+        input.focus();
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Create new';
+      }
     });
     createRow.appendChild(input);
     createRow.appendChild(button);
 
     playlistSelector.appendChild(list);
+    playlistSelector.appendChild(actions);
     playlistSelector.appendChild(createRow);
+  }
+
+  async function refreshYouTubePlaylists({ force = false } = {}) {
+    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
+      return loadSavedYouTubePlaylists();
+    }
+
+    if (playlistRefreshPromise && !force) {
+      return playlistRefreshPromise;
+    }
+
+    playlistRefreshPromise = uploader.listPlaylists(accessToken)
+      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+      .finally(() => {
+        playlistRefreshPromise = null;
+      });
+
+    return playlistRefreshPromise;
+  }
+
+  async function createYouTubePlaylist(title) {
+    if (!hasValidAccessToken()) {
+      throw new Error('Sign in to YouTube before creating playlists.');
+    }
+    if (!hasPlaylistScope()) {
+      clearYouTubeAuth();
+      throw new Error('Sign in again to grant YouTube playlist access.');
+    }
+    if (typeof uploader.createPlaylist !== 'function') {
+      throw new Error('YouTube playlist creation is not available. Run npm run build before creating playlists.');
+    }
+
+    const playlist = await uploader.createPlaylist(accessToken, title, { privacyStatus: 'private' });
+    saveYouTubePlaylist(playlist);
+    return playlist;
   }
 
   function updateAppStatus(message, type = 'ready') {
@@ -552,6 +649,11 @@
     tagsInput.value = savedState.tags;
     playlistIdsInput.value = savedState.playlistIds || '';
     renderPlaylistSelector();
+    refreshYouTubePlaylists()
+      .then(() => renderPlaylistSelector())
+      .catch((error) => {
+        setStatus(uploadStatus, error.message || 'Unable to load YouTube playlists.', 'error');
+      });
     thumbnailInput.value = '';
     categorySelect.value = savedState.categoryId;
     privacySelect.value = savedState.privacyStatus;
@@ -809,9 +911,19 @@
   }
 
   window.AudioRecorderYouTube = {
+    createPlaylist: createYouTubePlaylist,
+    getSavedPlaylists: loadSavedYouTubePlaylists,
     hasValidAccessToken,
+    hasPlaylistScope,
+    refreshPlaylists: refreshYouTubePlaylists,
     uploadDirect,
   };
+
+  if (hasValidAccessToken() && hasPlaylistScope()) {
+    refreshYouTubePlaylists().catch((error) => {
+      console.warn('Failed to refresh YouTube playlists:', error);
+    });
+  }
 
   window.addEventListener('audioRecorderYouTubeUploadRequested', (event) => {
     pendingUpload = event.detail;

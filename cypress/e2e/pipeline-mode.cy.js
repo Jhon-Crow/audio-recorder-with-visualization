@@ -1,4 +1,6 @@
 describe('Pipeline Mode', () => {
+  const verticalPreviewBackground = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 192"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="0" y2="1"%3E%3Cstop stop-color="%2307202f"/%3E%3Cstop offset="1" stop-color="%230abf53"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="108" height="192" fill="url(%23g)"/%3E%3Ccircle cx="54" cy="78" r="31" fill="%23ffffff" fill-opacity=".18"/%3E%3C/svg%3E';
+  const landscapePreviewBackground = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 108"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="1" y2="0"%3E%3Cstop stop-color="%23120427"/%3E%3Cstop offset="1" stop-color="%23ff5a5a"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="192" height="108" fill="url(%23g)"/%3E%3Cpath d="M0 77 C44 42 82 102 126 56 S180 47 192 36" stroke="%23ffdd57" stroke-width="7" fill="none" stroke-linecap="round"/%3E%3C/svg%3E';
   const savedVisualizationPresets = [
     {
       id: 'preset-cypress-bars',
@@ -7,6 +9,9 @@ describe('Pipeline Mode', () => {
         visualizer: 'bars',
         primaryColor: '#00ff88',
         secondaryColor: '#00d4ff',
+        backgroundColor: '#071923',
+        backgroundImage: verticalPreviewBackground,
+        backgroundSizeMode: 'cover',
       },
     },
     {
@@ -16,6 +21,9 @@ describe('Pipeline Mode', () => {
         visualizer: 'waveform',
         primaryColor: '#ffdd57',
         secondaryColor: '#ff5a5a',
+        backgroundColor: '#120427',
+        backgroundImage: landscapePreviewBackground,
+        backgroundSizeMode: 'cover',
       },
     },
   ];
@@ -40,8 +48,39 @@ describe('Pipeline Mode', () => {
     ]));
   }
 
+  function seedPresetFolder(win) {
+    win.localStorage.setItem('audio-recorder-presets', JSON.stringify([]));
+    win.localStorage.setItem('audio-recorder-preset-options', JSON.stringify({
+      savePath: '/cypress/presets',
+      skipDialog: false,
+    }));
+    win.electronAPI = {
+      loadPresetFiles() {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({
+            success: true,
+            presets: [
+              {
+                id: 'folder-preset',
+                name: 'Folder Saved Preset',
+                settings: {
+                  visualizer: 'bars',
+                  primaryColor: '#0abf53',
+                },
+              },
+            ],
+          }), 25);
+        });
+      },
+    };
+  }
+
   beforeEach(() => {
     cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: { items: [] },
+    });
     cy.visit('/examples/index.html', { onBeforeLoad: seedSavedVisualizationPresets });
     cy.waitForVisualization();
     cy.contains('.tab', 'Pipeline').click();
@@ -186,6 +225,134 @@ describe('Pipeline Mode', () => {
         .should('contain.text', 'Flat Saved Preset')
         .and('have.value', 'preset:flat-preset');
     });
+  });
+
+  it('updates pipeline preset choices when the sidebar loads saved presets after startup', () => {
+    cy.clearLocalStorage();
+    cy.visit('/examples/index.html', { onBeforeLoad: seedPresetFolder });
+    cy.waitForVisualization();
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetList .preset-load-btn', { timeout: 10000 })
+      .should('contain.text', 'Folder Saved Preset');
+
+    cy.contains('.tab', 'Pipeline').click();
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'Folder Saved Preset')
+        .and('have.value', 'preset:folder-preset');
+    });
+  });
+
+  it('shows image-backed visualization previews for vertical stages and landscape album tracks', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'custom',
+          name: 'Vertical preview',
+          action: 'visualize-upload',
+          resolution: '1080x1920',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+        {
+          kind: 'release',
+          name: 'Landscape album preview',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-waveform',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-02T12:00',
+          releaseType: 'album',
+          tracks: [
+            { id: 'track-landscape-one', title: 'Landscape track' },
+          ],
+        },
+      ]);
+    });
+
+    let verticalPreviewImage = '';
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-tooltip')
+      .and('contain', 'Stage 1 preview: 1080x1920, Cypress Bars');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .should(($trigger) => {
+        const style = $trigger[0].style;
+        const previewImage = style.getPropertyValue('--pipeline-preview-image');
+        expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1080 / 1920');
+        expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
+        verticalPreviewImage = previewImage;
+      });
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle.pipeline-preview-trigger').first()
+      .should('have.attr', 'data-tooltip')
+      .and('contain', 'Track 1 preview: 1920x1080, Cypress Waveform');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle.pipeline-preview-trigger').first()
+      .should('have.attr', 'data-preview-state', 'ready')
+      .should(($trigger) => {
+        const style = $trigger[0].style;
+        const previewImage = style.getPropertyValue('--pipeline-preview-image');
+        expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1920 / 1080');
+        expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
+        expect(previewImage).to.not.equal(verticalPreviewImage);
+      });
+  });
+
+  it('shows fetched YouTube playlists in pipeline stages and creates playlists by name', () => {
+    cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-existing',
+            snippet: { title: 'Existing playlist' },
+            contentDetails: { itemCount: 3 },
+          },
+        ],
+      },
+    }).as('listPipelinePlaylists');
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer stored-token');
+      expect(body.snippet.title).to.equal('Pipeline created playlist');
+      expect(body.status.privacyStatus).to.equal('private');
+
+      req.reply({
+        statusCode: 200,
+        body: {
+          id: 'PL-created',
+          snippet: { title: 'Pipeline created playlist', description: '' },
+        },
+      });
+    }).as('createPipelineStagePlaylist');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@listPipelinePlaylists');
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('.youtube-playlist-option', 'Existing playlist').find('input').check();
+      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-existing');
+      cy.get('.youtube-playlist-create input').type('Pipeline created playlist');
+      cy.get('.youtube-playlist-create button').click();
+    });
+    cy.wait('@createPipelineStagePlaylist');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids')
+      .should('have.value', 'PL-existing, PL-created');
   });
 
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
@@ -431,7 +598,7 @@ describe('Pipeline Mode', () => {
       expect(req.headers.authorization).to.equal('Bearer stored-token');
       expect(body).to.deep.equal({
         snippet: {
-          playlistId: 'PL-stage',
+          playlistId: 'PL-stage-created',
           resourceId: {
             kind: 'youtube#video',
             videoId: 'pipeline-video-id',
@@ -444,6 +611,29 @@ describe('Pipeline Mode', () => {
         body: { id: 'playlist-item-id' },
       });
     }).as('addPipelinePlaylistItem');
+
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer stored-token');
+      expect(body).to.deep.equal({
+        snippet: {
+          title: 'Stage playlist',
+          description: '',
+        },
+        status: {
+          privacyStatus: 'private',
+        },
+      });
+
+      req.reply({
+        statusCode: 200,
+        body: {
+          id: 'PL-stage-created',
+          snippet: { title: 'Stage playlist', description: '' },
+        },
+      });
+    }).as('createPipelinePlaylist');
 
     cy.reload();
     cy.visit('/examples/index.html', {
@@ -465,9 +655,10 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-description').type('Pipeline description');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-tags').clear().type('pipeline, direct');
-    cy.get('.pipeline-stage').first().find('.youtube-playlist-create input').type('PL-stage');
+    cy.get('.pipeline-stage').first().find('.youtube-playlist-create input').type('Stage playlist');
     cy.get('.pipeline-stage').first().find('.youtube-playlist-create button').click();
-    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids').should('have.value', 'PL-stage');
+    cy.wait('@createPipelinePlaylist');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids').should('have.value', 'PL-stage-created');
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(1).find('input').check();
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(2).find('input').check();
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(3).find('input').check();
@@ -487,7 +678,7 @@ describe('Pipeline Mode', () => {
       .and('contain.text', '1.')
       .and('contain.text', 'Direct upload stage')
       .and('contain.text', 'Publish date:')
-      .and('contain.text', 'PL-stage');
+      .and('contain.text', 'PL-stage-created');
     cy.get('#pipelineReportList a')
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-video-id');
   });

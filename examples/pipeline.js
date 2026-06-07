@@ -14,6 +14,8 @@
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
+  const PREVIEW_MAX_SIDE = 360;
+  const PREVIEW_FFT_SIZE = 2048;
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -105,6 +107,7 @@
   let resetHoldTimer = 0;
   let resetHoldCompleted = false;
   let draggedTrack = null;
+  const pipelinePreviewCache = new Map();
 
   function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -390,6 +393,9 @@
       { id: trimmedId, title: String(playlist.title || trimmedId).trim() || trimmedId },
     ];
     localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
+      detail: { playlists: next },
+    }));
   }
 
   function loadSavedPipelines() {
@@ -602,23 +608,28 @@
     });
   }
 
+  function normalizeVisualizationPreset(preset) {
+    if (!preset || typeof preset.id !== 'string') {
+      return null;
+    }
+    if (preset.settings && typeof preset.settings === 'object') {
+      return preset;
+    }
+    const { id, name, createdAt, sourcePath, ...settings } = preset;
+    return Object.keys(settings).length
+      ? { id, name, createdAt, sourcePath, settings }
+      : null;
+  }
+
   function loadSavedVisualizationPresets() {
     try {
-      const presets = JSON.parse(localStorage.getItem('audio-recorder-presets') || '[]');
+      const app = window.AudioRecorderApp;
+      const presets = app && typeof app.getSavedPresets === 'function'
+        ? app.getSavedPresets()
+        : JSON.parse(localStorage.getItem('audio-recorder-presets') || '[]');
       if (Array.isArray(presets)) {
         return presets
-          .map(preset => {
-            if (!preset || typeof preset.id !== 'string') {
-              return null;
-            }
-            if (preset.settings && typeof preset.settings === 'object') {
-              return preset;
-            }
-            const { id, name, createdAt, sourcePath, ...settings } = preset;
-            return Object.keys(settings).length
-              ? { id, name, createdAt, sourcePath, settings }
-              : null;
-          })
+          .map(normalizeVisualizationPreset)
           .filter(Boolean);
       }
     } catch (error) {
@@ -729,6 +740,261 @@
       width: Number.isFinite(width) && width > 0 ? width : 1920,
       height: Number.isFinite(height) && height > 0 ? height : 1080,
     };
+  }
+
+  function getPreviewAspectStyle(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    return `${dimensions.width} / ${dimensions.height}`;
+  }
+
+  function getPreviewRenderSize(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    if (dimensions.width >= dimensions.height) {
+      return {
+        width: PREVIEW_MAX_SIDE,
+        height: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.height) / dimensions.width)),
+      };
+    }
+
+    return {
+      width: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.width) / dimensions.height)),
+      height: PREVIEW_MAX_SIDE,
+    };
+  }
+
+  function getPresetLabel(presetId) {
+    const normalizedId = String(presetId || '').startsWith('preset:')
+      ? String(presetId).slice('preset:'.length)
+      : String(presetId || '');
+    const preset = loadSavedVisualizationPresets().find(item => item.id === normalizedId);
+    return preset ? preset.name || 'Saved preset' : 'Current settings';
+  }
+
+  function getPreviewLabel(stage, labelPrefix) {
+    const dimensions = parseResolution(stage.resolution);
+    return `${labelPrefix}: ${dimensions.width}x${dimensions.height}, ${getPresetLabel(stage.presetId)}`;
+  }
+
+  function getVisualizerClass(visualizerName) {
+    const library = window.AudioRecorderVisualization || {};
+    const visualizerExports = {
+      waveform: 'WaveformVisualizer',
+      bars: 'BarVisualizer',
+      circular: 'CircularVisualizer',
+      particles: 'ParticleVisualizer',
+      'spectrum-gradient': 'SpectrumGradientVisualizer',
+      'glow-waveform': 'GlowWaveformVisualizer',
+      'vu-meter': 'VUMeterVisualizer',
+      spectrogram: 'SpectrogramVisualizer',
+      'spiral-waveform': 'SpiralWaveformVisualizer',
+      'radial-bars': 'RadialBarsVisualizer',
+      'frequency-rings': 'FrequencyRingsVisualizer',
+    };
+    return library[visualizerExports[visualizerName]] || library.BarVisualizer || null;
+  }
+
+  function clonePlainObject(value) {
+    try {
+      return JSON.parse(JSON.stringify(value || {}));
+    } catch (error) {
+      return { ...(value || {}) };
+    }
+  }
+
+  function createPreviewFrequencyData(binCount = PREVIEW_FFT_SIZE / 2) {
+    const data = new Uint8Array(binCount);
+    const time = 1.35;
+    for (let i = 0; i < binCount; i++) {
+      const frequency = i / binCount;
+      const bass = Math.exp(-frequency * 3) * 200;
+      const mid = Math.exp(-Math.pow(frequency - 0.32, 2) * 10) * 150;
+      const high = Math.exp(-Math.pow(frequency - 0.7, 2) * 15) * 100;
+      const animation = Math.sin(time * 2 + i * 0.1) * 30 + 30;
+      data[i] = Math.min(255, Math.max(0, bass + mid + high + animation));
+    }
+    return data;
+  }
+
+  function createPreviewTimeDomainData(length = PREVIEW_FFT_SIZE) {
+    const data = new Uint8Array(length);
+    const time = 1.35;
+    for (let i = 0; i < length; i++) {
+      const t = i / length;
+      const wave1 = Math.sin(t * Math.PI * 4 + time * 2) * 40;
+      const wave2 = Math.sin(t * Math.PI * 8 + time * 3) * 20;
+      const wave3 = Math.sin(t * Math.PI * 16 + time * 5) * 10;
+      data[i] = Math.min(255, Math.max(0, 128 + wave1 + wave2 + wave3));
+    }
+    return data;
+  }
+
+  function resolvePreviewRenderSettings(stage) {
+    const app = window.AudioRecorderApp || {};
+    const fallbackOptions = typeof app.getCurrentOptions === 'function' ? app.getCurrentOptions() : {};
+    const fallbackVisualizer = app.elements?.visualizerSelect?.value || 'bars';
+    const settings = getSavedPresetSettings(stage.presetId);
+
+    if (settings) {
+      return {
+        visualizer: settings.visualizer || fallbackVisualizer,
+        visualizerOptions: buildVisualizerOptionsFromSettings(settings, fallbackOptions),
+      };
+    }
+
+    return {
+      visualizer: fallbackVisualizer,
+      visualizerOptions: fallbackOptions,
+    };
+  }
+
+  function getPreviewCacheKey(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    const settings = resolvePreviewRenderSettings(stage);
+    return JSON.stringify({
+      width: dimensions.width,
+      height: dimensions.height,
+      visualizer: settings.visualizer,
+      visualizerOptions: settings.visualizerOptions,
+    });
+  }
+
+  function drawFallbackPreviewFrame(ctx, width, height, visualizerOptions = {}) {
+    const primary = visualizerOptions.primaryColor || '#00ff88';
+    const secondary = visualizerOptions.secondaryColor || '#0088ff';
+    const background = visualizerOptions.backgroundColor || '#05070a';
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, background);
+    gradient.addColorStop(0.52, '#101827');
+    gradient.addColorStop(1, '#05070a');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    const gridSize = Math.max(16, Math.round(Math.min(width, height) / 8));
+    for (let x = gridSize; x < width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = gridSize; y < height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const data = createPreviewFrequencyData(64);
+    const barWidth = width / data.length;
+    for (let i = 0; i < data.length; i++) {
+      const value = data[i] / 255;
+      const barHeight = Math.max(2, value * height * 0.55);
+      const barGradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+      barGradient.addColorStop(0, secondary);
+      barGradient.addColorStop(1, primary);
+      ctx.fillStyle = barGradient;
+      ctx.fillRect(i * barWidth, height - barHeight, Math.max(1, barWidth * 0.68), barHeight);
+    }
+
+    ctx.save();
+    ctx.strokeStyle = primary;
+    ctx.lineWidth = Math.max(2, Math.round(Math.min(width, height) / 90));
+    ctx.shadowColor = primary;
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    const waveform = createPreviewTimeDomainData(160);
+    waveform.forEach((value, index) => {
+      const x = (index / (waveform.length - 1)) * width;
+      const y = height * 0.48 + ((value - 128) / 128) * height * 0.18;
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  async function createPipelinePreviewDataUrl(stage) {
+    const cacheKey = getPreviewCacheKey(stage);
+    if (pipelinePreviewCache.has(cacheKey)) {
+      return pipelinePreviewCache.get(cacheKey);
+    }
+
+    const { width, height } = getPreviewRenderSize(stage);
+    const renderSettings = resolvePreviewRenderSettings(stage);
+    const promise = (async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Preview canvas is not available.');
+      }
+
+      const VisualizerClass = getVisualizerClass(renderSettings.visualizer);
+      if (!VisualizerClass) {
+        drawFallbackPreviewFrame(ctx, width, height, renderSettings.visualizerOptions);
+        return canvas.toDataURL('image/png');
+      }
+
+      try {
+        const options = clonePlainObject(renderSettings.visualizerOptions);
+        const visualizer = new VisualizerClass(options);
+        await Promise.resolve(visualizer.init(canvas, options));
+        visualizer.draw(ctx, {
+          timeDomainData: createPreviewTimeDomainData(),
+          frequencyData: createPreviewFrequencyData(),
+          timestamp: 1350,
+          width,
+          height,
+          sampleRate: 44100,
+          fftSize: PREVIEW_FFT_SIZE,
+        });
+        return canvas.toDataURL('image/png');
+      } catch (error) {
+        const fallbackCanvas = document.createElement('canvas');
+        fallbackCanvas.width = width;
+        fallbackCanvas.height = height;
+        const fallbackCtx = fallbackCanvas.getContext('2d');
+        if (!fallbackCtx) {
+          throw error;
+        }
+        drawFallbackPreviewFrame(fallbackCtx, width, height, renderSettings.visualizerOptions);
+        return fallbackCanvas.toDataURL('image/png');
+      }
+    })();
+
+    pipelinePreviewCache.set(cacheKey, promise);
+    return promise;
+  }
+
+  function applyPipelinePreviewTooltip(element, stage, labelPrefix) {
+    element.classList.add('pipeline-preview-trigger');
+    element.dataset.tooltip = getPreviewLabel(stage, labelPrefix);
+    element.dataset.previewState = 'loading';
+    element.title = element.dataset.tooltip;
+    element.tabIndex = 0;
+    element.style.setProperty('--pipeline-preview-aspect', getPreviewAspectStyle(stage));
+    element.setAttribute('aria-label', element.dataset.tooltip);
+
+    createPipelinePreviewDataUrl(stage)
+      .then(dataUrl => {
+        if (!element.isConnected) return;
+        element.style.setProperty('--pipeline-preview-image', `url("${dataUrl}")`);
+        element.dataset.previewState = 'ready';
+      })
+      .catch(error => {
+        console.warn('Failed to render pipeline preview:', error);
+        if (element.isConnected) {
+          element.dataset.previewState = 'error';
+        }
+      });
   }
 
   function parseLocalDate(value) {
@@ -1415,6 +1681,7 @@
         const handle = document.createElement('span');
         handle.className = 'pipeline-track-handle';
         handle.textContent = String(index + 1);
+        applyPipelinePreviewTooltip(handle, stage, `Track ${index + 1} preview`);
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -1532,9 +1799,9 @@
     tagsField.appendChild(tags);
     grid.appendChild(tagsField);
 
-    const playlistField = createField('Playlists', 'span-12', 'Choose existing YouTube playlists or add a new playlist ID.');
+    const playlistField = createField('Playlists', 'span-12', 'Choose existing YouTube playlists or create a new playlist.');
     const playlistChooser = renderPlaylistChooser(stage, (playlistIds) => {
-      updateStage(stage.id, { playlistIds });
+      updateStage(stage.id, { playlistIds }, true);
     });
     playlistField.appendChild(playlistChooser);
     grid.appendChild(playlistField);
@@ -1568,7 +1835,10 @@
 
   function renderPlaylistChooser(stage, onChange) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
-    const known = loadSavedYouTubePlaylists();
+    const youtube = window.AudioRecorderYouTube;
+    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
+      ? youtube.getSavedPlaylists()
+      : loadSavedYouTubePlaylists();
     selectedIds.forEach(id => {
       if (!known.some(item => item.id === id)) {
         known.push({ id, title: id });
@@ -1586,6 +1856,12 @@
 
     const list = document.createElement('div');
     list.className = 'youtube-playlist-list';
+    const setSelectedIds = (ids) => {
+      const nextIds = ids.filter((item, index, list) => list.indexOf(item) === index);
+      hidden.value = nextIds.join(', ');
+      onChange(nextIds.join(', '));
+    };
+
     known.forEach(playlist => {
       const label = document.createElement('label');
       label.className = 'youtube-playlist-option';
@@ -1596,7 +1872,7 @@
         const nextIds = checkbox.checked
           ? [...selectedIds, playlist.id]
           : selectedIds.filter(id => id !== playlist.id);
-        onChange(nextIds.join(', '));
+        setSelectedIds(nextIds);
       });
       const text = document.createElement('span');
       text.textContent = playlist.title || playlist.id;
@@ -1608,34 +1884,76 @@
     if (!known.length) {
       const empty = document.createElement('div');
       empty.className = 'youtube-playlist-empty';
-      empty.textContent = 'No playlists saved yet';
+      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
+        ? 'No playlists loaded yet'
+        : 'Sign in to load YouTube playlists';
       list.appendChild(empty);
     }
+
+    const actions = document.createElement('div');
+    actions.className = 'youtube-playlist-actions';
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'btn-secondary compact-btn';
+    refreshButton.textContent = 'Refresh';
+    refreshButton.disabled = !youtube ||
+      typeof youtube.refreshPlaylists !== 'function' ||
+      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
+      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
+    refreshButton.addEventListener('click', async () => {
+      refreshButton.disabled = true;
+      refreshButton.textContent = 'Refreshing...';
+      try {
+        await youtube.refreshPlaylists({ force: true });
+        renderStages();
+      } catch (error) {
+        updateAppStatus(error.message || 'Unable to load YouTube playlists.', 'error');
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh';
+      }
+    });
+    actions.appendChild(refreshButton);
 
     const createRow = document.createElement('div');
     createRow.className = 'youtube-playlist-create';
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'New playlist ID';
-    input.setAttribute('aria-label', 'New YouTube playlist ID');
+    input.placeholder = 'New playlist name';
+    input.setAttribute('aria-label', 'New YouTube playlist name');
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-secondary compact-btn';
     button.textContent = 'Create new';
-    button.addEventListener('click', () => {
-      const id = input.value.trim();
-      if (!id) {
+    button.addEventListener('click', async () => {
+      const title = input.value.trim();
+      if (!title) {
         input.focus();
         return;
       }
-      saveYouTubePlaylist({ id, title: id });
-      hidden.value = [...selectedIds, id].filter((item, index, list) => list.indexOf(item) === index).join(', ');
-      onChange([...selectedIds, id].filter((item, index, list) => list.indexOf(item) === index).join(', '));
+      if (!youtube || typeof youtube.createPlaylist !== 'function') {
+        updateAppStatus('Sign in to YouTube before creating playlists.', 'error');
+        input.focus();
+        return;
+      }
+      button.disabled = true;
+      button.textContent = 'Creating...';
+      try {
+        const playlist = await youtube.createPlaylist(title);
+        setSelectedIds([...selectedIds, playlist.id]);
+      } catch (error) {
+        updateAppStatus(error.message || 'Unable to create YouTube playlist.', 'error');
+        input.focus();
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Create new';
+      }
     });
     createRow.appendChild(input);
     createRow.appendChild(button);
 
     wrapper.appendChild(list);
+    wrapper.appendChild(actions);
     wrapper.appendChild(createRow);
     return wrapper;
   }
@@ -1668,6 +1986,7 @@
       const number = document.createElement('span');
       number.className = 'pipeline-stage-number';
       number.textContent = String(index + 1);
+      applyPipelinePreviewTooltip(number, stage, `Stage ${index + 1} preview`);
 
       const fields = document.createElement('div');
       fields.className = 'pipeline-stage-fields';
@@ -2146,6 +2465,14 @@
     if (event.target === reportModal) {
       hidePipelineReport();
     }
+  });
+  window.addEventListener('audioRecorderPresetsChanged', () => {
+    stages = stages.map(normalizeStage);
+    saveStages();
+    renderStages();
+  });
+  window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
+    renderStages();
   });
 
   window.AudioRecorderPipeline = {

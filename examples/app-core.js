@@ -307,6 +307,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   function savePresets(presets) {
     try {
       localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+      window.dispatchEvent(new CustomEvent('audioRecorderPresetsChanged', {
+        detail: { presets },
+      }));
     } catch (error) {
       console.warn('Failed to save presets:', error);
     }
@@ -1892,6 +1895,9 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     getCurrentSettings,
     getCurrentOptions,
     getCurrentAudioEnhancement,
+    getSavedPresets() {
+      return presets.map(preset => ({ ...preset }));
+    },
     updatePreview,
     setPreviewGuidesDragging,
     updateSliderColors,

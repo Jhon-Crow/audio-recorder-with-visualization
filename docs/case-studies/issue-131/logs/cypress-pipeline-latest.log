@@ -1,5 +1,5 @@
 
-DevTools listening on ws://127.0.0.1:40865/devtools/browser/0f690cd5-0e36-4636-a9d3-1a667081e1ee
+DevTools listening on ws://127.0.0.1:46123/devtools/browser/a126dc76-c77f-40f5-8677-01eb04f77f8c
 
 ================================================================================
 
@@ -15,49 +15,52 @@ DevTools listening on ws://127.0.0.1:40865/devtools/browser/0f690cd5-0e36-4636-a
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
+
   Running:  pipeline-mode.cy.js                                                             (1 of 1)
 
 
   Pipeline Mode
-    ✓ seeds and persists the default release pipeline with a right sidebar (2689ms)
-    ✓ requires files before running and resets selected fields with a hold action (2605ms)
-    ✓ asks for and persists a timezone when delayed publishing is first used (1896ms)
-    ✓ uses saved visualization presets and disables inactive timing fields (961ms)
-    ✓ keeps relative publish dates current when the reference date changes (814ms)
-    ✓ loads sidebar presets stored as flat setting objects (1569ms)
-    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1077ms)
-    ✓ deletes a stage only after confirmation (1332ms)
-    ✓ keeps YouTube upload options separate for each stage (3187ms)
-    ✓ turns selected album files into ordered editable tracks (872ms)
-    ✓ resets added files from a stage without opening the full reset modal (901ms)
-    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (774ms)
-    ✓ runs visualization-only stages through the converter (1553ms)
-    ✓ uploads direct YouTube stages with stage metadata when already signed in (4744ms)
-    ✓ keeps generated tooltip boxes inside the viewport (931ms)
+    ✓ seeds and persists the default release pipeline with a right sidebar (2463ms)
+    ✓ requires files before running and resets selected fields with a hold action (2570ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (1844ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (912ms)
+    ✓ keeps relative publish dates current when the reference date changes (795ms)
+    ✓ loads sidebar presets stored as flat setting objects (1584ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (1567ms)
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (848ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (2208ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1134ms)
+    ✓ deletes a stage only after confirmation (1339ms)
+    ✓ keeps YouTube upload options separate for each stage (3243ms)
+    ✓ turns selected album files into ordered editable tracks (925ms)
+    ✓ resets added files from a stage without opening the full reset modal (879ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (799ms)
+    ✓ runs visualization-only stages through the converter (1589ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (3946ms)
+    ✓ keeps generated tooltip boxes inside the viewport (838ms)
 
 
-  15 passing (27s)
+  18 passing (30s)
 
 
   (Results)
 
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ Tests:        15                                                                               │
-  │ Passing:      15                                                                               │
+  │ Tests:        18                                                                               │
+  │ Passing:      18                                                                               │
   │ Failing:      0                                                                                │
   │ Pending:      0                                                                                │
   │ Skipped:      0                                                                                │
   │ Screenshots:  0                                                                                │
   │ Video:        true                                                                             │
-  │ Duration:     26 seconds                                                                       │
+  │ Duration:     30 seconds                                                                       │
   │ Spec Ran:     pipeline-mode.cy.js                                                              │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
   (Video)
 
-  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/pipeline-mode.cy.js.mp4
+  -  Video output: /tmp/gh-issue-solver-1780846308303/cypress/videos/pipeline-mode.cy.js.mp4
 
 
 ================================================================================
@@ -65,9 +68,9 @@ DevTools listening on ws://127.0.0.1:40865/devtools/browser/0f690cd5-0e36-4636-a
   (Run Finished)
 
 
-       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ ✔  pipeline-mode.cy.js                      00:26       15       15        -        -        - │
+  │ ✔  pipeline-mode.cy.js                      00:30       18       18        -        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✔  All specs passed!                        00:26       15       15        -        -        -  
+    ✔  All specs passed!                        00:30       18       18        -        -        -
 

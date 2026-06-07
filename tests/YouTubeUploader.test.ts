@@ -108,6 +108,87 @@ describe('YouTubeUploader', () => {
     });
   });
 
+  describe('playlist helpers', () => {
+    test('lists the signed-in channel playlists across pages', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(JSON.stringify({
+          nextPageToken: 'next-page',
+          items: [
+            {
+              id: 'PL123',
+              snippet: { title: 'Existing playlist', description: 'First page' },
+              contentDetails: { itemCount: 2 },
+            },
+          ],
+        }), { status: 200 }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({
+          items: [
+            {
+              id: 'PL456',
+              snippet: { title: 'Second playlist' },
+              contentDetails: { itemCount: 0 },
+            },
+          ],
+        }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.listPlaylists('token-123')).resolves.toEqual([
+        { id: 'PL123', title: 'Existing playlist', description: 'First page', itemCount: 2 },
+        { id: 'PL456', title: 'Second playlist', itemCount: 0 },
+      ]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&mine=true&maxResults=50',
+      );
+      expect(String(fetchMock.mock.calls[1][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&mine=true&maxResults=50&pageToken=next-page',
+      );
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({
+        method: 'GET',
+        headers: { Authorization: 'Bearer token-123' },
+      });
+    });
+
+    test('creates a private playlist by title', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock.mockResolvedValueOnce(createResponse(JSON.stringify({
+        id: 'PL-created',
+        snippet: { title: 'Release playlist', description: '' },
+      }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.createPlaylist('token-123', '  Release   playlist  ')).resolves.toEqual({
+        id: 'PL-created',
+        title: 'Release playlist',
+        description: '',
+      });
+
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2Cstatus',
+      );
+
+      const init = fetchMock.mock.calls[0][1] as RequestInit;
+      expect(init.method).toBe('POST');
+      expect(init.headers).toMatchObject({
+        Authorization: 'Bearer token-123',
+        'Content-Type': 'application/json; charset=UTF-8',
+      });
+      expect(JSON.parse(init.body as string)).toEqual({
+        snippet: {
+          title: 'Release playlist',
+          description: '',
+        },
+        status: {
+          privacyStatus: 'private',
+        },
+      });
+    });
+  });
+
   describe('upload()', () => {
     test('starts a resumable session and uploads the video blob', async () => {
       const fetchMock = createFetchMock();

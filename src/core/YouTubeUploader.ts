@@ -7,6 +7,7 @@ export const YOUTUBE_PLAYLIST_SCOPE = 'https://www.googleapis.com/auth/youtube.f
 export const YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE = `${YOUTUBE_UPLOAD_SCOPE} ${YOUTUBE_PLAYLIST_SCOPE}`;
 export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos';
 export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
+export const YOUTUBE_PLAYLISTS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlists';
 export const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlistItems';
 export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
@@ -29,6 +30,19 @@ export interface YouTubeUploadMetadata {
   short?: boolean;
   playlistId?: string;
   playlistIds?: string[] | string;
+}
+
+export interface YouTubePlaylistSummary {
+  id: string;
+  title: string;
+  description?: string;
+  itemCount?: number;
+}
+
+export interface YouTubeCreatePlaylistOptions {
+  description?: string;
+  privacyStatus?: YouTubePrivacyStatus;
+  signal?: AbortSignal;
 }
 
 export interface YouTubeUploadProgress {
@@ -79,6 +93,7 @@ export interface YouTubeUploaderConfig {
   fetch?: FetchLike;
   uploadEndpoint?: string;
   thumbnailUploadEndpoint?: string;
+  playlistsEndpoint?: string;
   playlistItemsEndpoint?: string;
 }
 
@@ -214,13 +229,110 @@ export class YouTubeUploader {
   private readonly fetchImpl?: FetchLike;
   private readonly uploadEndpoint: string;
   private readonly thumbnailUploadEndpoint: string;
+  private readonly playlistsEndpoint: string;
   private readonly playlistItemsEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
     this.uploadEndpoint = config.uploadEndpoint || YOUTUBE_UPLOAD_ENDPOINT;
     this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
+    this.playlistsEndpoint = config.playlistsEndpoint || YOUTUBE_PLAYLISTS_ENDPOINT;
     this.playlistItemsEndpoint = config.playlistItemsEndpoint || YOUTUBE_PLAYLIST_ITEMS_ENDPOINT;
+  }
+
+  async listPlaylists(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubePlaylistSummary[]> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const fetchImpl = this.getFetch();
+    const playlists: YouTubePlaylistSummary[] = [];
+    let pageToken = '';
+
+    do {
+      const url = new URL(this.playlistsEndpoint);
+      url.searchParams.set('part', 'snippet,contentDetails');
+      url.searchParams.set('mine', 'true');
+      url.searchParams.set('maxResults', '50');
+      if (pageToken) {
+        url.searchParams.set('pageToken', pageToken);
+      }
+
+      const response = await fetchImpl(url.toString(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: options.signal,
+      });
+
+      if (!response.ok) {
+        throw await this.createError(response, 'Unable to load YouTube playlists');
+      }
+
+      const rawResponse = await readResponseBody(response);
+      if (isRecord(rawResponse) && Array.isArray(rawResponse.items)) {
+        rawResponse.items.forEach(item => {
+          const playlist = normalizePlaylistResource(item);
+          if (playlist) {
+            playlists.push(playlist);
+          }
+        });
+        pageToken = typeof rawResponse.nextPageToken === 'string' ? rawResponse.nextPageToken : '';
+      } else {
+        pageToken = '';
+      }
+    } while (pageToken);
+
+    return playlists;
+  }
+
+  async createPlaylist(
+    accessToken: string,
+    title: string,
+    options: YouTubeCreatePlaylistOptions = {}
+  ): Promise<YouTubePlaylistSummary> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const normalizedTitle = title.replace(/\s+/g, ' ').trim();
+    if (!normalizedTitle) {
+      throw new YouTubeUploadError('Playlist title is required');
+    }
+
+    const url = new URL(this.playlistsEndpoint);
+    url.searchParams.set('part', 'snippet,status');
+
+    const response = await this.getFetch()(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        snippet: {
+          title: normalizedTitle,
+          description: options.description || '',
+        },
+        status: {
+          privacyStatus: options.privacyStatus || 'private',
+        },
+      }),
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to create YouTube playlist');
+    }
+
+    const rawResponse = await readResponseBody(response);
+    const playlist = normalizePlaylistResource(rawResponse);
+    if (!playlist) {
+      throw new YouTubeUploadError('YouTube playlist response did not include a playlist id', response.status, rawResponse);
+    }
+
+    return playlist;
   }
 
   async upload(request: YouTubeUploadRequest): Promise<YouTubeUploadResult> {
@@ -516,6 +628,29 @@ function getVideoId(value: unknown): string | null {
   }
 
   return typeof value.id === 'string' ? value.id : null;
+}
+
+function normalizePlaylistResource(value: unknown): YouTubePlaylistSummary | null {
+  if (!isRecord(value) || typeof value.id !== 'string') {
+    return null;
+  }
+
+  const snippet = isRecord(value.snippet) ? value.snippet : {};
+  const contentDetails = isRecord(value.contentDetails) ? value.contentDetails : {};
+  const title = typeof snippet.title === 'string' && snippet.title.trim()
+    ? snippet.title.trim()
+    : value.id;
+  const playlist: YouTubePlaylistSummary = { id: value.id, title };
+
+  if (typeof snippet.description === 'string') {
+    playlist.description = snippet.description;
+  }
+
+  if (typeof contentDetails.itemCount === 'number') {
+    playlist.itemCount = contentDetails.itemCount;
+  }
+
+  return playlist;
 }
 
 function extractErrorMessage(value: unknown): string | null {
