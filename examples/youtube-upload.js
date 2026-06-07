@@ -42,6 +42,7 @@
   const titleInput = document.getElementById('youtubeTitle');
   const descriptionInput = document.getElementById('youtubeDescription');
   const tagsInput = document.getElementById('youtubeTags');
+  const playlistIdInput = document.getElementById('youtubePlaylistId');
   const thumbnailInput = document.getElementById('youtubeThumbnail');
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
@@ -60,7 +61,7 @@
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
     uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, thumbnailInput,
-    categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
+    playlistIdInput, categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
   ];
@@ -357,6 +358,7 @@
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
     descriptionInput.value = '';
     tagsInput.value = 'audio, visualizer';
+    playlistIdInput.value = '';
     thumbnailInput.value = '';
     categorySelect.value = '10';
     privacySelect.value = 'private';
@@ -506,6 +508,7 @@
       title: titleInput.value,
       description: descriptionInput.value,
       tags: tagsInput.value,
+      playlistId: playlistIdInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
       publishAt: getScheduledPublishAt(),

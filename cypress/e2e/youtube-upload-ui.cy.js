@@ -15,7 +15,7 @@ describe('YouTube Upload UI', () => {
 
     addSyntheticRecording();
 
-    cy.contains('.recording-item', 'Recording 1').within(() => {
+    cy.get('.recording-item').first().within(() => {
       cy.contains('a', 'Download').should('be.visible');
       cy.contains('button', 'Upload to YouTube').should('be.visible').click();
     });
@@ -257,6 +257,22 @@ describe('YouTube Upload UI', () => {
       });
     }).as('setYouTubeThumbnail');
 
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(body.snippet.playlistId).to.equal('PL-cypress');
+      expect(body.snippet.resourceId).to.deep.equal({
+        kind: 'youtube#video',
+        videoId: 'video-abc',
+      });
+
+      req.reply({
+        statusCode: 200,
+        body: { id: 'playlist-item-abc' },
+      });
+    }).as('addYouTubePlaylistItem');
+
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
         win.google = {
@@ -291,6 +307,7 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeTitle').clear().type('Published visualizer');
     cy.get('#youtubeDescription').type('Rendered from Cypress');
     cy.get('#youtubeTags').clear().type('audio, visualizer, cypress');
+    cy.get('#youtubePlaylistId').should('be.visible').type('PL-cypress');
     cy.get('#youtubeThumbnail').selectFile({
       contents: Cypress.Buffer.from('preview-image'),
       fileName: 'preview.png',
@@ -305,6 +322,7 @@ describe('YouTube Upload UI', () => {
     cy.wait('@startYouTubeUpload');
     cy.wait('@finishYouTubeUpload');
     cy.wait('@setYouTubeThumbnail');
+    cy.wait('@addYouTubePlaylistItem');
     cy.get('#youtubeUploadStatus')
       .should('contain.text', 'Uploaded:')
       .find('a')

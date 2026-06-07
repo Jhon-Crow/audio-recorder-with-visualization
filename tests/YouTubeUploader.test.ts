@@ -201,6 +201,53 @@ describe('YouTubeUploader', () => {
       expect(thumbnailInit.body).toBe(thumbnail);
     });
 
+    test('adds the uploaded video to the requested playlist', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'video-123' }), {
+          status: 201,
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'playlist-item-123' }), {
+          status: 200,
+        }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const result = await uploader.upload({
+        video: new Blob(['video'], { type: 'video/webm' }),
+        accessToken: 'token-123',
+        metadata: {
+          title: 'Audio visualizer',
+          playlistId: ' PL123 ',
+        },
+      });
+
+      expect(result.playlistItem).toEqual({ id: 'playlist-item-123' });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(String(fetchMock.mock.calls[2][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet',
+      );
+
+      const playlistInit = fetchMock.mock.calls[2][1] as RequestInit;
+      expect(playlistInit.method).toBe('POST');
+      expect(playlistInit.headers).toMatchObject({
+        Authorization: 'Bearer token-123',
+        'Content-Type': 'application/json; charset=UTF-8',
+      });
+      expect(JSON.parse(playlistInit.body as string)).toEqual({
+        snippet: {
+          playlistId: 'PL123',
+          resourceId: {
+            kind: 'youtube#video',
+            videoId: 'video-123',
+          },
+        },
+      });
+    });
+
     test('continues after a 308 resumable response', async () => {
       const fetchMock = createFetchMock();
       fetchMock
