@@ -58,6 +58,7 @@ export interface ConversionResult {
 export class AudioToVideoConverter {
   private debug: boolean;
   private isCancelled: boolean = false;
+  private readonly encoderSupportCache = new Map<string, boolean>();
 
   constructor(options: { debug?: boolean } = {}) {
     this.debug = options.debug ?? false;
@@ -75,6 +76,26 @@ export class AudioToVideoConverter {
     if (this.debug) {
       console.log('[AudioToVideoConverter]', ...args);
     }
+  }
+
+  private getEncoderSupportCacheKey(
+    format: RecordingFormat,
+    width: number,
+    height: number
+  ): string {
+    return `${format}:${width}x${height}`;
+  }
+
+  private getMP4FallbackMessage(): string {
+    return 'MP4 encoding is not supported on this system at the requested resolution. Your video was saved as WebM format instead, which is compatible with most modern browsers and video players.';
+  }
+
+  private shouldFallbackFromMP4Error(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.toLowerCase().includes('cancelled')) {
+      return false;
+    }
+    return /encod|mediarecorder|mime|mp4|not supported/i.test(message);
   }
 
   /**
@@ -109,30 +130,61 @@ export class AudioToVideoConverter {
     const videoHeight = config.videoHeight ?? 1080;
 
     // For MP4, test encoder support first and fall back to WebM if needed
+    const encoderSupportCacheKey = this.getEncoderSupportCacheKey(
+      requestedFormat,
+      videoWidth,
+      videoHeight
+    );
     if (requestedFormat === 'mp4') {
-      this.log('Testing MP4 encoder support at', videoWidth, 'x', videoHeight, '...');
-      // Test at target resolution to catch hardware encoder limitations
-      const mp4Supported = await VideoRecorder.testEncoderSupport('mp4', 2000, videoWidth, videoHeight);
+      const hasKnownMP4Support = this.encoderSupportCache.get(encoderSupportCacheKey) === true;
+      if (hasKnownMP4Support) {
+        this.log('Using cached MP4 encoder support at', videoWidth, 'x', videoHeight);
+      } else {
+        this.log('Testing MP4 encoder support at', videoWidth, 'x', videoHeight, '...');
+        // Test at target resolution to catch hardware encoder limitations
+        const mp4Supported = await VideoRecorder.testEncoderSupport('mp4', 2000, videoWidth, videoHeight);
 
-      if (!mp4Supported) {
-        this.log('MP4 encoder not available at target resolution, falling back to WebM');
-        const blob = await this.convert({ ...config, format: 'webm' });
-        return {
-          blob,
-          format: 'webm',
-          usedFallback: true,
-          fallbackMessage: 'MP4 encoding is not supported on this system at the requested resolution. Your video was saved as WebM format instead, which is compatible with most modern browsers and video players.',
-        };
+        if (!mp4Supported) {
+          this.log('MP4 encoder not available at target resolution, falling back to WebM');
+          const blob = await this.convert({ ...config, format: 'webm' });
+          return {
+            blob,
+            format: 'webm',
+            usedFallback: true,
+            fallbackMessage: this.getMP4FallbackMessage(),
+          };
+        }
+
+        this.encoderSupportCache.set(encoderSupportCacheKey, true);
       }
     }
 
     // Proceed with requested format
-    const blob = await this.convert(config);
-    return {
-      blob,
-      format: requestedFormat,
-      usedFallback: false,
-    };
+    try {
+      const blob = await this.convert(config);
+      if (requestedFormat === 'mp4') {
+        this.encoderSupportCache.set(encoderSupportCacheKey, true);
+      }
+      return {
+        blob,
+        format: requestedFormat,
+        usedFallback: false,
+      };
+    } catch (error) {
+      if (requestedFormat !== 'mp4' || !this.shouldFallbackFromMP4Error(error)) {
+        throw error;
+      }
+
+      this.encoderSupportCache.set(encoderSupportCacheKey, false);
+      this.log('MP4 conversion failed, falling back to WebM:', error);
+      const blob = await this.convert({ ...config, format: 'webm' });
+      return {
+        blob,
+        format: 'webm',
+        usedFallback: true,
+        fallbackMessage: this.getMP4FallbackMessage(),
+      };
+    }
   }
 
   /**

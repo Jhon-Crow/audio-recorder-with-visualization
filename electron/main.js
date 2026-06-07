@@ -18,6 +18,8 @@ const OAUTH_FLOW_TIMEOUT_MS = 180000;
 const GOOGLE_OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+const YOUTUBE_PLAYLIST_SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl';
+const YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE = `${YOUTUBE_UPLOAD_SCOPE} ${YOUTUBE_PLAYLIST_SCOPE}`;
 const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
 const YOUTUBE_AUTH_STORE_FILE = 'youtube-auth.json';
 let activeYouTubeOAuthCleanup = null;
@@ -154,6 +156,14 @@ function clearStoredYouTubeAuth() {
   } catch (error) {
     console.warn('Failed to clear stored YouTube authorization:', error);
   }
+}
+
+function hasRequiredYouTubeScopes(scope = '') {
+  const granted = new Set(String(scope).split(/\s+/).filter(Boolean));
+  return YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE
+    .split(/\s+/)
+    .filter(Boolean)
+    .every(item => granted.has(item));
 }
 
 function listenAppServer(server, port) {
@@ -376,7 +386,7 @@ async function exchangeYouTubeOAuthCode({ clientId, clientSecret, code, redirect
     accessToken: details.access_token,
     expiresIn: Number(details.expires_in || 3600),
     refreshToken: typeof details.refresh_token === 'string' ? details.refresh_token : '',
-    scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_SCOPE,
+    scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE,
   };
 }
 
@@ -425,7 +435,9 @@ async function refreshYouTubeAccessToken(authState) {
   return {
     accessToken: details.access_token,
     expiresIn: Number(details.expires_in || 3600),
-    scope: typeof details.scope === 'string' ? details.scope : YOUTUBE_UPLOAD_SCOPE,
+    scope: typeof details.scope === 'string'
+      ? details.scope
+      : authState.scope || YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE,
   };
 }
 
@@ -442,7 +454,8 @@ async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
     storedAuth &&
     storedAuth.clientId === trimmedClientId &&
     storedAuth.clientSecret === trimmedClientSecret &&
-    storedAuth.refreshToken
+    storedAuth.refreshToken &&
+    hasRequiredYouTubeScopes(storedAuth.scope)
   ) {
     return refreshYouTubeAccessToken(storedAuth);
   }
@@ -472,7 +485,7 @@ async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
     authUrl.searchParams.set('client_id', trimmedClientId);
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', YOUTUBE_UPLOAD_SCOPE);
+    authUrl.searchParams.set('scope', YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE);
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('code_challenge', codeChallenge);
     authUrl.searchParams.set('code_challenge_method', 'S256');
@@ -495,6 +508,7 @@ async function authorizeYouTubeWithDesktopOAuth(clientId, clientSecret = '') {
         clientId: trimmedClientId,
         clientSecret: trimmedClientSecret,
         refreshToken: tokenResult.refreshToken,
+        scope: tokenResult.scope || YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE,
       });
     }
 

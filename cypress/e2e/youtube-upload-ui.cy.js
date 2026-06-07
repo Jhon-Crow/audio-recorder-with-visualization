@@ -1,4 +1,9 @@
 describe('YouTube Upload UI', () => {
+  const combinedYouTubeScope = [
+    'https://www.googleapis.com/auth/youtube.upload',
+    'https://www.googleapis.com/auth/youtube.force-ssl',
+  ].join(' ');
+
   function addSyntheticRecording() {
     cy.window().then((win) => {
       win.AudioRecorderApp.addRecording(new win.Blob(['video'], { type: 'video/webm' }));
@@ -7,6 +12,10 @@ describe('YouTube Upload UI', () => {
 
   beforeEach(() => {
     cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: { items: [] },
+    });
   });
 
   it('shows an upload button beside the generated recording download action', () => {
@@ -183,6 +192,80 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
   });
 
+  it('loads existing YouTube playlists and creates a new playlist by title', () => {
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-existing',
+            snippet: { title: 'Existing playlist' },
+            contentDetails: { itemCount: 4 },
+          },
+        ],
+      },
+    }).as('listYouTubePlaylists');
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(body).to.deep.equal({
+        snippet: {
+          title: 'Release playlist',
+          description: '',
+        },
+        status: {
+          privacyStatus: 'private',
+        },
+      });
+
+      req.reply({
+        statusCode: 200,
+        body: {
+          id: 'PL-created',
+          snippet: { title: 'Release playlist', description: '' },
+        },
+      });
+    }).as('createYouTubePlaylist');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      access_token: 'test-token',
+                      expires_in: 3600,
+                      scope: combinedYouTubeScope,
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.wait('@listYouTubePlaylists');
+    cy.contains('#youtubePlaylistSelector .youtube-playlist-option', 'Existing playlist').find('input').check();
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-existing');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create input').type('Release playlist');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create button').click();
+    cy.wait('@createYouTubePlaylist');
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-existing, PL-created');
+  });
+
   it('signs out from Google authorization settings', () => {
     const futureExpiry = Date.now() + 3600 * 1000;
 
@@ -259,18 +342,55 @@ describe('YouTube Upload UI', () => {
       });
     }).as('setYouTubeThumbnail');
 
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(body).to.deep.equal({
+        snippet: {
+          playlistId: 'PL-form',
+          resourceId: {
+            kind: 'youtube#video',
+            videoId: 'video-abc',
+          },
+        },
+      });
+
+      req.reply({
+        statusCode: 200,
+        body: { id: 'playlist-item-form' },
+      });
+    }).as('addYouTubePlaylistItem');
+
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(body.snippet.title).to.equal('Release upload playlist');
+      expect(body.status.privacyStatus).to.equal('private');
+
+      req.reply({
+        statusCode: 200,
+        body: {
+          id: 'PL-form',
+          snippet: { title: 'Release upload playlist', description: '' },
+        },
+      });
+    }).as('createUploadPlaylist');
+
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
         win.google = {
           accounts: {
             oauth2: {
               initTokenClient(config) {
+                expect(config.scope).to.equal(combinedYouTubeScope);
                 return {
                   requestAccessToken() {
                     config.callback({
                       access_token: 'test-token',
                       expires_in: 3600,
-                      scope: 'https://www.googleapis.com/auth/youtube.upload',
+                      scope: combinedYouTubeScope,
                     });
                   },
                 };
@@ -293,6 +413,10 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeTitle').clear().type('Published visualizer');
     cy.get('#youtubeDescription').type('Rendered from Cypress');
     cy.get('#youtubeTags').clear().type('audio, visualizer, cypress');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create input').type('Release upload playlist');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create button').click();
+    cy.wait('@createUploadPlaylist');
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-form');
     cy.get('#youtubeThumbnail').selectFile({
       contents: Cypress.Buffer.from('preview-image'),
       fileName: 'preview.png',
@@ -307,10 +431,110 @@ describe('YouTube Upload UI', () => {
     cy.wait('@startYouTubeUpload');
     cy.wait('@finishYouTubeUpload');
     cy.wait('@setYouTubeThumbnail');
+    cy.wait('@addYouTubePlaylistItem');
     cy.get('#youtubeUploadStatus')
       .should('contain.text', 'Uploaded:')
       .find('a')
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=video-abc');
+  });
+
+  it('remembers upload form options from the last upload attempt', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', {
+      statusCode: 200,
+      headers: { Location: 'https://upload.example/memory-session' },
+      body: '',
+    }).as('startMemoryUpload');
+
+    cy.intercept('PUT', 'https://upload.example/memory-session', {
+      statusCode: 201,
+      body: { id: 'video-memory' },
+    }).as('finishMemoryUpload');
+
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', {
+      statusCode: 200,
+      body: { id: 'playlist-memory' },
+    }).as('addMemoryPlaylistItem');
+
+    cy.intercept('POST', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer test-token');
+      expect(body.snippet.title).to.equal('Memory playlist');
+      expect(body.status.privacyStatus).to.equal('private');
+
+      req.reply({
+        statusCode: 200,
+        body: {
+          id: 'PL-memory',
+          snippet: { title: 'Memory playlist', description: '' },
+        },
+      });
+    }).as('createMemoryPlaylist');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      access_token: 'test-token',
+                      expires_in: 3600,
+                      scope: combinedYouTubeScope,
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeDescription').type('Saved upload description');
+    cy.get('#youtubeTags').clear().type('ambient, saved, cypress');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create input').type('Memory playlist');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create button').click();
+    cy.wait('@createMemoryPlaylist');
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-memory');
+    cy.get('#youtubeCategory').select('22');
+    cy.get('#youtubePrivacy').select('public');
+    cy.get('#youtubeShort').check();
+    cy.get('#youtubeMadeForKids').check();
+    cy.get('#youtubeSyntheticMedia').check();
+    cy.get('#youtubeNotifySubscribers').check();
+    cy.get('#submitYouTubeUploadBtn').click();
+
+    cy.wait('@startMemoryUpload');
+    cy.wait('@finishMemoryUpload');
+    cy.wait('@addMemoryPlaylistItem');
+    cy.get('#closeYouTubeUploadBtn').click();
+
+    addSyntheticRecording();
+    cy.contains('.recording-item', 'recording-2.webm').within(() => {
+      cy.contains('button', 'Upload to YouTube').click();
+    });
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeDescription').should('have.value', 'Saved upload description');
+    cy.get('#youtubeTags').should('have.value', 'ambient, saved, cypress');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-option').should('contain.text', 'Memory playlist');
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-memory');
+    cy.get('#youtubeCategory').should('have.value', '22');
+    cy.get('#youtubePrivacy').should('have.value', 'public');
+    cy.get('#youtubeShort').should('be.checked');
+    cy.get('#youtubeMadeForKids').should('be.checked');
+    cy.get('#youtubeSyntheticMedia').should('be.checked');
+    cy.get('#youtubeNotifySubscribers').should('be.checked');
   });
 
   it('keeps the upload form open when text selection ends outside the form', () => {

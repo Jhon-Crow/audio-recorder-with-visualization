@@ -1,0 +1,215 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 29c4418..9c56773 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -212,6 +212,26 @@ describe('Pipeline Mode', () => {
+     });
+   });
+
++  it('shows aspect-ratio preview tooltips for stage and album track numbers', () => {
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-number')
++      .should('have.class', 'pipeline-preview-trigger')
++      .and('have.attr', 'data-tooltip')
++      .and('contain', 'Stage 1 preview: 1080x1920');
++
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-number')
++      .should('have.attr', 'style')
++      .and('contain', '--pipeline-preview-aspect: 1080 / 1920');
++
++    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle').first()
++      .should('have.class', 'pipeline-preview-trigger')
++      .and('have.attr', 'data-tooltip')
++      .and('contain', 'Track 1 preview: 1920x1080');
++
++    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle').first()
++      .trigger('mouseover')
++      .should('have.css', 'cursor', 'help');
++  });
++
+   it('runs visualization-only stages through the converter', () => {
+     cy.get('#clearPipelineBtn').click();
+     cy.get('#addPipelineStageBtn').click();
+diff --git a/docs/case-studies/issue-137/analysis.md b/docs/case-studies/issue-137/analysis.md
+new file mode 100644
+index 0000000..6348b5f
+--- /dev/null
++++ b/docs/case-studies/issue-137/analysis.md
+@@ -0,0 +1,30 @@
++# Issue 137 Case Study: Pipeline Stage Previews
++
++## Request
++
++Hovering over a pipeline stage number or album track number should show a tooltip with an image-like preview of how that item will be visualized, using the configured aspect ratio.
++
++## Collected Data
++
++- Issue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/137
++- PR: https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/139
++- Related merged PR: #128, which introduced Pipeline mode execution.
++- Raw issue and PR metadata are stored in `docs/case-studies/issue-137/logs/`.
++
++## Existing Implementation
++
++- Pipeline UI is rendered in `examples/pipeline.js`.
++- Stage numbers use `.pipeline-stage-number`.
++- Album track numbers use `.pipeline-track-handle`.
++- Stage resolution is stored as strings such as `1920x1080` and `1080x1920`.
++- Existing text tooltips use `data-tooltip` in `examples/styles.css`.
++
++## Solution Options
++
++1. Native title tooltip only: simple, but cannot display aspect-ratio preview imagery.
++2. CSS-only rich tooltip: lightweight, no new dependency, works with current static example architecture.
++3. Third-party tooltip library such as Tippy.js or Floating UI: useful for complex positioning, but unnecessary for this repository's current no-bundler example UI.
++
++## Selected Approach
++
++Use a CSS-only preview tooltip attached to stage and track number elements. The tooltip renders a small framed visualization mock with CSS bars and a stage-specific aspect ratio from the configured resolution. This keeps the implementation local, testable, and consistent with existing `data-tooltip` behavior.
+diff --git a/docs/case-studies/issue-137/logs/issue-137-comments.json b/docs/case-studies/issue-137/logs/issue-137-comments.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/issue-137-comments.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/docs/case-studies/issue-137/logs/issue-137.json b/docs/case-studies/issue-137/logs/issue-137.json
+new file mode 100644
+index 0000000..4eb2509
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/issue-137.json
+@@ -0,0 +1 @@
++{"author":{"id":"U_kgDOB_qn0g","is_bot":false,"login":"Jhon-Crow","name":"Jhon-Crow"},"body":"при наведении на номер этапа или трека должен появляться тултип с изображением того, как будет визуализирован этот трек (визуализация с указанным соотношением сторон).\n\nPlease collect data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), and propose possible solutions  (including known existing components/libraries, that solve similar problem or can help in solutions).\nи реализуй","createdAt":"2026-06-07T03:59:50Z","number":137,"state":"OPEN","title":"добавь превью этапам пайплайна","updatedAt":"2026-06-07T03:59:50Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/137"}
+diff --git a/docs/case-studies/issue-137/logs/pr-139-conversation-comments.json b/docs/case-studies/issue-137/logs/pr-139-conversation-comments.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/pr-139-conversation-comments.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/docs/case-studies/issue-137/logs/pr-139-review-comments.json b/docs/case-studies/issue-137/logs/pr-139-review-comments.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/pr-139-review-comments.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/docs/case-studies/issue-137/logs/pr-139-reviews.json b/docs/case-studies/issue-137/logs/pr-139-reviews.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/pr-139-reviews.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/docs/case-studies/issue-137/logs/pr-139.json b/docs/case-studies/issue-137/logs/pr-139.json
+new file mode 100644
+index 0000000..5ae7c24
+--- /dev/null
++++ b/docs/case-studies/issue-137/logs/pr-139.json
+@@ -0,0 +1 @@
++{"author":{"id":"MDQ6VXNlcjE0MzE5MDQ=","is_bot":false,"login":"konard","name":"Konstantin Diachenko"},"baseRefName":"main","body":"## 🤖 AI-Powered Solution Draft\n\nThis pull request is being automatically generated to solve issue Jhon-Crow/audio-recorder-with-visualization#137.\n\n### 📋 Issue Reference\nFixes Jhon-Crow/audio-recorder-with-visualization#137\n\n### 🚧 Status\n**Work in Progress** - The AI assistant is currently analyzing and implementing the solution draft.\n\n### 📝 Implementation Details\n_Details will be added as the solution draft is developed..._\n\n---\n*This PR was created automatically by the AI issue solver*","commits":[{"authoredDate":"2026-06-07T04:07:33Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-07T04:07:33Z","messageBody":"Adding .gitkeep for PR creation (default mode).\nThis file will be removed when the task is complete.\n\nIssue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/137","messageHeadline":"Initial commit with task details","oid":"8d2575edfe8c0d7463323fae70f8ccbc2a7aeacf"}],"headRefName":"issue-137-21ca5ac03c0b","isDraft":true,"mergeStateStatus":"UNSTABLE","number":139,"state":"OPEN","title":"[WIP] добавь превью этапам пайплайна","updatedAt":"2026-06-07T04:07:40Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/139"}
+diff --git a/docs/case-studies/issue-137/screenshots/issue-137-pipeline-preview-tooltip.png b/docs/case-studies/issue-137/screenshots/issue-137-pipeline-preview-tooltip.png
+new file mode 100644
+index 0000000..da08057
+Binary files /dev/null and b/docs/case-studies/issue-137/screenshots/issue-137-pipeline-preview-tooltip.png differ
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 7a9beb0..27f9604 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -532,6 +532,26 @@
+     };
+   }
+
++  function getPreviewAspectStyle(stage) {
++    const dimensions = parseResolution(stage.resolution);
++    return `${dimensions.width} / ${dimensions.height}`;
++  }
++
++  function getPreviewLabel(stage, labelPrefix) {
++    const dimensions = parseResolution(stage.resolution);
++    const preset = getPresetChoices().find(([value]) => value === (stage.presetId || 'current'));
++    const presetName = preset ? preset[1] : 'Current settings';
++    return `${labelPrefix}: ${dimensions.width}x${dimensions.height}, ${presetName}`;
++  }
++
++  function applyPipelinePreviewTooltip(element, stage, labelPrefix) {
++    element.classList.add('pipeline-preview-trigger');
++    element.dataset.tooltip = getPreviewLabel(stage, labelPrefix);
++    element.title = element.dataset.tooltip;
++    element.style.setProperty('--pipeline-preview-aspect', getPreviewAspectStyle(stage));
++    element.setAttribute('aria-label', element.dataset.tooltip);
++  }
++
+   function parseLocalDate(value) {
+     if (!value) return null;
+     const date = new Date(value);
+@@ -992,6 +1012,7 @@
+         const handle = document.createElement('span');
+         handle.className = 'pipeline-track-handle';
+         handle.textContent = String(index + 1);
++        applyPipelinePreviewTooltip(handle, stage, `Track ${index + 1} preview`);
+
+         const input = document.createElement('input');
+         input.type = 'text';
+@@ -1134,6 +1155,7 @@
+       const number = document.createElement('span');
+       number.className = 'pipeline-stage-number';
+       number.textContent = String(index + 1);
++      applyPipelinePreviewTooltip(number, stage, `Stage ${index + 1} preview`);
+
+       const fields = document.createElement('div');
+       fields.className = 'pipeline-stage-fields';
+diff --git a/examples/styles.css b/examples/styles.css
+index f6ac939..b1dc2eb 100644
+--- a/examples/styles.css
++++ b/examples/styles.css
+@@ -1210,6 +1210,46 @@ button:focus-visible {
+   font-weight: 700;
+ }
+
++.pipeline-preview-trigger {
++  --pipeline-preview-aspect: 16 / 9;
++}
++
++.pipeline-preview-trigger::after {
++  content: "";
++  position: absolute;
++  bottom: calc(100% + 42px);
++  left: 50%;
++  width: min(220px, 62vw);
++  aspect-ratio: var(--pipeline-preview-aspect);
++  min-height: 72px;
++  max-height: 180px;
++  transform: translateX(-50%) translateY(-8px);
++  border: 2px solid rgba(0, 212, 255, 0.85);
++  border-radius: var(--radius-sm);
++  background:
++    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0)),
++    repeating-linear-gradient(90deg,
++      rgba(0, 212, 255, 0.95) 0 7px,
++      rgba(255, 0, 128, 0.85) 7px 13px,
++      rgba(255, 255, 255, 0.18) 13px 20px,
++      transparent 20px 28px),
++    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22), transparent 38%),
++    #05070a;
++  background-size: auto, auto 70%, auto, auto;
++  background-position: center, bottom left, center, center;
++  background-repeat: no-repeat;
++  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
++  opacity: 0;
++  pointer-events: none;
++  transition: opacity var(--transition-fast);
++  z-index: 1001;
++}
++
++.pipeline-preview-trigger:hover::after,
++.pipeline-preview-trigger:focus-visible::after {
++  opacity: 1;
++}
++
+ .pipeline-stage-fields {
+   display: grid;
+   grid-template-columns: repeat(12, minmax(0, 1fr));

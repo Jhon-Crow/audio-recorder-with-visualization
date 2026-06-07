@@ -1,0 +1,69 @@
+
+DevTools listening on ws://127.0.0.1:34219/devtools/browser/f025f6b6-9256-4385-a74e-75600cde82a8
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (youtube-upload-ui.cy.js)                                              │
+  │ Searched:       cypress/e2e/youtube-upload-ui.cy.js                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  youtube-upload-ui.cy.js                                                         (1 of 1)
+
+
+  YouTube Upload UI
+    ✓ shows an upload button beside the generated recording download action (1127ms)
+    ✓ offers to reopen file origins on localhost before Google sign-in (831ms)
+    ✓ explains invalid OAuth client IDs before Google sign-in (1153ms)
+    ✓ opens Google Cloud OAuth setup guidance with the current origin (827ms)
+    ✓ explains Google invalid_client responses with origin setup guidance (1325ms)
+    ✓ uses Electron native OAuth instead of the browser Google token flow (1810ms)
+    ✓ restores saved Google authorization after a restart (1023ms)
+    ✓ signs out from Google authorization settings (1077ms)
+    ✓ authorizes with Google and uploads metadata with the short tag enabled (6420ms)
+    ✓ remembers upload form options from the last upload attempt (4748ms)
+    ✓ keeps the upload form open when text selection ends outside the form (2626ms)
+
+
+  11 passing (24s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        11                                                                               │
+  │ Passing:      11                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     23 seconds                                                                       │
+  │ Spec Ran:     youtube-upload-ui.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/youtube-upload-ui.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  youtube-upload-ui.cy.js                  00:23       11       11        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:23       11       11        -        -        -  
+

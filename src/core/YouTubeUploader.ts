@@ -3,8 +3,12 @@
  */
 
 export const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+export const YOUTUBE_PLAYLIST_SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl';
+export const YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE = `${YOUTUBE_UPLOAD_SCOPE} ${YOUTUBE_PLAYLIST_SCOPE}`;
 export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos';
 export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
+export const YOUTUBE_PLAYLISTS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlists';
+export const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlistItems';
 export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
 const DEFAULT_CATEGORY_ID = '10';
@@ -24,6 +28,21 @@ export interface YouTubeUploadMetadata {
   containsSyntheticMedia?: boolean;
   publishAt?: string | Date;
   short?: boolean;
+  playlistId?: string;
+  playlistIds?: string[] | string;
+}
+
+export interface YouTubePlaylistSummary {
+  id: string;
+  title: string;
+  description?: string;
+  itemCount?: number;
+}
+
+export interface YouTubeCreatePlaylistOptions {
+  description?: string;
+  privacyStatus?: YouTubePrivacyStatus;
+  signal?: AbortSignal;
 }
 
 export interface YouTubeUploadProgress {
@@ -48,6 +67,8 @@ export interface YouTubeUploadResult {
   id: string;
   url: string;
   thumbnail?: unknown;
+  playlistItem?: unknown;
+  playlistItems?: unknown[];
   rawResponse: unknown;
 }
 
@@ -72,6 +93,8 @@ export interface YouTubeUploaderConfig {
   fetch?: FetchLike;
   uploadEndpoint?: string;
   thumbnailUploadEndpoint?: string;
+  playlistsEndpoint?: string;
+  playlistItemsEndpoint?: string;
 }
 
 export class YouTubeUploadError extends Error {
@@ -112,6 +135,31 @@ export function normalizeYouTubeTags(tags?: string[] | string): string[] {
     normalized.push(value);
     seen.add(key);
     totalLength = nextTotalLength;
+  });
+
+  return normalized;
+}
+
+export function normalizeYouTubePlaylistIds(playlistIds?: string[] | string): string[] {
+  if (!playlistIds) {
+    return [];
+  }
+
+  const rawIds = Array.isArray(playlistIds)
+    ? playlistIds
+    : playlistIds.split(/[\n,]+/);
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+
+  rawIds.forEach((playlistId) => {
+    const value = String(playlistId).trim();
+
+    if (!value || seen.has(value)) {
+      return;
+    }
+
+    normalized.push(value);
+    seen.add(value);
   });
 
   return normalized;
@@ -181,11 +229,110 @@ export class YouTubeUploader {
   private readonly fetchImpl?: FetchLike;
   private readonly uploadEndpoint: string;
   private readonly thumbnailUploadEndpoint: string;
+  private readonly playlistsEndpoint: string;
+  private readonly playlistItemsEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
     this.uploadEndpoint = config.uploadEndpoint || YOUTUBE_UPLOAD_ENDPOINT;
     this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
+    this.playlistsEndpoint = config.playlistsEndpoint || YOUTUBE_PLAYLISTS_ENDPOINT;
+    this.playlistItemsEndpoint = config.playlistItemsEndpoint || YOUTUBE_PLAYLIST_ITEMS_ENDPOINT;
+  }
+
+  async listPlaylists(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubePlaylistSummary[]> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const fetchImpl = this.getFetch();
+    const playlists: YouTubePlaylistSummary[] = [];
+    let pageToken = '';
+
+    do {
+      const url = new URL(this.playlistsEndpoint);
+      url.searchParams.set('part', 'snippet,contentDetails');
+      url.searchParams.set('mine', 'true');
+      url.searchParams.set('maxResults', '50');
+      if (pageToken) {
+        url.searchParams.set('pageToken', pageToken);
+      }
+
+      const response = await fetchImpl(url.toString(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: options.signal,
+      });
+
+      if (!response.ok) {
+        throw await this.createError(response, 'Unable to load YouTube playlists');
+      }
+
+      const rawResponse = await readResponseBody(response);
+      if (isRecord(rawResponse) && Array.isArray(rawResponse.items)) {
+        rawResponse.items.forEach(item => {
+          const playlist = normalizePlaylistResource(item);
+          if (playlist) {
+            playlists.push(playlist);
+          }
+        });
+        pageToken = typeof rawResponse.nextPageToken === 'string' ? rawResponse.nextPageToken : '';
+      } else {
+        pageToken = '';
+      }
+    } while (pageToken);
+
+    return playlists;
+  }
+
+  async createPlaylist(
+    accessToken: string,
+    title: string,
+    options: YouTubeCreatePlaylistOptions = {}
+  ): Promise<YouTubePlaylistSummary> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const normalizedTitle = title.replace(/\s+/g, ' ').trim();
+    if (!normalizedTitle) {
+      throw new YouTubeUploadError('Playlist title is required');
+    }
+
+    const url = new URL(this.playlistsEndpoint);
+    url.searchParams.set('part', 'snippet,status');
+
+    const response = await this.getFetch()(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        snippet: {
+          title: normalizedTitle,
+          description: options.description || '',
+        },
+        status: {
+          privacyStatus: options.privacyStatus || 'private',
+        },
+      }),
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to create YouTube playlist');
+    }
+
+    const rawResponse = await readResponseBody(response);
+    const playlist = normalizePlaylistResource(rawResponse);
+    if (!playlist) {
+      throw new YouTubeUploadError('YouTube playlist response did not include a playlist id', response.status, rawResponse);
+    }
+
+    return playlist;
   }
 
   async upload(request: YouTubeUploadRequest): Promise<YouTubeUploadResult> {
@@ -227,6 +374,27 @@ export class YouTubeUploader {
         request.thumbnail,
         request.signal
       );
+    }
+
+    const playlistIds = normalizeYouTubePlaylistIds([
+      request.metadata.playlistId || '',
+      ...normalizeYouTubePlaylistIds(request.metadata.playlistIds),
+    ]);
+
+    if (playlistIds.length > 0) {
+      result.playlistItems = [];
+
+      for (const playlistId of playlistIds) {
+        result.playlistItems.push(await this.addVideoToPlaylist(
+          fetchImpl,
+          request.accessToken,
+          playlistId,
+          result.id,
+          request.signal
+        ));
+      }
+
+      result.playlistItem = result.playlistItems[0];
     }
 
     return result;
@@ -370,6 +538,41 @@ export class YouTubeUploader {
 
     return readResponseBody(response);
   }
+
+  private async addVideoToPlaylist(
+    fetchImpl: FetchLike,
+    accessToken: string,
+    playlistId: string,
+    videoId: string,
+    signal?: AbortSignal
+  ): Promise<unknown> {
+    const url = new URL(this.playlistItemsEndpoint);
+    url.searchParams.set('part', 'snippet');
+
+    const response = await fetchImpl(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        snippet: {
+          playlistId,
+          resourceId: {
+            kind: 'youtube#video',
+            videoId,
+          },
+        },
+      }),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to add YouTube video to playlist');
+    }
+
+    return readResponseBody(response);
+  }
 }
 
 function normalizeChunkSize(chunkSize: number): number {
@@ -425,6 +628,29 @@ function getVideoId(value: unknown): string | null {
   }
 
   return typeof value.id === 'string' ? value.id : null;
+}
+
+function normalizePlaylistResource(value: unknown): YouTubePlaylistSummary | null {
+  if (!isRecord(value) || typeof value.id !== 'string') {
+    return null;
+  }
+
+  const snippet = isRecord(value.snippet) ? value.snippet : {};
+  const contentDetails = isRecord(value.contentDetails) ? value.contentDetails : {};
+  const title = typeof snippet.title === 'string' && snippet.title.trim()
+    ? snippet.title.trim()
+    : value.id;
+  const playlist: YouTubePlaylistSummary = { id: value.id, title };
+
+  if (typeof snippet.description === 'string') {
+    playlist.description = snippet.description;
+  }
+
+  if (typeof contentDetails.itemCount === 'number') {
+    playlist.itemCount = contentDetails.itemCount;
+  }
+
+  return playlist;
 }
 
 function extractErrorMessage(value: unknown): string | null {

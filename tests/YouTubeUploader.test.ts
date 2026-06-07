@@ -3,6 +3,7 @@ import {
   YouTubeUploader,
   appendShortHashtag,
   buildYouTubeVideoResource,
+  normalizeYouTubePlaylistIds,
   normalizeYouTubeTags,
   type YouTubeUploadProgress,
 } from '../src/core/YouTubeUploader';
@@ -41,6 +42,14 @@ describe('YouTubeUploader', () => {
         'music',
         'visualizer',
         'synth wave',
+      ]);
+    });
+
+    test('normalizes comma-separated and newline playlist IDs', () => {
+      expect(normalizeYouTubePlaylistIds(' PL1,PL2\nPL1\n PL3 ')).toEqual([
+        'PL1',
+        'PL2',
+        'PL3',
       ]);
     });
 
@@ -96,6 +105,87 @@ describe('YouTubeUploader', () => {
         title: 'Scheduled visualizer',
         publishAt: 'not a date',
       })).toThrow('Scheduled publish date is invalid');
+    });
+  });
+
+  describe('playlist helpers', () => {
+    test('lists the signed-in channel playlists across pages', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(JSON.stringify({
+          nextPageToken: 'next-page',
+          items: [
+            {
+              id: 'PL123',
+              snippet: { title: 'Existing playlist', description: 'First page' },
+              contentDetails: { itemCount: 2 },
+            },
+          ],
+        }), { status: 200 }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({
+          items: [
+            {
+              id: 'PL456',
+              snippet: { title: 'Second playlist' },
+              contentDetails: { itemCount: 0 },
+            },
+          ],
+        }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.listPlaylists('token-123')).resolves.toEqual([
+        { id: 'PL123', title: 'Existing playlist', description: 'First page', itemCount: 2 },
+        { id: 'PL456', title: 'Second playlist', itemCount: 0 },
+      ]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&mine=true&maxResults=50',
+      );
+      expect(String(fetchMock.mock.calls[1][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&mine=true&maxResults=50&pageToken=next-page',
+      );
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({
+        method: 'GET',
+        headers: { Authorization: 'Bearer token-123' },
+      });
+    });
+
+    test('creates a private playlist by title', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock.mockResolvedValueOnce(createResponse(JSON.stringify({
+        id: 'PL-created',
+        snippet: { title: 'Release playlist', description: '' },
+      }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.createPlaylist('token-123', '  Release   playlist  ')).resolves.toEqual({
+        id: 'PL-created',
+        title: 'Release playlist',
+        description: '',
+      });
+
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2Cstatus',
+      );
+
+      const init = fetchMock.mock.calls[0][1] as RequestInit;
+      expect(init.method).toBe('POST');
+      expect(init.headers).toMatchObject({
+        Authorization: 'Bearer token-123',
+        'Content-Type': 'application/json; charset=UTF-8',
+      });
+      expect(JSON.parse(init.body as string)).toEqual({
+        snippet: {
+          title: 'Release playlist',
+          description: '',
+        },
+        status: {
+          privacyStatus: 'private',
+        },
+      });
     });
   });
 
@@ -199,6 +289,64 @@ describe('YouTubeUploader', () => {
         'Content-Type': 'image/png',
       });
       expect(thumbnailInit.body).toBe(thumbnail);
+    });
+
+    test('adds the uploaded video to requested playlists', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'video-123' }), {
+          status: 201,
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'playlist-item-123' }), {
+          status: 200,
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'playlist-item-456' }), {
+          status: 200,
+        }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const result = await uploader.upload({
+        video: new Blob(['video'], { type: 'video/webm' }),
+        accessToken: 'token-123',
+        metadata: {
+          title: 'Audio visualizer',
+          playlistId: ' PL123 ',
+          playlistIds: 'PL456, PL123',
+        },
+      });
+
+      expect(result.playlistItem).toEqual({ id: 'playlist-item-123' });
+      expect(result.playlistItems).toEqual([
+        { id: 'playlist-item-123' },
+        { id: 'playlist-item-456' },
+      ]);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+      expect(String(fetchMock.mock.calls[2][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet',
+      );
+
+      const firstPlaylistInit = fetchMock.mock.calls[2][1] as RequestInit;
+      expect(firstPlaylistInit.method).toBe('POST');
+      expect(firstPlaylistInit.headers).toMatchObject({
+        Authorization: 'Bearer token-123',
+        'Content-Type': 'application/json; charset=UTF-8',
+      });
+      expect(JSON.parse(firstPlaylistInit.body as string)).toEqual({
+        snippet: {
+          playlistId: 'PL123',
+          resourceId: {
+            kind: 'youtube#video',
+            videoId: 'video-123',
+          },
+        },
+      });
+
+      const secondPlaylistInit = fetchMock.mock.calls[3][1] as RequestInit;
+      expect(JSON.parse(secondPlaylistInit.body as string).snippet.playlistId).toBe('PL456');
     });
 
     test('continues after a 308 resumable response', async () => {

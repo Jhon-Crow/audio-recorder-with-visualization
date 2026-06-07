@@ -8,6 +8,8 @@
   const library = window.AudioRecorderVisualization || {};
   const {
     YouTubeUploader,
+    YOUTUBE_PLAYLIST_SCOPE,
+    YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE,
     YOUTUBE_UPLOAD_SCOPE,
   } = library;
 
@@ -19,6 +21,7 @@
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
+  const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
   const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve or Electron, then use the localhost page.';
@@ -43,6 +46,8 @@
   const titleInput = document.getElementById('youtubeTitle');
   const descriptionInput = document.getElementById('youtubeDescription');
   const tagsInput = document.getElementById('youtubeTags');
+  const playlistIdsInput = document.getElementById('youtubePlaylistIds');
+  const playlistSelector = document.getElementById('youtubePlaylistSelector');
   const thumbnailInput = document.getElementById('youtubeThumbnail');
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
@@ -60,7 +65,7 @@
   const requiredElements = [
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
-    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, thumbnailInput,
+    uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, playlistIdsInput, playlistSelector, thumbnailInput,
     categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
@@ -75,8 +80,10 @@
   let pendingUpload = null;
   let accessToken = '';
   let accessTokenExpiresAt = 0;
+  let tokenScope = '';
   let googleIdentityPromise = null;
   let activeUploadController = null;
+  let playlistRefreshPromise = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   restoreStoredTokenState();
@@ -103,6 +110,208 @@
     link.rel = 'noopener';
     link.textContent = result.id;
     uploadStatus.appendChild(link);
+  }
+
+  function getPlaylistIds(value) {
+    return String(value || '')
+      .split(/[\n,]+/)
+      .map(item => item.trim())
+      .filter(Boolean)
+      .filter((item, index, list) => list.indexOf(item) === index);
+  }
+
+  function loadSavedYouTubePlaylists() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLAYLISTS_KEY) || '[]');
+      if (!Array.isArray(saved)) return [];
+      return saved
+        .map(item => {
+          if (typeof item === 'string') return { id: item, title: item };
+          if (item && typeof item.id === 'string') {
+            return { id: item.id, title: item.title || item.name || item.id };
+          }
+          return null;
+        })
+        .filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveYouTubePlaylists(playlists, { merge = false } = {}) {
+    const byId = new Map();
+    const orderedIds = [];
+    const source = merge ? [...loadSavedYouTubePlaylists(), ...playlists] : playlists;
+
+    source.forEach(playlist => {
+      const id = String(playlist?.id || '').trim();
+      if (!id) return;
+      if (!byId.has(id)) {
+        orderedIds.push(id);
+      }
+      byId.set(id, {
+        id,
+        title: String(playlist.title || playlist.name || id).trim() || id,
+      });
+    });
+
+    const normalized = orderedIds.map(id => byId.get(id));
+    localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
+      detail: { playlists: normalized },
+    }));
+    return normalized;
+  }
+
+  function saveYouTubePlaylist(playlist) {
+    const id = String(playlist.id || '').trim();
+    if (!id) return;
+    return saveYouTubePlaylists([
+      ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
+      { id, title: String(playlist.title || id).trim() || id },
+    ]);
+  }
+
+  function setPlaylistIds(ids) {
+    playlistIdsInput.value = getPlaylistIds(ids).join(', ');
+    renderPlaylistSelector();
+  }
+
+  function renderPlaylistSelector() {
+    const selectedIds = getPlaylistIds(playlistIdsInput.value);
+    const playlists = loadSavedYouTubePlaylists();
+    selectedIds.forEach(id => {
+      if (!playlists.some(item => item.id === id)) {
+        playlists.push({ id, title: id });
+      }
+    });
+
+    playlistSelector.innerHTML = '';
+
+    const list = document.createElement('div');
+    list.className = 'youtube-playlist-list';
+    playlists.forEach(playlist => {
+      const label = document.createElement('label');
+      label.className = 'youtube-playlist-option';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = selectedIds.includes(playlist.id);
+      checkbox.addEventListener('change', () => {
+        const nextIds = checkbox.checked
+          ? [...selectedIds, playlist.id]
+          : selectedIds.filter(id => id !== playlist.id);
+        setPlaylistIds(nextIds);
+      });
+      const text = document.createElement('span');
+      text.textContent = playlist.title || playlist.id;
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      list.appendChild(label);
+    });
+
+    if (!playlists.length) {
+      const empty = document.createElement('div');
+      empty.className = 'youtube-playlist-empty';
+      empty.textContent = hasValidAccessToken()
+        ? 'No playlists loaded yet'
+        : 'Sign in to load YouTube playlists';
+      list.appendChild(empty);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'youtube-playlist-actions';
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'btn-secondary compact-btn';
+    refreshButton.textContent = 'Refresh';
+    refreshButton.disabled = !hasValidAccessToken() || !hasPlaylistScope();
+    refreshButton.addEventListener('click', async () => {
+      refreshButton.disabled = true;
+      refreshButton.textContent = 'Refreshing...';
+      try {
+        await refreshYouTubePlaylists({ force: true });
+        renderPlaylistSelector();
+      } catch (error) {
+        setStatus(uploadStatus, error.message || 'Unable to load YouTube playlists.', 'error');
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh';
+      }
+    });
+    actions.appendChild(refreshButton);
+
+    const createRow = document.createElement('div');
+    createRow.className = 'youtube-playlist-create';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'New playlist name';
+    input.setAttribute('aria-label', 'New YouTube playlist name');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-secondary compact-btn';
+    button.textContent = 'Create new';
+    button.addEventListener('click', async () => {
+      const title = input.value.trim();
+      if (!title) {
+        input.focus();
+        return;
+      }
+      button.disabled = true;
+      button.textContent = 'Creating...';
+      try {
+        const playlist = await createYouTubePlaylist(title);
+        setPlaylistIds([...getPlaylistIds(playlistIdsInput.value), playlist.id]);
+        input.value = '';
+        setStatus(uploadStatus, `Playlist "${playlist.title}" created.`, 'success');
+      } catch (error) {
+        setStatus(uploadStatus, error.message || 'Unable to create YouTube playlist.', 'error');
+        input.focus();
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Create new';
+      }
+    });
+    createRow.appendChild(input);
+    createRow.appendChild(button);
+
+    playlistSelector.appendChild(list);
+    playlistSelector.appendChild(actions);
+    playlistSelector.appendChild(createRow);
+  }
+
+  async function refreshYouTubePlaylists({ force = false } = {}) {
+    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
+      return loadSavedYouTubePlaylists();
+    }
+
+    if (playlistRefreshPromise && !force) {
+      return playlistRefreshPromise;
+    }
+
+    playlistRefreshPromise = uploader.listPlaylists(accessToken)
+      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+      .finally(() => {
+        playlistRefreshPromise = null;
+      });
+
+    return playlistRefreshPromise;
+  }
+
+  async function createYouTubePlaylist(title) {
+    if (!hasValidAccessToken()) {
+      throw new Error('Sign in to YouTube before creating playlists.');
+    }
+    if (!hasPlaylistScope()) {
+      clearYouTubeAuth();
+      throw new Error('Sign in again to grant YouTube playlist access.');
+    }
+    if (typeof uploader.createPlaylist !== 'function') {
+      throw new Error('YouTube playlist creation is not available. Run npm run build before creating playlists.');
+    }
+
+    const playlist = await uploader.createPlaylist(accessToken, title, { privacyStatus: 'private' });
+    saveYouTubePlaylist(playlist);
+    return playlist;
   }
 
   function updateAppStatus(message, type = 'ready') {
@@ -136,10 +345,27 @@
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
   }
 
+  function getRequiredYouTubeScope() {
+    return YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE || YOUTUBE_UPLOAD_SCOPE;
+  }
+
+  function hasGrantedScope(scope) {
+    if (!scope) {
+      return true;
+    }
+
+    const granted = new Set(String(tokenScope || '').split(/\s+/).filter(Boolean));
+    return String(scope).split(/\s+/).filter(Boolean).every(item => granted.has(item));
+  }
+
+  function hasPlaylistScope() {
+    return hasGrantedScope(YOUTUBE_PLAYLIST_SCOPE);
+  }
+
   function saveTokenState() {
     try {
       if (accessToken && accessTokenExpiresAt) {
-        localStorage.setItem(TOKEN_STATE_KEY, JSON.stringify({ accessToken, accessTokenExpiresAt }));
+        localStorage.setItem(TOKEN_STATE_KEY, JSON.stringify({ accessToken, accessTokenExpiresAt, tokenScope }));
       } else {
         localStorage.removeItem(TOKEN_STATE_KEY);
       }
@@ -159,6 +385,11 @@
       if (state && typeof state.accessToken === 'string' && Number.isFinite(Number(state.accessTokenExpiresAt))) {
         accessToken = state.accessToken;
         accessTokenExpiresAt = Number(state.accessTokenExpiresAt);
+        tokenScope = typeof state.tokenScope === 'string'
+          ? state.tokenScope
+          : typeof state.scope === 'string'
+            ? state.scope
+            : '';
       }
     } catch (error) {
       console.warn('Failed to load YouTube token state:', error);
@@ -168,6 +399,7 @@
   function clearYouTubeAuth() {
     accessToken = '';
     accessTokenExpiresAt = 0;
+    tokenScope = '';
     saveTokenState();
 
     if (isElectronYouTubeOAuthAvailable() && typeof window.electronAPI.clearYouTubeAuthorization === 'function') {
@@ -281,6 +513,7 @@
     return {
       description: '',
       tags: 'audio, visualizer',
+      playlistIds: '',
       categoryId: '10',
       privacyStatus: 'private',
       short: shouldDefaultToShort(),
@@ -312,6 +545,7 @@
     const state = {
       description: descriptionInput.value,
       tags: tagsInput.value,
+      playlistIds: playlistIdsInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
       short: shortCheckbox.checked,
@@ -413,6 +647,13 @@
     titleInput.value = getDefaultTitle(pendingUpload.fileName);
     descriptionInput.value = savedState.description;
     tagsInput.value = savedState.tags;
+    playlistIdsInput.value = savedState.playlistIds || '';
+    renderPlaylistSelector();
+    refreshYouTubePlaylists()
+      .then(() => renderPlaylistSelector())
+      .catch((error) => {
+        setStatus(uploadStatus, error.message || 'Unable to load YouTube playlists.', 'error');
+      });
     thumbnailInput.value = '';
     categorySelect.value = savedState.categoryId;
     privacySelect.value = savedState.privacyStatus;
@@ -478,6 +719,7 @@
 
       accessToken = result.accessToken;
       accessTokenExpiresAt = Date.now() + Number(result.expiresIn || 3600) * 1000;
+      tokenScope = result.scope || getRequiredYouTubeScope();
       saveTokenState();
       return accessToken;
     }
@@ -496,7 +738,7 @@
     return new Promise((resolve, reject) => {
       const tokenClient = oauth.initTokenClient({
         client_id: clientId,
-        scope: YOUTUBE_UPLOAD_SCOPE,
+        scope: getRequiredYouTubeScope(),
         callback: (response) => {
           if (!response || response.error) {
             const errorCode = response && response.error ? response.error : '';
@@ -513,6 +755,7 @@
 
           accessToken = response.access_token;
           accessTokenExpiresAt = Date.now() + Number(response.expires_in || 3600) * 1000;
+          tokenScope = response.scope || getRequiredYouTubeScope();
           saveTokenState();
           resolve(accessToken);
         },
@@ -562,6 +805,7 @@
       title: titleInput.value,
       description: descriptionInput.value,
       tags: tagsInput.value,
+      playlistIds: playlistIdsInput.value,
       categoryId: categorySelect.value,
       privacyStatus: privacySelect.value,
       publishAt: getScheduledPublishAt(),
@@ -582,6 +826,14 @@
     if (!hasValidAccessToken()) {
       hideModal(uploadModal);
       openAuthModal();
+      return;
+    }
+
+    if (playlistIdsInput.value.trim() && !hasPlaylistScope()) {
+      clearYouTubeAuth();
+      hideModal(uploadModal);
+      openAuthModal();
+      setStatus(authStatus, 'Sign in again to grant YouTube playlist access.');
       return;
     }
 
@@ -634,12 +886,18 @@
       throw new Error('No video selected for YouTube upload.');
     }
 
+    const metadata = options.metadata || {};
+    if ((metadata.playlistId || metadata.playlistIds) && !hasPlaylistScope()) {
+      clearYouTubeAuth();
+      throw new Error('Sign in to YouTube again to grant playlist access before adding videos to playlists.');
+    }
+
     try {
       return await uploader.upload({
         video,
         thumbnail: options.thumbnail,
         accessToken,
-        metadata: options.metadata || {},
+        metadata,
         notifySubscribers: options.notifySubscribers,
         signal: options.signal,
         onProgress: options.onProgress,
@@ -653,9 +911,19 @@
   }
 
   window.AudioRecorderYouTube = {
+    createPlaylist: createYouTubePlaylist,
+    getSavedPlaylists: loadSavedYouTubePlaylists,
     hasValidAccessToken,
+    hasPlaylistScope,
+    refreshPlaylists: refreshYouTubePlaylists,
     uploadDirect,
   };
+
+  if (hasValidAccessToken() && hasPlaylistScope()) {
+    refreshYouTubePlaylists().catch((error) => {
+      console.warn('Failed to refresh YouTube playlists:', error);
+    });
+  }
 
   window.addEventListener('audioRecorderYouTubeUploadRequested', (event) => {
     pendingUpload = event.detail;
