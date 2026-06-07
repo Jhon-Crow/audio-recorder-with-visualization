@@ -1,0 +1,73 @@
+
+DevTools listening on ws://127.0.0.1:40865/devtools/browser/0f690cd5-0e36-4636-a9d3-1a667081e1ee
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-mode.cy.js)                                                  │
+  │ Searched:       cypress/e2e/pipeline-mode.cy.js                                                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  pipeline-mode.cy.js                                                             (1 of 1)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (2689ms)
+    ✓ requires files before running and resets selected fields with a hold action (2605ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (1896ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (961ms)
+    ✓ keeps relative publish dates current when the reference date changes (814ms)
+    ✓ loads sidebar presets stored as flat setting objects (1569ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1077ms)
+    ✓ deletes a stage only after confirmation (1332ms)
+    ✓ keeps YouTube upload options separate for each stage (3187ms)
+    ✓ turns selected album files into ordered editable tracks (872ms)
+    ✓ resets added files from a stage without opening the full reset modal (901ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (774ms)
+    ✓ runs visualization-only stages through the converter (1553ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (4744ms)
+    ✓ keeps generated tooltip boxes inside the viewport (931ms)
+
+
+  15 passing (27s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        15                                                                               │
+  │ Passing:      15                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     26 seconds                                                                       │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  pipeline-mode.cy.js                      00:26       15       15        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:26       15       15        -        -        -  
+
