@@ -39,13 +39,19 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
   });
 
-  it('shows a sticky numbered stage navigator that scrolls to pipeline stages', () => {
+  it('shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards', () => {
     cy.get('#pipelineStageNav')
       .should('have.class', 'is-open')
-      .and('have.css', 'position', 'sticky')
+      .and('have.css', 'position', 'fixed')
       .and('have.css', 'pointer-events', 'auto');
     cy.get('#pipelineStageNav').then(($nav) => {
       expect($nav[0].getBoundingClientRect().height).to.be.lessThan(260);
+    });
+    cy.get('.pipeline-workspace').then(($workspace) => {
+      expect($workspace.css('display')).to.eq('block');
+    });
+    cy.get('.pipeline-stage').first().then(($stage) => {
+      expect($stage[0].getBoundingClientRect().width).to.be.greaterThan(900);
     });
     cy.get('#pipelineStageNav .pipeline-stage-nav-btn').should('have.length', 3);
     cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(0)
