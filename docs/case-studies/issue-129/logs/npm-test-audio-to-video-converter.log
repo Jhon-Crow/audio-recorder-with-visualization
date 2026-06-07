@@ -1,0 +1,46 @@
+
+> audio-recorder-with-visualization@1.0.0 test
+> jest --runInBand tests/AudioToVideoConverter.test.ts
+
+PASS tests/AudioToVideoConverter.test.ts (18.555 s)
+  AudioToVideoConverter
+    Initialization
+      ✓ should create converter instance (3 ms)
+      ✓ should create converter with debug mode (1 ms)
+    getAvailableVisualizers
+      ✓ should return list of available visualizers (1 ms)
+    getSupportedFormats
+      ✓ should return list of supported formats
+    cancel()
+      ✓ should set cancellation flag
+    convert() with canvas element
+      ✓ should convert audio to video (1128 ms)
+      ✓ should convert with canvas selector (1129 ms)
+      ✓ should throw for invalid canvas selector (11 ms)
+      ✓ should convert with File source (1140 ms)
+      ✓ should convert with string visualizer (1125 ms)
+      ✓ should convert with visualizer instance (1124 ms)
+      ✓ should convert with default BarVisualizer when not specified (1139 ms)
+      ✓ should throw for unknown visualizer name (1 ms)
+      ✓ should call onProgress callback (1139 ms)
+      ✓ should convert with custom bitrates (1136 ms)
+      ✓ should convert with visualizer options (1137 ms)
+      ✓ should convert with audio enhancement options (1126 ms)
+    convert() cancellation
+      ✓ should reject when cancelled (30 ms)
+    convert() error handling
+      ✓ should handle audio load error (11 ms)
+    Debug mode
+      ✓ should log when debug is enabled (1139 ms)
+    convertWithFallback()
+      ✓ should return ConversionResult with blob and format info for webm (1140 ms)
+      ✓ should return result with usedFallback=false when mp4 is supported (1138 ms)
+      ✓ should default to webm format when not specified (1136 ms)
+      ✓ should reuse successful mp4 encoder support for the same resolution (2 ms)
+      ✓ should fall back to webm when mp4 conversion fails after support probe (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       25 passed, 25 total
+Snapshots:   0 total
+Time:        19.004 s
+Ran all test suites matching /tests\/AudioToVideoConverter.test.ts/i.

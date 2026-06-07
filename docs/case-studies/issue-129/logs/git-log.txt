@@ -1,0 +1,40 @@
+23fa3d8 (HEAD -> issue-129-6fa81f607a95, origin/issue-129-6fa81f607a95) Revert "Initial commit with task details"
+2ad9bda Document issue 129 batch MP4 analysis
+aee8639 Initial commit with task details
+9896572 (upstream/main, origin/main, origin/HEAD, main) Merge pull request #108 from konard/issue-107-9ab461961108
+cae0dd8 (origin/issue-107-9ab461961108) Resolve upstream merge and fix batch MP4 filenames
+7efe9c3 Merge pull request #119 from konard/issue-117-a1337cdeabfd
+18411e6 (origin/issue-117-a1337cdeabfd) Revert "Remove generated issue logs from PR"
+e151a7e Remove generated issue logs from PR
+1257ee5 Merge remote-tracking branch 'upstream/main' into issue-117-a1337cdeabfd
+312eb69 Merge branch 'pr-120-upstream' into issue-117-a1337cdeabfd
+57bb5b8 Merge pull request #125 from konard/issue-123-7b0766771743
+0271256 Merge pull request #122 from konard/issue-121-103004f9fc01
+f375670 (origin/issue-123-7b0766771743) Remove task placeholder file
+75c521c Fix YouTube upload modal dismissal
+c63cda2 Merge pull request #116 from konard/issue-115-9ee3eb4ba9cb
+1606fe5 Initial commit with task details
+52ca7ff (origin/issue-121-103004f9fc01) Persist YouTube Google authorization
+cc98092 Initial commit with task details
+f2e6343 (origin/issue-118-f1d07ac6dab1) Revert "Initial commit with task details"
+18c70a2 Revert "Initial commit with task details"
+041b10a (origin/issue-115-9ee3eb4ba9cb) Revert "Initial commit with task details"
+f2e9068 Add YouTube thumbnail upload support
+b55cd08 Merge pull request #114 from konard/issue-113-94b03c93afe6
+fb3c685 Add scheduled YouTube publish support
+c25f136 Use YouTube Shorts hashtag in upload metadata
+ca9a12a Initial commit with task details
+cc17531 Initial commit with task details
+24426c3 Initial commit with task details
+7b949a5 Merge pull request #104 from konard/issue-102-ea27a4a1da11
+bbd04a3 (origin/issue-113-94b03c93afe6) Revert "Initial commit with task details"
+c582e51 (origin/issue-102-ea27a4a1da11) Merge remote-tracking branch 'upstream/main' into issue-102-ea27a4a1da11
+c965f57 Persist active preset highlight
+d557e1c Use desktop OAuth for Electron YouTube upload
+f4d42d9 Initial commit with task details
+89d7bfd Merge pull request #110 from konard/issue-109-299b1e5a9a9f
+0c7baa5 (origin/issue-109-299b1e5a9a9f) Record post-merge verification for issue 109
+05014da Merge remote-tracking branch 'upstream/main' into issue-109-299b1e5a9a9f
+f741629 Fix preset rename modal and active state
+8aabe4c Guide YouTube OAuth setup and update CI runtime
+7021424 Stabilize YouTube OAuth localhost origin
