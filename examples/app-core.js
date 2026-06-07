@@ -312,6 +312,69 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     }
   }
 
+  function normalizeFolderPreset(preset, index = 0) {
+    if (!preset || typeof preset !== 'object' || !preset.settings || typeof preset.settings !== 'object') {
+      return null;
+    }
+
+    const id = preset.id || preset.sourcePath || `folder-preset-${index}`;
+    return {
+      ...preset,
+      id: String(id),
+      name: preset.name ? String(preset.name) : String(index + 1),
+      createdAt: preset.createdAt || new Date().toISOString(),
+      settings: preset.settings,
+    };
+  }
+
+  function mergePresets(nextPresets) {
+    const normalized = nextPresets
+      .map(normalizeFolderPreset)
+      .filter(Boolean);
+
+    if (!normalized.length) {
+      return 0;
+    }
+
+    const existingIds = new Set(presets.map(preset => preset.id));
+    const additions = normalized.filter(preset => !existingIds.has(preset.id));
+    if (!additions.length) {
+      return 0;
+    }
+
+    presets = [...presets, ...additions];
+    savePresets(presets);
+    renderPresets();
+    return additions.length;
+  }
+
+  async function loadPresetsFromFolder(folderPath, { notify = false } = {}) {
+    if (!window.electronAPI || !window.electronAPI.loadPresetFiles || !folderPath || folderPath === 'Browser local storage') {
+      return 0;
+    }
+
+    const result = await window.electronAPI.loadPresetFiles(folderPath);
+    if (!result || !result.success) {
+      const error = result && result.error ? result.error : 'Unknown error';
+      console.warn('Failed to load preset files:', error);
+      if (notify) {
+        updateStatus(`Could not load presets: ${error}`, 'error');
+      }
+      return 0;
+    }
+
+    const addedCount = mergePresets(result.presets || []);
+    if (notify) {
+      updateStatus(
+        addedCount > 0
+          ? `Loaded ${addedCount} preset${addedCount === 1 ? '' : 's'} from folder`
+          : 'No new presets found in folder',
+        'ready'
+      );
+    }
+    return addedCount;
+  }
+
   function loadPresetOptions() {
     try {
       const saved = localStorage.getItem(PRESET_OPTIONS_KEY);
@@ -1541,6 +1604,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         savePresetOptions(presetOptions);
         presetFolderInput.value = result.folderPath;
         presetSettingsPathInput.value = result.folderPath;
+        await loadPresetsFromFolder(result.folderPath, { notify: true });
       }
       return;
     }
@@ -1663,6 +1727,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   function initializePresetControls() {
     presetSettingsPathInput.value = presetOptions.savePath || 'Browser local storage';
     renderPresets();
+    loadPresetsFromFolder(presetOptions.savePath);
 
     savePresetBtn.addEventListener('click', async () => {
       if (presetOptions.skipDialog) {
@@ -1835,6 +1900,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     addRecording,
     getVideoDimensions,
     applyVideoDimensions,
+    loadPresetsFromFolder,
+    choosePresetFolder,
     // Elements (for other modules)
     elements: {
       visualizerSelect,

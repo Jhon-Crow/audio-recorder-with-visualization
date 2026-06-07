@@ -826,6 +826,44 @@ ipcMain.handle('preset-save-file', async (event, folderPath, preset) => {
   }
 });
 
+ipcMain.handle('preset-load-files', async (event, folderPath) => {
+  try {
+    if (!folderPath) {
+      return { success: false, error: 'Preset folder is not configured' };
+    }
+
+    if (!fs.existsSync(folderPath)) {
+      return { success: true, presets: [] };
+    }
+
+    const stat = fs.statSync(folderPath);
+    if (!stat.isDirectory()) {
+      return { success: false, error: 'Preset path is not a folder' };
+    }
+
+    const presets = fs.readdirSync(folderPath)
+      .filter(fileName => path.extname(fileName).toLowerCase() === '.json')
+      .map(fileName => {
+        const filePath = path.join(folderPath, fileName);
+        try {
+          const preset = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          return preset && typeof preset === 'object'
+            ? { ...preset, sourcePath: filePath }
+            : null;
+        } catch (error) {
+          console.warn(`Failed to read preset file ${filePath}:`, error);
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    return { success: true, presets };
+  } catch (error) {
+    console.error('Error loading preset files:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ==================== PRESENTATION MODE IPC HANDLERS ====================
 
 // Start/toggle presentation mode
