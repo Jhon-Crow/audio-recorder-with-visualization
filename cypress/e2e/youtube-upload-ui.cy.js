@@ -15,7 +15,9 @@ describe('YouTube Upload UI', () => {
 
     addSyntheticRecording();
 
-    cy.contains('.recording-item', 'Recording 1').within(() => {
+    cy.get('#recordingsList').scrollIntoView();
+    cy.get('.recording-item').first().within(() => {
+      cy.contains('recording-1.webm').should('be.visible');
       cy.contains('a', 'Download').should('be.visible');
       cy.contains('button', 'Upload to YouTube').should('be.visible').click();
     });
