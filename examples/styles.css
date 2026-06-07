@@ -1210,6 +1210,46 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.pipeline-preview-trigger {
+  --pipeline-preview-aspect: 16 / 9;
+}
+
+.pipeline-preview-trigger::after {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 42px);
+  left: 50%;
+  width: min(220px, 62vw);
+  aspect-ratio: var(--pipeline-preview-aspect);
+  min-height: 72px;
+  max-height: 180px;
+  transform: translateX(-50%) translateY(-8px);
+  border: 2px solid rgba(0, 212, 255, 0.85);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0)),
+    repeating-linear-gradient(90deg,
+      rgba(0, 212, 255, 0.95) 0 7px,
+      rgba(255, 0, 128, 0.85) 7px 13px,
+      rgba(255, 255, 255, 0.18) 13px 20px,
+      transparent 20px 28px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22), transparent 38%),
+    #05070a;
+  background-size: auto, auto 70%, auto, auto;
+  background-position: center, bottom left, center, center;
+  background-repeat: no-repeat;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 1001;
+}
+
+.pipeline-preview-trigger:hover::after,
+.pipeline-preview-trigger:focus-visible::after {
+  opacity: 1;
+}
+
 .pipeline-stage-fields {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));

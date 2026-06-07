@@ -532,6 +532,26 @@
     };
   }
 
+  function getPreviewAspectStyle(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    return `${dimensions.width} / ${dimensions.height}`;
+  }
+
+  function getPreviewLabel(stage, labelPrefix) {
+    const dimensions = parseResolution(stage.resolution);
+    const preset = getPresetChoices().find(([value]) => value === (stage.presetId || 'current'));
+    const presetName = preset ? preset[1] : 'Current settings';
+    return `${labelPrefix}: ${dimensions.width}x${dimensions.height}, ${presetName}`;
+  }
+
+  function applyPipelinePreviewTooltip(element, stage, labelPrefix) {
+    element.classList.add('pipeline-preview-trigger');
+    element.dataset.tooltip = getPreviewLabel(stage, labelPrefix);
+    element.title = element.dataset.tooltip;
+    element.style.setProperty('--pipeline-preview-aspect', getPreviewAspectStyle(stage));
+    element.setAttribute('aria-label', element.dataset.tooltip);
+  }
+
   function parseLocalDate(value) {
     if (!value) return null;
     const date = new Date(value);
@@ -992,6 +1012,7 @@
         const handle = document.createElement('span');
         handle.className = 'pipeline-track-handle';
         handle.textContent = String(index + 1);
+        applyPipelinePreviewTooltip(handle, stage, `Track ${index + 1} preview`);
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -1134,6 +1155,7 @@
       const number = document.createElement('span');
       number.className = 'pipeline-stage-number';
       number.textContent = String(index + 1);
+      applyPipelinePreviewTooltip(number, stage, `Stage ${index + 1} preview`);
 
       const fields = document.createElement('div');
       fields.className = 'pipeline-stage-fields';

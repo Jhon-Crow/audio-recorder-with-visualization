@@ -212,6 +212,26 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('shows aspect-ratio preview tooltips for stage and album track numbers', () => {
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-number')
+      .should('have.class', 'pipeline-preview-trigger')
+      .and('have.attr', 'data-tooltip')
+      .and('contain', 'Stage 1 preview: 1080x1920');
+
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-number')
+      .should('have.attr', 'style')
+      .and('contain', '--pipeline-preview-aspect: 1080 / 1920');
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle').first()
+      .should('have.class', 'pipeline-preview-trigger')
+      .and('have.attr', 'data-tooltip')
+      .and('contain', 'Track 1 preview: 1920x1080');
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle').first()
+      .trigger('mouseover')
+      .should('have.css', 'cursor', 'help');
+  });
+
   it('runs visualization-only stages through the converter', () => {
     cy.get('#clearPipelineBtn').click();
     cy.get('#addPipelineStageBtn').click();
