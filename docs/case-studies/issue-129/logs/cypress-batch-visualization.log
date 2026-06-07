@@ -1,0 +1,70 @@
+It looks like this is your first time using Cypress: 15.8.1
+
+[STARTED]  Verifying Cypress can run /home/box/.cache/Cypress/15.8.1/Cypress
+[TITLE]  Verified Cypress!       /home/box/.cache/Cypress/15.8.1/Cypress
+[SUCCESS]  Verified Cypress!       /home/box/.cache/Cypress/15.8.1/Cypress
+
+Opening Cypress...
+
+DevTools listening on ws://127.0.0.1:40309/devtools/browser/c5b0ab66-cbfa-44cd-bfea-baa3b1731fb7
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (batch-visualization.cy.js)                                            │
+  │ Searched:       cypress/e2e/batch-visualization.cy.js                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  batch-visualization.cy.js                                                       (1 of 1)
+
+
+  Batch Visualization Mode
+    ✓ allows selecting multiple audio files for conversion (404ms)
+    ✓ shows a disabled Save All button until recordings exist (251ms)
+    ✓ uses one Electron batch save request for Save All (319ms)
+    ✓ names every MP4 batch recording from the actual rendered blob type (227ms)
+    ✓ uses the selected output format for every file in a batch (272ms)
+
+
+  5 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        5                                                                                │
+  │ Passing:      5                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 second                                                                         │
+  │ Spec Ran:     batch-visualization.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780797955551/cypress/videos/batch-visualization.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  batch-visualization.cy.js                00:01        5        5        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:01        5        5        -        -        -  
+

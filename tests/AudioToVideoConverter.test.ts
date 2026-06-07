@@ -1,4 +1,5 @@
 import { AudioToVideoConverter } from '../src/AudioToVideoConverter';
+import { VideoRecorder } from '../src/core/VideoRecorder';
 import { WaveformVisualizer } from '../src/visualizers/WaveformVisualizer';
 
 describe('AudioToVideoConverter', () => {
@@ -325,6 +326,10 @@ describe('AudioToVideoConverter', () => {
   });
 
   describe('convertWithFallback()', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
     test('should return ConversionResult with blob and format info for webm', async () => {
       const result = await converter.convertWithFallback({
         audioSource: 'test.mp3',
@@ -361,6 +366,65 @@ describe('AudioToVideoConverter', () => {
       expect(result.format).toBe('webm');
       expect(result.usedFallback).toBe(false);
     }, 10000);
+
+    test('should reuse successful mp4 encoder support for the same resolution', async () => {
+      const supportSpy = jest
+        .spyOn(VideoRecorder, 'testEncoderSupport')
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      const convertSpy = jest
+        .spyOn(converter, 'convert')
+        .mockImplementation(async (config) => new Blob(['video'], { type: `video/${config.format}` }));
+
+      const firstResult = await converter.convertWithFallback({
+        audioSource: 'first.mp3',
+        canvas,
+        format: 'mp4',
+        videoWidth: 608,
+        videoHeight: 1080,
+      });
+      const secondResult = await converter.convertWithFallback({
+        audioSource: 'second.mp3',
+        canvas,
+        format: 'mp4',
+        videoWidth: 608,
+        videoHeight: 1080,
+      });
+
+      expect(supportSpy).toHaveBeenCalledTimes(1);
+      expect(convertSpy).toHaveBeenCalledTimes(2);
+      expect(convertSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ format: 'mp4' }));
+      expect(convertSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ format: 'mp4' }));
+      expect(firstResult.format).toBe('mp4');
+      expect(firstResult.usedFallback).toBe(false);
+      expect(secondResult.format).toBe('mp4');
+      expect(secondResult.usedFallback).toBe(false);
+    });
+
+    test('should fall back to webm when mp4 conversion fails after support probe', async () => {
+      jest
+        .spyOn(VideoRecorder, 'testEncoderSupport')
+        .mockResolvedValue(true);
+      const convertSpy = jest
+        .spyOn(converter, 'convert')
+        .mockRejectedValueOnce(new Error('Encoding failed: hardware encoder unavailable'))
+        .mockResolvedValueOnce(new Blob(['video'], { type: 'video/webm' }));
+
+      const result = await converter.convertWithFallback({
+        audioSource: 'test.mp3',
+        canvas,
+        format: 'mp4',
+        videoWidth: 608,
+        videoHeight: 1080,
+      });
+
+      expect(convertSpy).toHaveBeenCalledTimes(2);
+      expect(convertSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ format: 'mp4' }));
+      expect(convertSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ format: 'webm' }));
+      expect(result.format).toBe('webm');
+      expect(result.usedFallback).toBe(true);
+      expect(result.fallbackMessage).toMatch(/MP4 encoding is not supported/);
+    });
   });
 });
 
