@@ -11,6 +11,7 @@
   const PIPELINE_TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const PIPELINE_UPLOAD_ORDER_KEY = 'audio-recorder-pipeline-upload-order';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
+  const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
 
@@ -352,6 +353,45 @@
     localStorage.setItem(PIPELINE_STAGES_KEY, JSON.stringify(stages.map(sanitizeStage)));
   }
 
+  function getPlaylistIds(value) {
+    return String(value || '')
+      .split(/[\n,]+/)
+      .map(item => item.trim())
+      .filter(Boolean)
+      .filter((item, index, list) => list.indexOf(item) === index);
+  }
+
+  function loadSavedYouTubePlaylists() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLAYLISTS_KEY) || '[]');
+      if (!Array.isArray(saved)) return [];
+      return saved
+        .map(item => {
+          if (typeof item === 'string') {
+            return { id: item, title: item };
+          }
+          if (item && typeof item.id === 'string') {
+            return { id: item.id, title: item.title || item.name || item.id };
+          }
+          return null;
+        })
+        .filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveYouTubePlaylist(playlist) {
+    const trimmedId = String(playlist.id || '').trim();
+    if (!trimmedId) return;
+    const playlists = loadSavedYouTubePlaylists();
+    const next = [
+      ...playlists.filter(item => item.id !== trimmedId),
+      { id: trimmedId, title: String(playlist.title || trimmedId).trim() || trimmedId },
+    ];
+    localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(next));
+  }
+
   function loadSavedPipelines() {
     try {
       const saved = JSON.parse(localStorage.getItem(SAVED_PIPELINES_KEY) || '[]');
@@ -409,11 +449,22 @@
   }
 
   function updateStage(stageId, changes, shouldRender = false) {
+    const affectsSchedule = [
+      'publishAtLocal',
+      'publishImmediately',
+      'scheduleMode',
+      'relativeReference',
+      'relativeOffsetDirection',
+      'relativeOffsetMonths',
+      'relativeOffsetDays',
+      'relativeOffsetHours',
+      'relativeOffsetUnitMinutes',
+    ].some(key => Object.prototype.hasOwnProperty.call(changes, key));
     stages = stages.map((stage, index) => (
       stage.id === stageId ? normalizeStage({ ...stage, ...changes }, index) : stage
     ));
     saveStages();
-    if (shouldRender) {
+    if (shouldRender || affectsSchedule) {
       renderStages();
     } else {
       updateRunState();
@@ -555,12 +606,20 @@
     try {
       const presets = JSON.parse(localStorage.getItem('audio-recorder-presets') || '[]');
       if (Array.isArray(presets)) {
-        return presets.filter(preset => (
-          preset &&
-          typeof preset.id === 'string' &&
-          preset.settings &&
-          typeof preset.settings === 'object'
-        ));
+        return presets
+          .map(preset => {
+            if (!preset || typeof preset.id !== 'string') {
+              return null;
+            }
+            if (preset.settings && typeof preset.settings === 'object') {
+              return preset;
+            }
+            const { id, name, createdAt, sourcePath, ...settings } = preset;
+            return Object.keys(settings).length
+              ? { id, name, createdAt, sourcePath, settings }
+              : null;
+          })
+          .filter(Boolean);
       }
     } catch (error) {
       console.warn('Failed to read visualizer presets for pipeline:', error);
@@ -757,6 +816,30 @@
     return dates.map((date, index) => (
       date || addRelativeOffset(anchorDate, stages[index])
     ));
+  }
+
+  function refreshRelativePublishDates() {
+    const stageBaseDates = computeStageBaseDates();
+    let changed = false;
+    stages = stages.map((stage, index) => {
+      if (stage.publishImmediately || stage.scheduleMode !== 'relative') {
+        return stage;
+      }
+      const date = stageBaseDates[index];
+      if (!date || !Number.isFinite(date.getTime())) {
+        return stage;
+      }
+      const publishAtLocal = toDateTimeLocalValue(date);
+      if (stage.publishAtLocal === publishAtLocal) {
+        return stage;
+      }
+      changed = true;
+      return { ...stage, publishAtLocal };
+    });
+    if (changed) {
+      saveStages();
+    }
+    return stageBaseDates;
   }
 
   function getStageFiles(stage) {
@@ -1256,7 +1339,24 @@
       ? `${selected.length} selected`
       : stage.fileNames.length ? `Last: ${stage.fileNames.join(', ')}` : '';
 
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'btn-secondary compact-btn pipeline-reset-files-btn';
+    reset.textContent = 'Сбросить файлы';
+    reset.disabled = !selected.length && !stage.fileNames.length;
+    reset.dataset.tooltip = 'Clear files added to this stage.';
+    reset.title = reset.dataset.tooltip;
+    reset.addEventListener('click', () => {
+      selectedFilesByStageId.delete(stage.id);
+      if (isAlbumStage(stage)) {
+        updateStage(stage.id, { fileNames: [], tracks: [] }, true);
+      } else {
+        updateStage(stage.id, { fileNames: [] }, true);
+      }
+    });
+
     cell.appendChild(button);
+    cell.appendChild(reset);
     cell.appendChild(fileInput);
     cell.appendChild(names);
     return cell;
@@ -1432,13 +1532,11 @@
     tagsField.appendChild(tags);
     grid.appendChild(tagsField);
 
-    const playlistField = createField('Playlist IDs', 'span-12', 'Comma- or newline-separated YouTube playlist IDs for uploads from this stage.');
-    const playlistIds = document.createElement('input');
-    playlistIds.type = 'text';
-    playlistIds.value = stage.playlistIds || '';
-    playlistIds.className = 'pipeline-stage-playlist-ids';
-    playlistIds.addEventListener('input', () => updateStage(stage.id, { playlistIds: playlistIds.value }));
-    playlistField.appendChild(playlistIds);
+    const playlistField = createField('Playlists', 'span-12', 'Choose existing YouTube playlists or add a new playlist ID.');
+    const playlistChooser = renderPlaylistChooser(stage, (playlistIds) => {
+      updateStage(stage.id, { playlistIds });
+    });
+    playlistField.appendChild(playlistChooser);
     grid.appendChild(playlistField);
 
     [
@@ -1468,9 +1566,83 @@
     return details;
   }
 
+  function renderPlaylistChooser(stage, onChange) {
+    const selectedIds = getPlaylistIds(stage.playlistIds);
+    const known = loadSavedYouTubePlaylists();
+    selectedIds.forEach(id => {
+      if (!known.some(item => item.id === id)) {
+        known.push({ id, title: id });
+      }
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'youtube-playlist-selector pipeline-playlist-selector';
+
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.className = 'pipeline-stage-playlist-ids';
+    hidden.value = selectedIds.join(', ');
+    wrapper.appendChild(hidden);
+
+    const list = document.createElement('div');
+    list.className = 'youtube-playlist-list';
+    known.forEach(playlist => {
+      const label = document.createElement('label');
+      label.className = 'youtube-playlist-option';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = selectedIds.includes(playlist.id);
+      checkbox.addEventListener('change', () => {
+        const nextIds = checkbox.checked
+          ? [...selectedIds, playlist.id]
+          : selectedIds.filter(id => id !== playlist.id);
+        onChange(nextIds.join(', '));
+      });
+      const text = document.createElement('span');
+      text.textContent = playlist.title || playlist.id;
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      list.appendChild(label);
+    });
+
+    if (!known.length) {
+      const empty = document.createElement('div');
+      empty.className = 'youtube-playlist-empty';
+      empty.textContent = 'No playlists saved yet';
+      list.appendChild(empty);
+    }
+
+    const createRow = document.createElement('div');
+    createRow.className = 'youtube-playlist-create';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'New playlist ID';
+    input.setAttribute('aria-label', 'New YouTube playlist ID');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-secondary compact-btn';
+    button.textContent = 'Create new';
+    button.addEventListener('click', () => {
+      const id = input.value.trim();
+      if (!id) {
+        input.focus();
+        return;
+      }
+      saveYouTubePlaylist({ id, title: id });
+      hidden.value = [...selectedIds, id].filter((item, index, list) => list.indexOf(item) === index).join(', ');
+      onChange([...selectedIds, id].filter((item, index, list) => list.indexOf(item) === index).join(', '));
+    });
+    createRow.appendChild(input);
+    createRow.appendChild(button);
+
+    wrapper.appendChild(list);
+    wrapper.appendChild(createRow);
+    return wrapper;
+  }
+
   function renderStages() {
     stagesContainer.innerHTML = '';
-    const stageBaseDates = computeStageBaseDates();
+    const stageBaseDates = refreshRelativePublishDates();
 
     if (!stages.length) {
       const empty = document.createElement('p');
@@ -1542,7 +1714,9 @@
       const publishField = createField('Publish date', 'span-4', 'Absolute publication date, also used as the release date base when this stage is switched to absolute timing.');
       const publishAt = document.createElement('input');
       publishAt.type = 'datetime-local';
-      publishAt.value = stage.publishAtLocal || '';
+      publishAt.value = stage.scheduleMode === 'relative' && stageBaseDates[index]
+        ? toDateTimeLocalValue(stageBaseDates[index])
+        : stage.publishAtLocal || '';
       publishAt.className = 'pipeline-publish-at';
       publishAt.disabled = !isAbsolute;
       publishAt.addEventListener('focus', openTimezoneModalIfNeeded);

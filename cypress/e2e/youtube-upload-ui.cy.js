@@ -319,7 +319,9 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeTitle').clear().type('Published visualizer');
     cy.get('#youtubeDescription').type('Rendered from Cypress');
     cy.get('#youtubeTags').clear().type('audio, visualizer, cypress');
-    cy.get('#youtubePlaylistIds').type('PL-form');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create input').type('PL-form');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create button').click();
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-form');
     cy.get('#youtubeThumbnail').selectFile({
       contents: Cypress.Buffer.from('preview-image'),
       fileName: 'preview.png',
@@ -389,7 +391,9 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('be.visible');
     cy.get('#youtubeDescription').type('Saved upload description');
     cy.get('#youtubeTags').clear().type('ambient, saved, cypress');
-    cy.get('#youtubePlaylistIds').type('PL-memory');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create input').type('PL-memory');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-create button').click();
+    cy.get('#youtubePlaylistIds').should('have.value', 'PL-memory');
     cy.get('#youtubeCategory').select('22');
     cy.get('#youtubePrivacy').select('public');
     cy.get('#youtubeShort').check();
@@ -411,6 +415,7 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('be.visible');
     cy.get('#youtubeDescription').should('have.value', 'Saved upload description');
     cy.get('#youtubeTags').should('have.value', 'ambient, saved, cypress');
+    cy.get('#youtubePlaylistSelector .youtube-playlist-option').should('contain.text', 'PL-memory');
     cy.get('#youtubePlaylistIds').should('have.value', 'PL-memory');
     cy.get('#youtubeCategory').should('have.value', '22');
     cy.get('#youtubePrivacy').should('have.value', 'public');

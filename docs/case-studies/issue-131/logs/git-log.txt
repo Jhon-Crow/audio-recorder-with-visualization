@@ -1,0 +1,30 @@
+1c4fd2d (HEAD -> issue-131-06cd8d2fd62d, origin/issue-131-06cd8d2fd62d) Add pipeline scheduling screenshot
+10d200e Merge remote-tracking branch 'upstream/main' into issue-131-06cd8d2fd62d
+f440de6 Implement pipeline scheduling and playlist reports
+6d59236 (upstream/main, origin/main, origin/HEAD, main) Merge pull request #130 from konard/issue-129-6fa81f607a95
+f9b45ed Initial commit with task details
+3755a72 Merge pull request #128 from konard/issue-127-9c107db5dfa0
+79b0735 Merge pull request #133 from konard/issue-132-ed1d0581cc9f
+474f4b6 (origin/issue-132-ed1d0581cc9f) Revert "Initial commit with task details"
+16ee140 Load presets from selected folder
+1e3f5cc (origin/issue-127-9c107db5dfa0) Implement pipeline execution feedback
+59122d7 Initial commit with task details
+31ff6be (origin/issue-129-6fa81f607a95) Cache MP4 encoder support for batch rendering
+c63d9a5 Implement critical pipeline mode UI
+23fa3d8 Revert "Initial commit with task details"
+3a0d94a Merge remote-tracking branch 'upstream/main' into issue-127-9c107db5dfa0
+2ad9bda Document issue 129 batch MP4 analysis
+aee8639 Initial commit with task details
+aeb447a Revert "Initial commit with task details"
+9896572 Merge pull request #108 from konard/issue-107-9ab461961108
+51d13cd Merge upstream main into issue 127 branch
+8aafcfc Add pipeline stage deletion and upload settings
+cae0dd8 (origin/issue-107-9ab461961108) Resolve upstream merge and fix batch MP4 filenames
+7efe9c3 Merge pull request #119 from konard/issue-117-a1337cdeabfd
+4bef423 Document pipeline mode plan for issue 127
+ee02707 Initial commit with task details
+18411e6 (origin/issue-117-a1337cdeabfd) Revert "Remove generated issue logs from PR"
+e151a7e Remove generated issue logs from PR
+1257ee5 Merge remote-tracking branch 'upstream/main' into issue-117-a1337cdeabfd
+312eb69 Merge branch 'pr-120-upstream' into issue-117-a1337cdeabfd
+57bb5b8 Merge pull request #125 from konard/issue-123-7b0766771743

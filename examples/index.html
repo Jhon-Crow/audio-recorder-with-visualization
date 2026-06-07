@@ -809,10 +809,11 @@
               Tags
               <input type="text" id="youtubeTags" aria-label="YouTube video tags">
             </label>
-            <label class="youtube-wide-field">
-              Playlist IDs
-              <input type="text" id="youtubePlaylistIds" aria-label="YouTube playlist IDs">
-            </label>
+            <div class="youtube-wide-field youtube-playlist-field">
+              <span>Playlists</span>
+              <input type="hidden" id="youtubePlaylistIds" aria-label="Selected YouTube playlist IDs">
+              <div id="youtubePlaylistSelector" class="youtube-playlist-selector"></div>
+            </div>
             <label class="youtube-wide-field">
               Video Preview
               <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">

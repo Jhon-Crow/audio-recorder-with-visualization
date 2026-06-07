@@ -29,6 +29,17 @@ describe('Pipeline Mode', () => {
     win.localStorage.setItem('audio-recorder-presets', JSON.stringify(savedVisualizationPresets));
   }
 
+  function seedFlatVisualizationPresets(win) {
+    win.localStorage.setItem('audio-recorder-presets', JSON.stringify([
+      {
+        id: 'flat-preset',
+        name: 'Flat Saved Preset',
+        visualizer: 'bars',
+        primaryColor: '#ffffff',
+      },
+    ]));
+  }
+
   beforeEach(() => {
     cy.clearLocalStorage();
     cy.visit('/examples/index.html', { onBeforeLoad: seedSavedVisualizationPresets });
@@ -145,6 +156,35 @@ describe('Pipeline Mode', () => {
       cy.get('.pipeline-publish-at').should('be.disabled');
       cy.get('.pipeline-relative-offset').should('be.disabled');
       cy.get('.pipeline-relative-reference').should('be.disabled');
+    });
+  });
+
+  it('keeps relative publish dates current when the reference date changes', () => {
+    cy.get('.pipeline-stage').first().find('.pipeline-publish-at').then(($input) => {
+      expect($input.val()).to.not.equal('');
+    });
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-publish-at').then(($input) => {
+      $input[0].value = '2026-08-10T18:00';
+      $input[0].dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    cy.get('.pipeline-stage').first().find('.pipeline-publish-at')
+      .should('be.disabled')
+      .and('have.value', '2026-08-08T18:00');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-publish-at')
+      .should('be.disabled')
+      .and('have.value', '2026-08-11T18:00');
+  });
+
+  it('loads sidebar presets stored as flat setting objects', () => {
+    cy.visit('/examples/index.html', { onBeforeLoad: seedFlatVisualizationPresets });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'Flat Saved Preset')
+        .and('have.value', 'preset:flat-preset');
     });
   });
 
@@ -302,6 +342,20 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
   });
 
+  it('resets added files from a stage without opening the full reset modal', () => {
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'reset-me.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-file-btn').should('contain.text', 'reset-me.mp3');
+      cy.get('.pipeline-reset-files-btn').should('not.be.disabled').click();
+      cy.get('.pipeline-file-btn').should('contain.text', 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ');
+    });
+  });
+
   it('labels pipeline YouTube checkboxes and generated controls with tooltips', () => {
     cy.get('.pipeline-stage').first().within(() => {
       cy.get('.pipeline-file-btn')
@@ -411,7 +465,9 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-description').type('Pipeline description');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-tags').clear().type('pipeline, direct');
-    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids').type('PL-stage');
+    cy.get('.pipeline-stage').first().find('.youtube-playlist-create input').type('PL-stage');
+    cy.get('.pipeline-stage').first().find('.youtube-playlist-create button').click();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids').should('have.value', 'PL-stage');
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(1).find('input').check();
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(2).find('input').check();
     cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(3).find('input').check();
@@ -434,5 +490,15 @@ describe('Pipeline Mode', () => {
       .and('contain.text', 'PL-stage');
     cy.get('#pipelineReportList a')
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-video-id');
+  });
+
+  it('keeps generated tooltip boxes inside the viewport', () => {
+    cy.viewport(360, 640);
+    cy.get('.pipeline-stage').first().find('.pipeline-file-btn').trigger('mouseover');
+    cy.get('.pipeline-stage').first().find('.pipeline-file-btn').then(($button) => {
+      const tooltipStyle = getComputedStyle($button[0], '::before');
+      expect(tooltipStyle.whiteSpace).to.equal('normal');
+      expect(parseFloat(tooltipStyle.maxWidth)).to.be.lessThan(360);
+    });
   });
 });
