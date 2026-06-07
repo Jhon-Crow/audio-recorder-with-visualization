@@ -13,6 +13,7 @@ export {
   buildYouTubeVideoResource,
   getYouTubeWatchUrl,
   normalizeYouTubeTags,
+  YOUTUBE_PLAYLIST_ITEMS_ENDPOINT,
   YOUTUBE_SHORT_HASHTAG,
   YOUTUBE_UPLOAD_ENDPOINT,
   YOUTUBE_UPLOAD_SCOPE,
