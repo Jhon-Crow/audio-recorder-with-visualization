@@ -39,6 +39,43 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
   });
 
+  it('shows a fixed numbered stage navigator that scrolls to pipeline stages', () => {
+    cy.get('#pipelineStageNav')
+      .should('have.class', 'is-open')
+      .and('have.css', 'position', 'fixed')
+      .and('have.css', 'pointer-events', 'auto');
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').should('have.length', 3);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(0)
+      .should('contain.text', '1')
+      .and('contain.text', 'Pre-save short')
+      .and('contain.text', 'Visualization + update')
+      .and('contain.text', '-1440 min');
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1)
+      .should('contain.text', 'Release')
+      .and('contain.text', 'Visualization + update')
+      .invoke('text')
+      .should('match', /\d{4}-\d{2}-\d{2}/);
+
+    cy.get('.pipeline-stage').eq(2).then(($stage) => {
+      const stageId = $stage.attr('data-stage-id');
+      cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(2).click();
+      cy.get(`#pipelineStageNav .pipeline-stage-nav-btn[data-stage-id="${stageId}"]`)
+        .should('have.class', 'is-active')
+        .and('have.attr', 'aria-current', 'step');
+      cy.get(`.pipeline-stage[data-stage-id="${stageId}"]`).then(($target) => {
+        expect($target[0].getBoundingClientRect().top).to.be.lessThan(120);
+      });
+    });
+
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-inline-check input[aria-label="Publish this pipeline stage immediately"]').check();
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(2).should('contain.text', 'Immediately');
+
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').should('have.length', 4);
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#pipelineStageNav').should('not.be.visible');
+  });
+
   it('requires files before running and resets selected fields with a hold action', () => {
     selectFilesForEveryStage();
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
