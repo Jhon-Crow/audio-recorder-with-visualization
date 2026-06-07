@@ -169,4 +169,131 @@ describe('Pipeline Mode', () => {
     cy.get('#youtubeTags').should('have.value', 'stage one');
     cy.get('#youtubeShort').should('be.checked');
   });
+
+  it('turns selected album files into ordered editable tracks', () => {
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-file-input').selectFile([
+      {
+        contents: Cypress.Buffer.from('album-one'),
+        fileName: '01 first song.mp3',
+        mimeType: 'audio/mpeg',
+      },
+      {
+        contents: Cypress.Buffer.from('album-two'),
+        fileName: '02_second_song.wav',
+        mimeType: 'audio/wav',
+      },
+      {
+        contents: Cypress.Buffer.from('album-three'),
+        fileName: '03-third-song.flac',
+        mimeType: 'audio/flac',
+      },
+    ], { force: true });
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-album-track').should('have.length', 3);
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(0).should('have.value', '01 first song');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(1).should('have.value', '02 second song');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(2).should('have.value', '03 third song');
+  });
+
+  it('labels pipeline YouTube checkboxes and generated controls with tooltips', () => {
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-file-btn')
+        .should('have.attr', 'data-tooltip')
+        .and('contain', 'Select one or more source files');
+      cy.get('.pipeline-field[data-tooltip]').should('have.length.greaterThan', 8);
+      cy.get('.pipeline-youtube-details .pipeline-inline-check[data-tooltip]').should('have.length', 4);
+      cy.get('.pipeline-youtube-details .pipeline-inline-check').eq(0)
+        .should('contain.text', 'Short (#shorts)')
+        .find('input[type="checkbox"]')
+        .should('have.attr', 'aria-label', 'Mark this pipeline video as a YouTube Short');
+      cy.get('.pipeline-youtube-details .pipeline-inline-check').eq(1).should('contain.text', 'Made for kids');
+      cy.get('.pipeline-youtube-details .pipeline-inline-check').eq(2).should('contain.text', 'Synthetic media');
+      cy.get('.pipeline-youtube-details .pipeline-inline-check').eq(3).should('contain.text', 'Notify subscribers');
+    });
+  });
+
+  it('runs visualization-only stages through the converter', () => {
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Rendered stage');
+    cy.get('.pipeline-stage').first().find('select').first().select('visualize-only');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'render-me.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      }).as('pipelineConvert');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@pipelineConvert').should('have.been.calledOnce');
+    cy.get('#recordingsList').should('contain.text', 'render-me.webm');
+    cy.get('#status').should('contain.text', 'Pipeline complete: 1 task finished');
+    cy.get('#resetPipelineFieldsBtn').should('be.visible');
+  });
+
+  it('uploads direct YouTube stages with stage metadata when already signed in', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+      expect(req.headers.authorization).to.equal('Bearer stored-token');
+      expect(String(req.query.notifySubscribers)).to.equal('true');
+      expect(body.snippet.title).to.equal('Direct upload stage');
+      expect(body.snippet.description).to.equal('Pipeline description');
+      expect(body.snippet.tags).to.deep.equal(['pipeline', 'direct']);
+      expect(body.status.privacyStatus).to.equal('private');
+      expect(body.status.selfDeclaredMadeForKids).to.equal(true);
+      expect(body.status.containsSyntheticMedia).to.equal(true);
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: 'https://upload.example/pipeline-session' },
+        body: '',
+      });
+    }).as('startPipelineUpload');
+
+    cy.intercept('PUT', 'https://upload.example/pipeline-session', {
+      statusCode: 201,
+      body: { id: 'pipeline-video-id' },
+    }).as('finishPipelineUpload');
+
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Direct upload stage');
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-description').type('Pipeline description');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-tags').clear().type('pipeline, direct');
+    cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(1).find('input').check();
+    cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(2).find('input').check();
+    cy.get('.pipeline-stage').first().find('.pipeline-youtube-details .pipeline-inline-check').eq(3).find('input').check();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-video'),
+      fileName: 'direct-video.webm',
+      mimeType: 'video/webm',
+    }, { force: true });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    cy.wait('@startPipelineUpload');
+    cy.wait('@finishPipelineUpload');
+    cy.get('#status').should('contain.text', 'Pipeline complete: 1 task finished');
+  });
 });

@@ -1160,6 +1160,10 @@ button:focus-visible {
   border-color: rgba(255, 170, 0, 0.55);
 }
 
+.pipeline-stage.is-running {
+  border-color: rgba(0, 212, 255, 0.45);
+}
+
 .pipeline-file-cell {
   display: flex;
   flex-direction: column;
@@ -1261,12 +1265,29 @@ button:focus-visible {
   font-size: 14px;
 }
 
+.pipeline-stage-fields input[type="checkbox"] {
+  width: auto;
+  min-width: auto;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+
 .pipeline-inline-check {
   flex-direction: row;
   align-items: center;
   gap: var(--spacing-xs);
   min-height: 42px;
-  padding-top: 20px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.pipeline-check-text {
+  min-width: 0;
+  color: var(--color-text-primary);
+  line-height: 1.25;
 }
 
 .pipeline-youtube-details {

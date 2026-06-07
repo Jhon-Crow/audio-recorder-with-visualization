@@ -27,8 +27,7 @@ The target mode is a batch constructor for preparing a sequence of video jobs:
 - The example app is a plain HTML/CSS/JS UI in `examples/index.html`, `examples/styles.css`, and `examples/app-core.js`.
 - Existing top-level modes are tabs: Microphone Recording, Audio to Video, and Presentation Mode.
 - YouTube upload already exists as modal UI in `examples/youtube-upload.js` and uses `src/core/YouTubeUploader.ts`.
-- `YouTubeUploader` currently supports title, description, tags, category, privacy, made-for-kids, synthetic-media, short hashtag, notifications, resumable upload, and progress.
-- `YouTubeUploader` does not currently support scheduled publishing via `status.publishAt`.
+- `YouTubeUploader` currently supports title, description, tags, category, privacy, scheduled `status.publishAt`, made-for-kids, synthetic-media, short hashtag, thumbnails, notifications, resumable upload, and progress.
 - The app already has localStorage-backed settings and presets, modal patterns, accordions, and simple native drag/drop for preset ordering.
 - Cypress coverage exists for tabs, upload modal behavior, preset drag/drop, aspect ratios, and other UI flows.
 
@@ -144,3 +143,30 @@ The current PR implements the non-executing critical Pipeline UI slice:
 Implementation screenshot:
 
 ![Implemented Pipeline mode](./screenshots/pipeline-mode-implemented.png)
+
+## Implemented Execution Feedback Slice
+
+The latest PR feedback identified four gaps:
+
+- YouTube checkboxes were visually detached from their labels.
+- Selected album files did not become album tracks.
+- Generated Pipeline controls needed tooltips.
+- RUN only reported that the pipeline was ready instead of executing.
+
+This continuation slice addresses those gaps:
+
+- Album file selection now creates ordered editable tracks from selected filenames.
+- YouTube details now include explicit Short, Made for kids, Synthetic media, and Notify subscribers controls with adjacent text and tooltips.
+- Pipeline stages now support relative or absolute scheduling; default stages are relative except the album release stage, which stays absolute.
+- RUN now builds sequential tasks, renders visualization stages through the existing converter, adds rendered videos to the recordings list, and uploads YouTube stages through the existing uploader when the user is signed in.
+- Album render/upload tasks are split per selected album file and share the optional album cover as the YouTube thumbnail.
+- New Cypress coverage verifies album file-to-track mapping, generated tooltips/checkbox labels, visualization-only execution, and direct YouTube upload metadata.
+
+Feedback screenshots:
+
+![Detached checkbox labels](./screenshots/pr-comment-checkboxes.png)
+![Album files not becoming tracks](./screenshots/pr-comment-album-files.png)
+
+Updated Pipeline implementation:
+
+![Pipeline execution feedback implementation](./screenshots/pipeline-mode-execution-feedback.png)

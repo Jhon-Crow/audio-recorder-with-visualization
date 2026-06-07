@@ -624,6 +624,39 @@
     }
   }
 
+  async function uploadDirect(options = {}) {
+    if (!hasValidAccessToken()) {
+      throw new Error('Sign in to YouTube before running upload pipeline stages.');
+    }
+
+    const video = options.video || options.blob;
+    if (!video) {
+      throw new Error('No video selected for YouTube upload.');
+    }
+
+    try {
+      return await uploader.upload({
+        video,
+        thumbnail: options.thumbnail,
+        accessToken,
+        metadata: options.metadata || {},
+        notifySubscribers: options.notifySubscribers,
+        signal: options.signal,
+        onProgress: options.onProgress,
+      });
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        clearYouTubeAuth();
+      }
+      throw error;
+    }
+  }
+
+  window.AudioRecorderYouTube = {
+    hasValidAccessToken,
+    uploadDirect,
+  };
+
   window.addEventListener('audioRecorderYouTubeUploadRequested', (event) => {
     pendingUpload = event.detail;
 
