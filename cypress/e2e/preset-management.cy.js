@@ -163,4 +163,75 @@ describe('Preset Management', () => {
       expect(win.localStorage.getItem('audio-recorder-active-preset-id')).to.equal(null);
     });
   });
+
+  it('loads presets from a manually selected Electron folder', () => {
+    cy.window().then((win) => {
+      win.electronAPI = {
+        choosePresetFolder: () => Promise.resolve({ success: true, folderPath: '/old/presets' }),
+        loadPresetFiles: () => Promise.resolve({
+          success: true,
+          presets: [
+            {
+              id: 'legacy-preset',
+              name: 'Legacy',
+              createdAt: '2026-06-01T00:00:00.000Z',
+              settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
+            },
+          ],
+        }),
+      };
+      cy.spy(win.electronAPI, 'choosePresetFolder').as('choosePresetFolder');
+      cy.spy(win.electronAPI, 'loadPresetFiles').as('loadPresetFiles');
+    });
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetSettingsBtn').click();
+    cy.get('#presetSettingsChooseFolderBtn').click();
+
+    cy.get('@choosePresetFolder').should('have.been.calledOnce');
+    cy.get('@loadPresetFiles').should('have.been.calledWith', '/old/presets');
+    cy.get('#presetSettingsPathInput').should('have.value', '/old/presets');
+    cy.get('#presetList .preset-load-btn').should('have.length', 1).first().should('contain', 'Legacy');
+
+    cy.get('#presetSettingsCloseBtn').click();
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetList .preset-load-btn').first().click();
+    cy.get('#visualizerSelect').should('have.value', 'waveform');
+    cy.get('#primaryColor').should('have.value', '#ff0000');
+
+    cy.window().then((win) => {
+      const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
+      expect(presets).to.have.length(1);
+      expect(presets[0].id).to.equal('legacy-preset');
+
+      const options = JSON.parse(win.localStorage.getItem('audio-recorder-preset-options'));
+      expect(options.savePath).to.equal('/old/presets');
+    });
+  });
+
+  it('loads presets from a saved Electron folder on startup', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-preset-options', JSON.stringify({
+        savePath: '/old/presets',
+        skipDialog: false,
+      }));
+      win.electronAPI = {
+        loadPresetFiles: () => Promise.resolve({
+          success: true,
+          presets: [
+            {
+              id: 'startup-legacy-preset',
+              name: 'Startup Legacy',
+              createdAt: '2026-06-01T00:00:00.000Z',
+              settings: { visualizer: 'waveform', primaryColor: '#ff0000' },
+            },
+          ],
+        }),
+      };
+      return win.AudioRecorderApp.loadPresetsFromFolder('/old/presets');
+    });
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetList .preset-load-btn').should('have.length', 1).first().should('contain', 'Startup Legacy');
+  });
 });
