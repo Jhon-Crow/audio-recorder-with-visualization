@@ -131,12 +131,12 @@ body {
 }
 
 .pipeline-stage-nav {
-  position: fixed;
+  position: sticky;
   top: var(--spacing-lg);
-  right: 96px;
-  bottom: var(--spacing-lg);
   z-index: 245;
   width: 248px;
+  max-height: calc(100vh - (var(--spacing-lg) * 2));
+  align-self: start;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -1233,11 +1233,19 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.pipeline-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 248px;
+  gap: var(--spacing-md);
+  align-items: start;
+  max-width: calc(100% - 88px);
+}
+
 .pipeline-stages {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  max-width: calc(100% - 280px);
+  min-width: 0;
 }
 
 .pipeline-empty {
@@ -1517,7 +1525,13 @@ button:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .pipeline-workspace {
+    display: block;
+    max-width: none;
+  }
+
   .pipeline-stage-nav {
+    position: fixed;
     top: auto;
     right: var(--spacing-lg);
     left: var(--spacing-lg);
