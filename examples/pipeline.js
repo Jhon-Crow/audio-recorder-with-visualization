@@ -16,6 +16,7 @@
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
   const PREVIEW_FFT_SIZE = 2048;
+  const PREVIEW_STAGE_PADDING = 18;
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -806,10 +807,10 @@
     const time = 1.35;
     for (let i = 0; i < binCount; i++) {
       const frequency = i / binCount;
-      const bass = Math.exp(-frequency * 3) * 200;
-      const mid = Math.exp(-Math.pow(frequency - 0.32, 2) * 10) * 150;
-      const high = Math.exp(-Math.pow(frequency - 0.7, 2) * 15) * 100;
-      const animation = Math.sin(time * 2 + i * 0.1) * 30 + 30;
+      const bass = Math.exp(-frequency * 3) * 72;
+      const mid = Math.exp(-Math.pow(frequency - 0.32, 2) * 10) * 44;
+      const high = Math.exp(-Math.pow(frequency - 0.7, 2) * 15) * 28;
+      const animation = Math.sin(time * 2 + i * 0.1) * 8 + 8;
       data[i] = Math.min(255, Math.max(0, bass + mid + high + animation));
     }
     return data;
@@ -820,12 +821,61 @@
     const time = 1.35;
     for (let i = 0; i < length; i++) {
       const t = i / length;
-      const wave1 = Math.sin(t * Math.PI * 4 + time * 2) * 40;
-      const wave2 = Math.sin(t * Math.PI * 8 + time * 3) * 20;
-      const wave3 = Math.sin(t * Math.PI * 16 + time * 5) * 10;
+      const wave1 = Math.sin(t * Math.PI * 4 + time * 2) * 16;
+      const wave2 = Math.sin(t * Math.PI * 8 + time * 3) * 8;
+      const wave3 = Math.sin(t * Math.PI * 16 + time * 5) * 4;
       data[i] = Math.min(255, Math.max(0, 128 + wave1 + wave2 + wave3));
     }
     return data;
+  }
+
+  function drawMontageFrame(ctx, width, height) {
+    const lineWidth = Math.max(2, Math.round(Math.min(width, height) / 96));
+    const inset = Math.max(5, Math.round(lineWidth * 1.5));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(
+      inset + lineWidth / 2,
+      inset + lineWidth / 2,
+      width - inset * 2 - lineWidth,
+      height - inset * 2 - lineWidth
+    );
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.72)';
+    ctx.lineWidth = Math.max(1, Math.round(lineWidth / 2));
+    ctx.strokeRect(
+      inset + lineWidth * 2,
+      inset + lineWidth * 2,
+      width - inset * 2 - lineWidth * 4,
+      height - inset * 2 - lineWidth * 4
+    );
+    ctx.restore();
+  }
+
+  function createFramedPreviewCanvas(sourceCanvas) {
+    const frameCanvas = document.createElement('canvas');
+    frameCanvas.width = sourceCanvas.width;
+    frameCanvas.height = sourceCanvas.height;
+    const frameCtx = frameCanvas.getContext('2d');
+    if (!frameCtx) {
+      return sourceCanvas;
+    }
+
+    frameCtx.fillStyle = '#05070a';
+    frameCtx.fillRect(0, 0, frameCanvas.width, frameCanvas.height);
+    const padding = Math.min(
+      PREVIEW_STAGE_PADDING,
+      Math.max(8, Math.round(Math.min(frameCanvas.width, frameCanvas.height) * 0.08))
+    );
+    frameCtx.drawImage(
+      sourceCanvas,
+      padding,
+      padding,
+      Math.max(1, frameCanvas.width - padding * 2),
+      Math.max(1, frameCanvas.height - padding * 2)
+    );
+    drawMontageFrame(frameCtx, frameCanvas.width, frameCanvas.height);
+    return frameCanvas;
   }
 
   function resolvePreviewRenderSettings(stage) {
@@ -940,7 +990,7 @@
       const VisualizerClass = getVisualizerClass(renderSettings.visualizer);
       if (!VisualizerClass) {
         drawFallbackPreviewFrame(ctx, width, height, renderSettings.visualizerOptions);
-        return canvas.toDataURL('image/png');
+        return createFramedPreviewCanvas(canvas).toDataURL('image/png');
       }
 
       try {
@@ -956,7 +1006,10 @@
           sampleRate: 44100,
           fftSize: PREVIEW_FFT_SIZE,
         });
-        return canvas.toDataURL('image/png');
+        if (typeof visualizer.destroy === 'function') {
+          visualizer.destroy();
+        }
+        return createFramedPreviewCanvas(canvas).toDataURL('image/png');
       } catch (error) {
         const fallbackCanvas = document.createElement('canvas');
         fallbackCanvas.width = width;
@@ -966,7 +1019,7 @@
           throw error;
         }
         drawFallbackPreviewFrame(fallbackCtx, width, height, renderSettings.visualizerOptions);
-        return fallbackCanvas.toDataURL('image/png');
+        return createFramedPreviewCanvas(fallbackCanvas).toDataURL('image/png');
       }
     })();
 

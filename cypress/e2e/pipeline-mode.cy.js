@@ -33,6 +33,36 @@ describe('Pipeline Mode', () => {
     'https://www.googleapis.com/auth/youtube.force-ssl',
   ].join(' ');
 
+  function expectPreviewHasMontageFrame(previewImage) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        const canvas = win.document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+
+        const samples = [
+          ctx.getImageData(6, 6, 1, 1).data,
+          ctx.getImageData(image.width - 7, 6, 1, 1).data,
+          ctx.getImageData(6, image.height - 7, 1, 1).data,
+          ctx.getImageData(image.width - 7, image.height - 7, 1, 1).data,
+        ];
+
+        samples.forEach((pixel) => {
+          expect(pixel[0], 'frame red channel').to.be.greaterThan(180);
+          expect(pixel[1], 'frame green channel').to.be.greaterThan(180);
+          expect(pixel[2], 'frame blue channel').to.be.greaterThan(180);
+        });
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
+
   function seedSavedVisualizationPresets(win) {
     win.localStorage.setItem('audio-recorder-presets', JSON.stringify(savedVisualizationPresets));
   }
@@ -284,7 +314,8 @@ describe('Pipeline Mode', () => {
         expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1080 / 1920');
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
         verticalPreviewImage = previewImage;
-      });
+      })
+      .then(() => expectPreviewHasMontageFrame(verticalPreviewImage));
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle.pipeline-preview-trigger').first()
       .should('have.attr', 'data-tooltip')
@@ -297,6 +328,9 @@ describe('Pipeline Mode', () => {
         expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1920 / 1080');
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
         expect(previewImage).to.not.equal(verticalPreviewImage);
+      })
+      .then(($trigger) => {
+        expectPreviewHasMontageFrame($trigger[0].style.getPropertyValue('--pipeline-preview-image'));
       });
   });
 
