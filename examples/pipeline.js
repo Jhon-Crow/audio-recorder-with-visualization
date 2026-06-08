@@ -17,6 +17,7 @@
   const PREVIEW_MAX_SIDE = 360;
   const PREVIEW_FFT_SIZE = 2048;
   const PREVIEW_STAGE_PADDING = 18;
+  const PREVIEW_TOOLTIP_GAP = 12;
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -108,6 +109,7 @@
   let resetHoldTimer = 0;
   let resetHoldCompleted = false;
   let draggedTrack = null;
+  let activePreviewTooltipTrigger = null;
   const pipelinePreviewCache = new Map();
 
   function createId(prefix) {
@@ -1048,6 +1050,81 @@
           element.dataset.previewState = 'error';
         }
       });
+  }
+
+  function getPipelinePreviewTooltip() {
+    let tooltip = document.getElementById('pipelinePreviewTooltip');
+    if (tooltip) {
+      return tooltip;
+    }
+
+    tooltip = document.createElement('div');
+    tooltip.id = 'pipelinePreviewTooltip';
+    tooltip.className = 'pipeline-preview-tooltip';
+    tooltip.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(tooltip);
+    return tooltip;
+  }
+
+  function positionPipelinePreviewTooltip(trigger, tooltip) {
+    const triggerRect = trigger.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportPadding = 10;
+    const availableWidth = Math.max(160, window.innerWidth - viewportPadding * 2);
+    const availableHeight = Math.max(160, window.innerHeight - viewportPadding * 2);
+    const left = Math.min(
+      window.innerWidth - viewportPadding - tooltipRect.width,
+      Math.max(viewportPadding, triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2)
+    );
+    const preferredTop = triggerRect.top - tooltipRect.height - PREVIEW_TOOLTIP_GAP;
+    const fallbackTop = triggerRect.bottom + PREVIEW_TOOLTIP_GAP;
+    const top = preferredTop >= viewportPadding
+      ? preferredTop
+      : Math.min(window.innerHeight - viewportPadding - tooltipRect.height, Math.max(viewportPadding, fallbackTop));
+
+    tooltip.style.left = `${Math.max(viewportPadding, left)}px`;
+    tooltip.style.top = `${Math.max(viewportPadding, top)}px`;
+    tooltip.style.maxWidth = `${availableWidth}px`;
+    tooltip.style.maxHeight = `${availableHeight}px`;
+  }
+
+  function showPipelinePreviewTooltip(trigger) {
+    if (!trigger.classList.contains('pipeline-preview-trigger') || trigger.dataset.previewState !== 'ready') {
+      return;
+    }
+
+    activePreviewTooltipTrigger = trigger;
+    const tooltip = getPipelinePreviewTooltip();
+    tooltip.style.setProperty('--pipeline-preview-aspect', trigger.style.getPropertyValue('--pipeline-preview-aspect') || '16 / 9');
+    tooltip.style.setProperty('--pipeline-preview-image', trigger.style.getPropertyValue('--pipeline-preview-image') || 'none');
+    tooltip.dataset.tooltip = trigger.dataset.tooltip || '';
+    tooltip.dataset.previewState = trigger.dataset.previewState || '';
+    tooltip.classList.add('is-visible');
+    tooltip.setAttribute('aria-hidden', 'false');
+    positionPipelinePreviewTooltip(trigger, tooltip);
+  }
+
+  function hidePipelinePreviewTooltip(trigger = activePreviewTooltipTrigger) {
+    if (trigger && activePreviewTooltipTrigger && trigger !== activePreviewTooltipTrigger) {
+      return;
+    }
+
+    activePreviewTooltipTrigger = null;
+    const tooltip = document.getElementById('pipelinePreviewTooltip');
+    if (!tooltip) {
+      return;
+    }
+    tooltip.classList.remove('is-visible');
+    tooltip.setAttribute('aria-hidden', 'true');
+  }
+
+  function updatePipelinePreviewTooltip() {
+    if (!activePreviewTooltipTrigger || !activePreviewTooltipTrigger.isConnected) {
+      hidePipelinePreviewTooltip();
+      return;
+    }
+
+    positionPipelinePreviewTooltip(activePreviewTooltipTrigger, getPipelinePreviewTooltip());
   }
 
   function parseLocalDate(value) {
@@ -2466,6 +2543,33 @@
     saveStages();
     renderStages();
   });
+
+  stagesContainer.addEventListener('pointerover', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && stagesContainer.contains(trigger)) {
+      showPipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('pointerout', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && !trigger.contains(event.relatedTarget)) {
+      hidePipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('focusin', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && stagesContainer.contains(trigger)) {
+      showPipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('focusout', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger) {
+      hidePipelinePreviewTooltip(trigger);
+    }
+  });
+  window.addEventListener('scroll', updatePipelinePreviewTooltip, true);
+  window.addEventListener('resize', updatePipelinePreviewTooltip);
 
   runPipelineBtn.addEventListener('click', () => {
     if (runPipelineBtn.disabled) return;

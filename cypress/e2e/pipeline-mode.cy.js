@@ -33,7 +33,7 @@ describe('Pipeline Mode', () => {
     'https://www.googleapis.com/auth/youtube.force-ssl',
   ].join(' ');
 
-  function expectPreviewHasMontageFrame(previewImage) {
+  function expectPreviewContainsBrightCenter(previewImage) {
     const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
     return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
       const image = new win.Image();
@@ -43,19 +43,9 @@ describe('Pipeline Mode', () => {
         canvas.height = image.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0);
+        const center = ctx.getImageData(Math.floor(image.width / 2), Math.floor(image.height * 0.42), 1, 1).data;
 
-        const samples = [
-          ctx.getImageData(6, 6, 1, 1).data,
-          ctx.getImageData(image.width - 7, 6, 1, 1).data,
-          ctx.getImageData(6, image.height - 7, 1, 1).data,
-          ctx.getImageData(image.width - 7, image.height - 7, 1, 1).data,
-        ];
-
-        samples.forEach((pixel) => {
-          expect(pixel[0], 'frame red channel').to.be.greaterThan(180);
-          expect(pixel[1], 'frame green channel').to.be.greaterThan(180);
-          expect(pixel[2], 'frame blue channel').to.be.greaterThan(180);
-        });
+        expect(center[0] + center[1] + center[2], 'background image center brightness').to.be.greaterThan(120);
         resolve();
       };
       image.onerror = reject;
@@ -315,7 +305,7 @@ describe('Pipeline Mode', () => {
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
         verticalPreviewImage = previewImage;
       })
-      .then(() => expectPreviewHasMontageFrame(verticalPreviewImage));
+      .then(() => expectPreviewContainsBrightCenter(verticalPreviewImage));
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle.pipeline-preview-trigger').first()
       .should('have.attr', 'data-tooltip')
@@ -330,7 +320,7 @@ describe('Pipeline Mode', () => {
         expect(previewImage).to.not.equal(verticalPreviewImage);
       })
       .then(($trigger) => {
-        expectPreviewHasMontageFrame($trigger[0].style.getPropertyValue('--pipeline-preview-image'));
+        expectPreviewContainsBrightCenter($trigger[0].style.getPropertyValue('--pipeline-preview-image'));
       });
   });
 

@@ -1051,12 +1051,6 @@ button:focus-visible {
   animation: fadeIn var(--transition-slow) ease-out 0.25s both;
 }
 
-.tab-container:has(.pipeline-preview-trigger:hover),
-.tab-container:has(.pipeline-preview-trigger:focus-visible) {
-  position: relative;
-  z-index: 7000;
-}
-
 .tabs {
   display: flex;
   gap: var(--spacing-xs);
@@ -1299,23 +1293,17 @@ button:focus-visible {
   --pipeline-preview-image: none;
   position: relative;
   cursor: zoom-in;
-  z-index: 6000;
 }
 
-.pipeline-preview-trigger::before {
-  z-index: 5002;
-}
-
-.pipeline-preview-trigger::after {
+.pipeline-preview-tooltip {
+  --pipeline-preview-aspect: 16 / 9;
+  --pipeline-preview-image: none;
   content: "";
-  position: absolute;
-  bottom: calc(100% + 42px);
-  left: 50%;
-  width: min(260px, 70vw);
+  position: fixed;
+  width: min(300px, 82vw);
   aspect-ratio: var(--pipeline-preview-aspect);
   min-height: 84px;
-  max-height: 260px;
-  transform: translateX(-50%) translateY(-8px);
+  max-height: min(360px, 82vh);
   border: 2px solid rgba(0, 212, 255, 0.86);
   border-radius: var(--radius-sm);
   background-color: #05070a;
@@ -1325,16 +1313,15 @@ button:focus-visible {
     linear-gradient(135deg, rgba(0, 255, 136, 0.18), rgba(0, 136, 255, 0.22));
   background-position: center;
   background-repeat: no-repeat;
-  background-size: cover, cover, cover;
+  background-size: contain, cover, cover;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.58);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-fast);
-  z-index: 5001;
+  z-index: 7000;
 }
 
-.pipeline-preview-trigger:hover::after,
-.pipeline-preview-trigger:focus-visible::after {
+.pipeline-preview-tooltip.is-visible {
   opacity: 1;
 }
 
