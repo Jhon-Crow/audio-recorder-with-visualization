@@ -85,6 +85,20 @@ describe('Batch Visualization Mode', () => {
     cy.get('#recordingsList a[download="second-track.mp4"]').should('exist');
   });
 
+  it('names a single MP4 visualization from the actual rendered blob type', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['one'], { type: 'video/mp4' }),
+        { sourceName: 'single-track.mp3', format: 'webm' }
+      );
+    });
+
+    cy.get('#recordingsList').should('contain.text', 'single-track.mp4');
+    cy.get('#recordingsList').should('not.contain.text', 'single-track.webm');
+    cy.get('#recordingsList a[download="single-track.mp4"]').should('exist');
+    cy.get('#recordingsList a[download="single-track.webm"]').should('not.exist');
+  });
+
   it('uses the selected output format for every file in a batch', () => {
     cy.readFile('examples/app-interactions.js').then((source) => {
       expect(source).to.include('const requestedFormat = el.videoFormat.value;');
