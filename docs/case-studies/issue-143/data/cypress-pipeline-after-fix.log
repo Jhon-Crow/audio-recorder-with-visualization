@@ -15,7 +15,7 @@ DevTools listening on ws://127.0.0.1:39737/devtools/browser/e7a56414-2c1f-4cb4-b
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
+
   Running:  pipeline-mode.cy.js                                                             (1 of 1)
 
 
@@ -72,9 +72,9 @@ DevTools listening on ws://127.0.0.1:39737/devtools/browser/e7a56414-2c1f-4cb4-b
   (Run Finished)
 
 
-       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ✔  pipeline-mode.cy.js                      00:41       22       22        -        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✔  All specs passed!                        00:41       22       22        -        -        -  
+    ✔  All specs passed!                        00:41       22       22        -        -        -
 

@@ -15,7 +15,7 @@ DevTools listening on ws://127.0.0.1:42085/devtools/browser/feddd69e-3993-4d1b-a
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
+
   Running:  pipeline-mode.cy.js                                                             (1 of 1)
 
 
@@ -53,7 +53,7 @@ DevTools listening on ws://127.0.0.1:42085/devtools/browser/feddd69e-3993-4d1b-a
 
       -'No saved visualization presets'
       +'Pipeline Memory Preset'
-      
+
       at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:311:9)
       at withinFn (http://localhost:8080/__cypress/runner/cypress_runner.js:135675:8)
       at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135756:16)
@@ -82,8 +82,8 @@ DevTools listening on ws://127.0.0.1:42085/devtools/browser/feddd69e-3993-4d1b-a
   (Screenshots)
 
   -  /tmp/gh-issue-solver-1780901438177/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
-     ine Mode -- updates pipeline preset choices when preset persistence fails but th               
-     e in-memory preset is saved (failed).png                                                       
+     ine Mode -- updates pipeline preset choices when preset persistence fails but th
+     e in-memory preset is saved (failed).png
 
 
   (Video)
@@ -96,9 +96,9 @@ DevTools listening on ws://127.0.0.1:42085/devtools/browser/feddd69e-3993-4d1b-a
   (Run Finished)
 
 
-       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ✖  pipeline-mode.cy.js                      00:49       20       19        1        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✖  1 of 1 failed (100%)                     00:49       20       19        1        -        -  
+    ✖  1 of 1 failed (100%)                     00:49       20       19        1        -        -
 
