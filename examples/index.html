@@ -18,6 +18,7 @@
     <div class="pipeline-list" id="pipelineList" aria-label="Saved pipelines"></div>
     <button type="button" class="preset-icon-btn preset-settings-btn" id="pipelineSettingsBtn" data-tooltip="Pipeline settings" aria-label="Pipeline settings">⚙️</button>
   </aside>
+  <nav id="pipelineStageNav" class="pipeline-stage-nav" aria-label="Pipeline stage navigation"></nav>
   <div class="preset-context-menu" id="presetContextMenu" role="menu" aria-hidden="true">
     <button type="button" id="presetRenameBtn" role="menuitem">Rename</button>
     <button type="button" id="presetDeleteBtn" role="menuitem">Delete</button>
@@ -198,7 +199,9 @@
           <button type="button" id="pipelineTimezoneBtn" class="btn-info">Timezone: Set timezone</button>
         </div>
         <p id="pipelineValidationStatus" class="pipeline-validation-status" aria-live="polite"></p>
-        <div id="pipelineStages" class="pipeline-stages" aria-live="polite"></div>
+        <div class="pipeline-workspace">
+          <div id="pipelineStages" class="pipeline-stages" aria-live="polite"></div>
+        </div>
       </div>
     </div>
 
