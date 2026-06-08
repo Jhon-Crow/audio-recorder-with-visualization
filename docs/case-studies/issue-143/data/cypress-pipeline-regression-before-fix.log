@@ -1,0 +1,104 @@
+
+DevTools listening on ws://127.0.0.1:42085/devtools/browser/feddd69e-3993-4d1b-a050-39a5109e7f72
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-mode.cy.js)                                                  │
+  │ Searched:       cypress/e2e/pipeline-mode.cy.js                                                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  pipeline-mode.cy.js                                                             (1 of 1)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (2406ms)
+    ✓ requires files before running and resets selected fields with a hold action (2591ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (2019ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (1021ms)
+    ✓ keeps relative publish dates current when the reference date changes (847ms)
+    ✓ loads sidebar presets stored as flat setting objects (1615ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (1644ms)
+    ✓ updates pipeline preset choices immediately after saving a new preset (2923ms)
+    1) updates pipeline preset choices when preset persistence fails but the in-memory preset is saved
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (865ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (2467ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1320ms)
+    ✓ deletes a stage only after confirmation (1428ms)
+    ✓ keeps YouTube upload options separate for each stage (3702ms)
+    ✓ turns selected album files into ordered editable tracks (969ms)
+    ✓ resets added files from a stage without opening the full reset modal (1071ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (943ms)
+    ✓ runs visualization-only stages through the converter (1778ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (4807ms)
+    ✓ keeps generated tooltip boxes inside the viewport (982ms)
+
+
+  19 passing (49s)
+  1 failing
+
+  1) Pipeline Mode
+       updates pipeline preset choices when preset persistence fails but the in-memory preset is saved:
+
+      Timed out retrying after 10000ms
+      + expected - actual
+
+      -'No saved visualization presets'
+      +'Pipeline Memory Preset'
+      
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:311:9)
+      at withinFn (http://localhost:8080/__cypress/runner/cypress_runner.js:135675:8)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135756:16)
+      at __WEBPACK_DEFAULT_EXPORT__ (http://localhost:8080/__cypress/runner/cypress_runner.js:133609:10)
+      at Context.within (http://localhost:8080/__cypress/runner/cypress_runner.js:135742:67)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        20                                                                               │
+  │ Passing:      19                                                                               │
+  │ Failing:      1                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  1                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     49 seconds                                                                       │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780901438177/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- updates pipeline preset choices when preset persistence fails but th               
+     e in-memory preset is saved (failed).png                                                       
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780901438177/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  pipeline-mode.cy.js                      00:49       20       19        1        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     00:49       20       19        1        -        -  
+

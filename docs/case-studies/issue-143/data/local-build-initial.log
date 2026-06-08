@@ -1,0 +1,5 @@
+
+> audio-recorder-with-visualization@1.0.0 build
+> rollup -c
+
+sh: 1: rollup: not found

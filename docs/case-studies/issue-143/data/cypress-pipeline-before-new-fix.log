@@ -1,0 +1,77 @@
+
+DevTools listening on ws://127.0.0.1:39649/devtools/browser/f85f634b-7518-4ede-bdc4-fed30c800208
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-mode.cy.js)                                                  │
+  │ Searched:       cypress/e2e/pipeline-mode.cy.js                                                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  pipeline-mode.cy.js                                                             (1 of 1)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (3322ms)
+    ✓ requires files before running and resets selected fields with a hold action (3052ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (2052ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (996ms)
+    ✓ keeps relative publish dates current when the reference date changes (846ms)
+    ✓ loads sidebar presets stored as flat setting objects (1660ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (1687ms)
+    ✓ updates pipeline preset choices immediately after saving a new preset (2977ms)
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (971ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (2311ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1210ms)
+    ✓ deletes a stage only after confirmation (1415ms)
+    ✓ keeps YouTube upload options separate for each stage (3853ms)
+    ✓ turns selected album files into ordered editable tracks (919ms)
+    ✓ resets added files from a stage without opening the full reset modal (966ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (851ms)
+    ✓ runs visualization-only stages through the converter (1647ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (4319ms)
+    ✓ keeps generated tooltip boxes inside the viewport (892ms)
+
+
+  19 passing (37s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        19                                                                               │
+  │ Passing:      19                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     36 seconds                                                                       │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780901438177/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  pipeline-mode.cy.js                      00:36       19       19        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:36       19       19        -        -        -  
+
