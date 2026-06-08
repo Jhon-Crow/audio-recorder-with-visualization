@@ -119,7 +119,7 @@ Local checks after the fix:
 - `npm run lint`
 - `CYPRESS_baseUrl=http://localhost:8080 npx cypress run --spec cypress/e2e/pipeline-mode.cy.js --config video=false`
 
-The focused Cypress run now reports 20 passing tests.
+After merging upstream `main`, the focused Cypress run reports 22 passing tests.
 
 Browser verification also confirmed the first pipeline stage `Preset` select contained `Pipeline Memory Preset` after `localStorage` preset persistence was forced to fail. The focused screenshot is saved at `images/playwright-after-fix-preset-select.png`.
 

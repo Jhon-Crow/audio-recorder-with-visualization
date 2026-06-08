@@ -2,6 +2,7 @@
 > audio-recorder-with-visualization@1.0.0 test
 > jest --runInBand
 
+PASS tests/AudioToVideoConverter.test.ts (17.172 s)
 PASS tests/BaseVisualizer.test.ts
 PASS tests/AudioRecorder.test.ts
   ● Console
@@ -652,15 +653,14 @@ PASS tests/AudioRecorder.test.ts
       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
 
 PASS tests/MoreVisualizers.test.ts
-PASS tests/Visualizers.test.ts
 PASS tests/AudioAnalyzer.test.ts
+PASS tests/Visualizers.test.ts
 PASS tests/YouTubeUploader.test.ts
-PASS tests/AudioToVideoConverter.test.ts (16.167 s)
-PASS tests/EventEmitter.test.ts
 PASS tests/VideoRecorder.test.ts
+PASS tests/EventEmitter.test.ts
 
 Test Suites: 9 passed, 9 total
 Tests:       341 passed, 341 total
 Snapshots:   0 total
-Time:        23.207 s
+Time:        19.668 s, estimated 23 s
 Ran all test suites.
