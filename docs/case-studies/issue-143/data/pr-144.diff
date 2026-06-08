@@ -5,7 +5,7 @@ index c9fa32b..087de8f 100644
 @@ -244,6 +244,37 @@ describe('Pipeline Mode', () => {
      });
    });
- 
+
 +  it('updates pipeline preset choices immediately after saving a new preset', () => {
 +    cy.window().then((win) => {
 +      win.localStorage.removeItem('audio-recorder-presets');
@@ -46,7 +46,7 @@ index 802449b..5f2b2ba 100644
 +++ b/examples/pipeline.js
 @@ -648,6 +648,7 @@
    }
- 
+
    function setSelectOptions(select, options, value) {
 +    select.innerHTML = '';
      options.forEach(([optionValue, label]) => {
@@ -55,7 +55,7 @@ index 802449b..5f2b2ba 100644
 @@ -660,6 +661,32 @@
      }
    }
- 
+
 +  function refreshStagePresetSelections() {
 +    const choices = getPresetChoices();
 +    let changed = false;
@@ -86,7 +86,7 @@ index 802449b..5f2b2ba 100644
      const label = document.createElement('label');
      label.className = `pipeline-field ${className}`.trim();
 @@ -1662,6 +1689,8 @@
- 
+
      const presetField = createField('Album preset', 'span-4', 'Visualizer preset used for album render tasks.');
      const presetSelect = document.createElement('select');
 +    presetSelect.className = 'pipeline-preset-select';
@@ -95,7 +95,7 @@ index 802449b..5f2b2ba 100644
      presetSelect.addEventListener('change', () => {
        updateStage(stage.id, { presetId: presetSelect.value });
 @@ -2133,6 +2162,8 @@
- 
+
          const presetField = createField('Preset', 'span-3', 'Visualizer preset used while rendering this stage.');
          const preset = document.createElement('select');
 +        preset.className = 'pipeline-preset-select';
