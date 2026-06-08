@@ -35,7 +35,36 @@ jobs:
             electron-runtime-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            if ($attempt -eq 1) {
+              Remove-Item Env:ELECTRON_MIRROR -ErrorAction SilentlyContinue
+              Write-Host "Using the default Electron download source"
+            } else {
+              $env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+              Write-Host "Using Electron mirror fallback: $env:ELECTRON_MIRROR"
+            }
+
+            Write-Host "npm ci attempt $attempt of $maxAttempts"
+            npm ci
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            $exitCode = $LASTEXITCODE
+            if ($attempt -eq $maxAttempts) {
+              exit $exitCode
+            }
+
+            Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            if (Test-Path node_modules) {
+              Remove-Item node_modules -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            Start-Sleep -Seconds (20 * $attempt)
+          }
 
       - name: Run tests
         run: npm test

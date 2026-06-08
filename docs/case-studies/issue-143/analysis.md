@@ -28,6 +28,7 @@ GitHub and CI data:
 - `data/ci-build-portable-exe-27103143872.log`
 - `data/ci-build-portable-exe-27122134136.log`
 - `data/ci-build-portable-exe-27122342581.log`
+- `data/ci-build-portable-exe-27122908080.log`
 - `data/solution-draft-log-pr-1780862246615.txt`
 
 Local reproduction and verification data:
@@ -60,6 +61,7 @@ The CI logs were also copied to `ci-logs/` as requested for preserved CI investi
 - 2026-06-08 UTC: A new Cypress regression reproduced the remaining stale-selector path by forcing `localStorage.setItem('audio-recorder-presets', ...)` to throw while the preset remained saved in app memory.
 - 2026-06-08 07:20 UTC: CI run `27122134136` failed after tests and the library build passed because `electron-builder` received a 504 while downloading Electron `33.4.11` for Windows.
 - 2026-06-08 07:24 UTC: CI run `27122342581` repeated the same external Electron download failure on the retry commit.
+- 2026-06-08 07:37 UTC: CI run `27122908080` hit the same external 504 earlier, during the `electron` package `install.js` download inside `npm ci`.
 
 ## What The First Fix Covered
 
@@ -133,7 +135,15 @@ The application checks passed in the failed CI runs. In run `27122342581`, Jest 
 
 - `cannot resolve https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip: status code 504`
 
-The portable build workflow now caches Electron runtime downloads and passes the already installed `node_modules/electron/dist` runtime to `electron-builder` with `-c.electronDist=...`. That avoids a second Electron runtime download in the packaging step. The packaging command is also retried up to three times for remaining transient packaging failures.
+The next run, `27122908080`, hit the same external 504 earlier in the job during `npm ci`:
+
+- `npm error path D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\electron`
+- `npm error command C:\Windows\system32\cmd.exe /d /s /c node install.js`
+- `npm error HTTPError: Response code 504 (Gateway Time-out)`
+
+Electron's advanced installation documentation identifies these install errors as network problems and documents both the Windows cache path and `ELECTRON_MIRROR` fallback support. The npm mirror URL documented there was checked for the exact `electron-v33.4.11-win32-x64.zip` artifact before adding it as a retry fallback.
+
+The portable build workflow now caches Electron runtime downloads, retries `npm ci` up to three times, and uses the documented `https://npmmirror.com/mirrors/electron/` mirror only after the first dependency-install attempt uses the default Electron download source. It also passes the already installed `node_modules/electron/dist` runtime to `electron-builder` with `-c.electronDist=...`, avoiding a second Electron runtime download in the packaging step. The packaging command is retried up to three times for remaining transient packaging failures.
 
 Local workflow-change validation:
 

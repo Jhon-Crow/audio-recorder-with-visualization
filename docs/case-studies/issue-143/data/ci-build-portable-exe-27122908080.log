@@ -1,0 +1,259 @@
+build	Set up job	﻿2026-06-08T07:37:25.2400889Z Current runner version: '2.334.0'
+build	Set up job	2026-06-08T07:37:25.2478234Z ##[group]Runner Image Provisioner
+build	Set up job	2026-06-08T07:37:25.2479067Z Hosted Compute Agent
+build	Set up job	2026-06-08T07:37:25.2479625Z Version: 20260520.533
+build	Set up job	2026-06-08T07:37:25.2480218Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+build	Set up job	2026-06-08T07:37:25.2480891Z Build Date: 2026-05-20T17:44:04Z
+build	Set up job	2026-06-08T07:37:25.2481524Z Worker ID: {f71be27e-1d65-4c66-b294-99be362276fa}
+build	Set up job	2026-06-08T07:37:25.2482187Z Azure Region: westus3
+build	Set up job	2026-06-08T07:37:25.2482691Z ##[endgroup]
+build	Set up job	2026-06-08T07:37:25.2484089Z ##[group]Operating System
+build	Set up job	2026-06-08T07:37:25.2484706Z Microsoft Windows Server 2025
+build	Set up job	2026-06-08T07:37:25.2485253Z 10.0.26100
+build	Set up job	2026-06-08T07:37:25.2485731Z Datacenter
+build	Set up job	2026-06-08T07:37:25.2486192Z ##[endgroup]
+build	Set up job	2026-06-08T07:37:25.2486665Z ##[group]Runner Image
+build	Set up job	2026-06-08T07:37:25.2487897Z Image: windows-2025
+build	Set up job	2026-06-08T07:37:25.2488831Z Version: 20260525.149.1
+build	Set up job	2026-06-08T07:37:25.2489908Z Included Software: https://github.com/actions/runner-images/blob/win25/20260525.149/images/windows/Windows2025-Readme.md
+build	Set up job	2026-06-08T07:37:25.2491682Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260525.149
+build	Set up job	2026-06-08T07:37:25.2492594Z ##[endgroup]
+build	Set up job	2026-06-08T07:37:25.2493700Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-06-08T07:37:25.2495456Z Contents: read
+build	Set up job	2026-06-08T07:37:25.2496018Z Metadata: read
+build	Set up job	2026-06-08T07:37:25.2496605Z Packages: read
+build	Set up job	2026-06-08T07:37:25.2497103Z ##[endgroup]
+build	Set up job	2026-06-08T07:37:25.2499087Z Secret source: None
+build	Set up job	2026-06-08T07:37:25.2499782Z Prepare workflow directory
+build	Set up job	2026-06-08T07:37:25.2964189Z Prepare all required actions
+build	Set up job	2026-06-08T07:37:25.3018994Z Getting action download info
+build	Set up job	2026-06-08T07:37:25.8576323Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	Set up job	2026-06-08T07:37:25.9928958Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+build	Set up job	2026-06-08T07:37:26.1575756Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+build	Set up job	2026-06-08T07:37:26.3088818Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	Set up job	2026-06-08T07:37:26.6568447Z Complete job name: build
+build	Checkout repository	﻿2026-06-08T07:37:26.7920780Z ##[group]Run actions/checkout@v4
+build	Checkout repository	2026-06-08T07:37:26.7922334Z with:
+build	Checkout repository	2026-06-08T07:37:26.7923271Z   repository: Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:26.7932695Z   token: ***
+build	Checkout repository	2026-06-08T07:37:26.7933442Z   ssh-strict: true
+build	Checkout repository	2026-06-08T07:37:26.7934169Z   ssh-user: git
+build	Checkout repository	2026-06-08T07:37:26.7934914Z   persist-credentials: true
+build	Checkout repository	2026-06-08T07:37:26.7935737Z   clean: true
+build	Checkout repository	2026-06-08T07:37:26.7936493Z   sparse-checkout-cone-mode: true
+build	Checkout repository	2026-06-08T07:37:26.7937386Z   fetch-depth: 1
+build	Checkout repository	2026-06-08T07:37:26.7938133Z   fetch-tags: false
+build	Checkout repository	2026-06-08T07:37:26.7938891Z   show-progress: true
+build	Checkout repository	2026-06-08T07:37:26.7939638Z   lfs: false
+build	Checkout repository	2026-06-08T07:37:26.7940328Z   submodules: false
+build	Checkout repository	2026-06-08T07:37:26.7941093Z   set-safe-directory: true
+build	Checkout repository	2026-06-08T07:37:26.7942198Z env:
+build	Checkout repository	2026-06-08T07:37:26.7942939Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Checkout repository	2026-06-08T07:37:26.7944248Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:26.9365622Z Syncing repository: Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:26.9368421Z ##[group]Getting Git version info
+build	Checkout repository	2026-06-08T07:37:26.9370015Z Working directory is 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	Checkout repository	2026-06-08T07:37:27.0788144Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	Checkout repository	2026-06-08T07:37:27.4040179Z git version 2.54.0.windows.1
+build	Checkout repository	2026-06-08T07:37:27.4092730Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:27.4116256Z Temporarily overriding HOME='D:\a\_temp\3c81bcef-3c68-4194-b52c-58a30837e7c9' before making global git config changes
+build	Checkout repository	2026-06-08T07:37:27.4120069Z Adding repository directory to the temporary git global config as a safe directory
+build	Checkout repository	2026-06-08T07:37:27.4129785Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:27.4983068Z Deleting the contents of 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	Checkout repository	2026-06-08T07:37:27.4988890Z ##[group]Initializing the repository
+build	Checkout repository	2026-06-08T07:37:27.4998542Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:27.5956887Z Initialized empty Git repository in D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/.git/
+build	Checkout repository	2026-06-08T07:37:27.6000706Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:27.6504017Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:27.6505341Z ##[group]Disabling automatic garbage collection
+build	Checkout repository	2026-06-08T07:37:27.6512254Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+build	Checkout repository	2026-06-08T07:37:27.6789931Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:27.6791159Z ##[group]Setting up auth
+build	Checkout repository	2026-06-08T07:37:27.6801895Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	Checkout repository	2026-06-08T07:37:27.7082546Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	Checkout repository	2026-06-08T07:37:29.0738340Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Checkout repository	2026-06-08T07:37:29.1013274Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	Checkout repository	2026-06-08T07:37:29.5964956Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Checkout repository	2026-06-08T07:37:29.6259521Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	Checkout repository	2026-06-08T07:37:30.1482873Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+build	Checkout repository	2026-06-08T07:37:30.1769410Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:30.1770219Z ##[group]Fetching the repository
+build	Checkout repository	2026-06-08T07:37:30.1782714Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ecc582f50ee25b52cceac4d536a93619e750ce2c:refs/remotes/pull/144/merge
+build	Checkout repository	2026-06-08T07:37:32.4083329Z From https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:37:32.4084389Z  * [new ref]         ecc582f50ee25b52cceac4d536a93619e750ce2c -> pull/144/merge
+build	Checkout repository	2026-06-08T07:37:32.4429627Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:32.4430346Z ##[group]Determining the checkout info
+build	Checkout repository	2026-06-08T07:37:32.4433762Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:32.4443488Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+build	Checkout repository	2026-06-08T07:37:32.4868083Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+build	Checkout repository	2026-06-08T07:37:32.5171211Z ##[group]Checking out the ref
+build	Checkout repository	2026-06-08T07:37:32.5179507Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/144/merge
+build	Checkout repository	2026-06-08T07:37:32.7777710Z Note: switching to 'refs/remotes/pull/144/merge'.
+build	Checkout repository	2026-06-08T07:37:32.7778068Z
+build	Checkout repository	2026-06-08T07:37:32.7778281Z You are in 'detached HEAD' state. You can look around, make experimental
+build	Checkout repository	2026-06-08T07:37:32.7779104Z changes and commit them, and you can discard any commits you make in this
+build	Checkout repository	2026-06-08T07:37:32.7780301Z state without impacting any branches by switching back to a branch.
+build	Checkout repository	2026-06-08T07:37:32.7781108Z
+build	Checkout repository	2026-06-08T07:37:32.7781348Z If you want to create a new branch to retain commits you create, you may
+build	Checkout repository	2026-06-08T07:37:32.7781836Z do so (now or later) by using -c with the switch command. Example:
+build	Checkout repository	2026-06-08T07:37:32.7782103Z
+build	Checkout repository	2026-06-08T07:37:32.7782230Z   git switch -c <new-branch-name>
+build	Checkout repository	2026-06-08T07:37:32.7783282Z
+build	Checkout repository	2026-06-08T07:37:32.7783397Z Or undo this operation with:
+build	Checkout repository	2026-06-08T07:37:32.7783615Z
+build	Checkout repository	2026-06-08T07:37:32.7783715Z   git switch -
+build	Checkout repository	2026-06-08T07:37:32.7783844Z
+build	Checkout repository	2026-06-08T07:37:32.7784078Z Turn off this advice by setting config variable advice.detachedHead to false
+build	Checkout repository	2026-06-08T07:37:32.7784386Z
+build	Checkout repository	2026-06-08T07:37:32.7784793Z HEAD is now at ecc582f Merge 7b596de2c8167c278b3827b3bc07f8cea0fe1e5f into c996ac5d0882090bba83bc5ce73e293a08ad841c
+build	Checkout repository	2026-06-08T07:37:32.7925634Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:37:32.8310280Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+build	Checkout repository	2026-06-08T07:37:32.8564964Z ecc582f50ee25b52cceac4d536a93619e750ce2c
+build	Setup Node.js	﻿2026-06-08T07:37:32.9005986Z ##[group]Run actions/setup-node@v4
+build	Setup Node.js	2026-06-08T07:37:32.9006331Z with:
+build	Setup Node.js	2026-06-08T07:37:32.9006521Z   node-version: 20
+build	Setup Node.js	2026-06-08T07:37:32.9006723Z   cache: npm
+build	Setup Node.js	2026-06-08T07:37:32.9006909Z   always-auth: false
+build	Setup Node.js	2026-06-08T07:37:32.9007114Z   check-latest: false
+build	Setup Node.js	2026-06-08T07:37:32.9010131Z   token: ***
+build	Setup Node.js	2026-06-08T07:37:32.9010313Z env:
+build	Setup Node.js	2026-06-08T07:37:32.9010507Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Setup Node.js	2026-06-08T07:37:32.9010774Z ##[endgroup]
+build	Setup Node.js	2026-06-08T07:37:33.0812400Z Attempting to download 20...
+build	Setup Node.js	2026-06-08T07:37:33.0981314Z (node:3344) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+build	Setup Node.js	2026-06-08T07:37:33.0982046Z (Use `node --trace-deprecation ...` to show where the warning was created)
+build	Setup Node.js	2026-06-08T07:37:34.0148895Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-win32-x64.7z
+build	Setup Node.js	2026-06-08T07:37:34.4634311Z Extracting ...
+build	Setup Node.js	2026-06-08T07:37:36.6492987Z Adding to the cache ...
+build	Setup Node.js	2026-06-08T07:37:39.8180617Z ##[group]Environment details
+build	Setup Node.js	2026-06-08T07:37:41.0024229Z node: v20.20.2
+build	Setup Node.js	2026-06-08T07:37:41.0024547Z npm: 10.8.2
+build	Setup Node.js	2026-06-08T07:37:41.0024837Z yarn: 1.22.22
+build	Setup Node.js	2026-06-08T07:37:41.0025678Z ##[endgroup]
+build	Setup Node.js	2026-06-08T07:37:41.0713207Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\20.20.2\x64\npm.cmd config get cache"
+build	Setup Node.js	2026-06-08T07:37:41.3776073Z C:\npm\cache
+build	Setup Node.js	2026-06-08T07:37:41.7131826Z Cache hit for: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	Setup Node.js	2026-06-08T07:37:41.7244928Z (node:3344) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build	Setup Node.js	2026-06-08T07:37:42.9484685Z Received 75497472 of 132340717 (57.0%), 71.6 MBs/sec
+build	Setup Node.js	2026-06-08T07:37:43.3960366Z Received 132340717 of 132340717 (100.0%), 86.9 MBs/sec
+build	Setup Node.js	2026-06-08T07:37:43.3963313Z Cache Size: ~126 MB (132340717 B)
+build	Setup Node.js	2026-06-08T07:37:43.4092981Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/d192f1f0-ac1b-4f57-9c79-61d59b80867a/cache.tzst -P -C D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization --force-local --use-compress-program "zstd -d"
+build	Setup Node.js	2026-06-08T07:37:51.5776173Z Cache restored successfully
+build	Setup Node.js	2026-06-08T07:37:51.5848093Z Cache restored from key: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	Cache Electron runtime downloads	﻿2026-06-08T07:37:51.7443644Z ##[group]Run actions/cache@v4
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7444048Z with:
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7444266Z   path: ~\AppData\Local\electron\Cache
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7444775Z   key: electron-runtime-Windows-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7445324Z   restore-keys: electron-runtime-Windows-
+build	Cache Electron runtime downloads
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7445624Z   enableCrossOsArchive: false
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7445871Z   fail-on-cache-miss: false
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7446219Z   lookup-only: false
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7446572Z   save-always: false
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7446889Z env:
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7447090Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.7447361Z ##[endgroup]
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.8923154Z (node:10120) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+build	Cache Electron runtime downloads	2026-06-08T07:37:51.8925345Z (Use `node --trace-deprecation ...` to show where the warning was created)
+build	Cache Electron runtime downloads	2026-06-08T07:37:52.1835004Z Cache not found for input keys: electron-runtime-Windows-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715, electron-runtime-Windows-
+build	Install dependencies	﻿2026-06-08T07:37:52.2087557Z ##[group]Run npm ci
+build	Install dependencies	2026-06-08T07:37:52.2087889Z ^[[36;1mnpm ci^[[0m
+build	Install dependencies	2026-06-08T07:37:52.3072410Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	Install dependencies	2026-06-08T07:37:52.3073145Z env:
+build	Install dependencies	2026-06-08T07:37:52.3073837Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Install dependencies	2026-06-08T07:37:52.3074159Z ##[endgroup]
+build	Install dependencies	2026-06-08T07:38:03.1243711Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+build	Install dependencies	2026-06-08T07:38:03.2735310Z npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+build	Install dependencies	2026-06-08T07:38:03.3055156Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:38:03.3940153Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+build	Install dependencies	2026-06-08T07:38:03.7054201Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.7743767Z npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+build	Install dependencies	2026-06-08T07:38:03.8549583Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8715163Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8721542Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8735651Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8740730Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8752048Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8767414Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8812382Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8832344Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.8844213Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:38:03.9490149Z npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+build	Install dependencies	2026-06-08T07:38:04.1820854Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:38:04.1867498Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+build	Install dependencies	2026-06-08T07:38:04.7389502Z npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+build	Install dependencies	2026-06-08T07:38:05.2752078Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+build	Install dependencies	2026-06-08T07:38:05.2754411Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:38:09.9298272Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+build	Install dependencies	2026-06-08T07:39:25.3198960Z npm warn cleanup Failed to remove some directories [
+build	Install dependencies	2026-06-08T07:39:25.3201495Z npm warn cleanup   [
+build	Install dependencies	2026-06-08T07:39:25.3202601Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress',
+build	Install dependencies	2026-06-08T07:39:25.3203816Z npm warn cleanup     [Error: EBUSY: resource busy or locked, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\cypress'] {
+build	Install dependencies	2026-06-08T07:39:25.3205031Z npm warn cleanup       errno: -4082,
+build	Install dependencies	2026-06-08T07:39:25.3205635Z npm warn cleanup       code: 'EBUSY',
+build	Install dependencies	2026-06-08T07:39:25.3206053Z npm warn cleanup       syscall: 'rmdir',
+build	Install dependencies	2026-06-08T07:39:25.3206755Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress'
+build	Install dependencies	2026-06-08T07:39:25.3207363Z npm warn cleanup     }
+build	Install dependencies	2026-06-08T07:39:25.4017921Z npm warn cleanup   ],
+build	Install dependencies	2026-06-08T07:39:25.4018355Z npm warn cleanup   [
+build	Install dependencies	2026-06-08T07:39:25.4019396Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules',
+build	Install dependencies	2026-06-08T07:39:25.4023582Z npm warn cleanup     [Error: EBUSY: resource busy or locked, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\cypress'] {
+build	Install dependencies	2026-06-08T07:39:25.4025046Z npm warn cleanup       errno: -4082,
+build	Install dependencies	2026-06-08T07:39:25.4025609Z npm warn cleanup       code: 'EBUSY',
+build	Install dependencies	2026-06-08T07:39:25.4026187Z npm warn cleanup       syscall: 'rmdir',
+build	Install dependencies	2026-06-08T07:39:25.4027413Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress'
+build	Install dependencies	2026-06-08T07:39:25.4028425Z npm warn cleanup     }
+build	Install dependencies	2026-06-08T07:39:25.4028807Z npm warn cleanup   ],
+build	Install dependencies	2026-06-08T07:39:25.4029196Z npm warn cleanup   [
+build	Install dependencies	2026-06-08T07:39:25.4030203Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\@jsonjoy.com',
+build	Install dependencies	2026-06-08T07:39:25.4032440Z npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\@jsonjoy.com\json-pack\lib\nfs'] {
+build	Install dependencies	2026-06-08T07:39:25.4033955Z npm warn cleanup       errno: -4048,
+build	Install dependencies	2026-06-08T07:39:25.4034546Z npm warn cleanup       code: 'EPERM',
+build	Install dependencies	2026-06-08T07:39:25.4035108Z npm warn cleanup       syscall: 'rmdir',
+build	Install dependencies	2026-06-08T07:39:25.4036458Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\@jsonjoy.com\\json-pack\\lib\\nfs'
+build	Install dependencies	2026-06-08T07:39:25.4037736Z npm warn cleanup     }
+build	Install dependencies	2026-06-08T07:39:25.4038153Z npm warn cleanup   ],
+build	Install dependencies	2026-06-08T07:39:25.4038544Z npm warn cleanup   [
+build	Install dependencies	2026-06-08T07:39:25.4039672Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\ajv-formats',
+build	Install dependencies	2026-06-08T07:39:25.4042268Z npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\ajv-formats\node_modules\ajv'] {
+build	Install dependencies	2026-06-08T07:39:25.4043767Z npm warn cleanup       errno: -4048,
+build	Install dependencies	2026-06-08T07:39:25.4044301Z npm warn cleanup       code: 'EPERM',
+build	Install dependencies	2026-06-08T07:39:25.4044965Z npm warn cleanup       syscall: 'rmdir',
+build	Install dependencies	2026-06-08T07:39:25.4046412Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\ajv-formats\\node_modules\\ajv'
+build	Install dependencies	2026-06-08T07:39:25.4047609Z npm warn cleanup     }
+build	Install dependencies	2026-06-08T07:39:25.4047990Z npm warn cleanup   ]
+build	Install dependencies	2026-06-08T07:39:25.4048356Z npm warn cleanup ]
+build	Install dependencies	2026-06-08T07:39:25.4048731Z npm error code 1
+build	Install dependencies	2026-06-08T07:39:25.4049719Z npm error path D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\electron
+build	Install dependencies	2026-06-08T07:39:25.4050668Z npm error command failed
+build	Install dependencies	2026-06-08T07:39:25.4051327Z npm error command C:\Windows\system32\cmd.exe /d /s /c node install.js
+build	Install dependencies	2026-06-08T07:39:25.4052155Z npm error HTTPError: Response code 504 (Gateway Time-out)
+build	Install dependencies	2026-06-08T07:39:25.4053787Z npm error     at Request._onResponseBase (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:913:31)
+build	Install dependencies	2026-06-08T07:39:25.4056115Z npm error     at Request._onResponse (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:948:24)
+build	Install dependencies	2026-06-08T07:39:25.4058497Z npm error     at ClientRequest.<anonymous> (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:962:23)
+build	Install dependencies	2026-06-08T07:39:25.4061050Z npm error     at Object.onceWrapper (node:events:639:26)
+build	Install dependencies	2026-06-08T07:39:25.4062171Z npm error     at ClientRequest.emit (node:events:536:35)
+build	Install dependencies	2026-06-08T07:39:25.4063818Z npm error     at origin.emit (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\@szmarczak\http-timer\dist\source\index.js:43:20)
+build	Install dependencies	2026-06-08T07:39:25.4066238Z npm error     at HTTPParser.parserOnIncomingClient (node:_http_client:702:27)
+build	Install dependencies	2026-06-08T07:39:25.4067316Z npm error     at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+build	Install dependencies	2026-06-08T07:39:25.4068279Z npm error     at TLSSocket.socketOnData (node:_http_client:544:22)
+build	Install dependencies	2026-06-08T07:39:25.4069098Z npm error     at TLSSocket.emit (node:events:524:28)
+build	Install dependencies	2026-06-08T07:39:25.4070180Z npm error A complete log of this run can be found in: C:\npm\cache\_logs\2026-06-08T07_37_57_116Z-debug-0.log
+build	Install dependencies	2026-06-08T07:39:25.9713822Z ##[error]Process completed with exit code 1.
+build	Post Checkout repository	﻿2026-06-08T07:39:26.0040282Z Post job cleanup.
+build	Post Checkout repository	2026-06-08T07:39:26.3296467Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	Post Checkout repository	2026-06-08T07:39:26.3644579Z git version 2.54.0.windows.1
+build	Post Checkout repository	2026-06-08T07:39:26.3726189Z Temporarily overriding HOME='D:\a\_temp\61408d0b-ae7b-42ea-9560-607258fb3df6' before making global git config changes
+build	Post Checkout repository	2026-06-08T07:39:26.3728018Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Checkout repository	2026-06-08T07:39:26.3738602Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Post Checkout repository	2026-06-08T07:39:26.4098285Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	Post Checkout repository	2026-06-08T07:39:26.4520227Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	Post Checkout repository	2026-06-08T07:39:27.0718259Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Checkout repository	2026-06-08T07:39:27.1014705Z http.https://github.com/.extraheader
+build	Post Checkout repository	2026-06-08T07:39:27.1066443Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+build	Post Checkout repository	2026-06-08T07:39:27.1415321Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	Post Checkout repository	2026-06-08T07:39:27.7415453Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Checkout repository	2026-06-08T07:39:27.7759047Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	Complete job	﻿2026-06-08T07:39:28.3842760Z Cleaning up orphan processes
+build	Complete job	2026-06-08T07:39:28.4478896Z Terminate orphan process: pid (6468) (node)
+build	Complete job	2026-06-08T07:39:28.4491890Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
