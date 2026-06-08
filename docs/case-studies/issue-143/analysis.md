@@ -26,6 +26,8 @@ GitHub and CI data:
 - `data/ci-run-list.json`
 - `data/ci-build-portable-exe-27102988943.log`
 - `data/ci-build-portable-exe-27103143872.log`
+- `data/ci-build-portable-exe-27122134136.log`
+- `data/ci-build-portable-exe-27122342581.log`
 - `data/solution-draft-log-pr-1780862246615.txt`
 
 Local reproduction and verification data:
@@ -56,6 +58,8 @@ The CI logs were also copied to `ci-logs/` as requested for preserved CI investi
 - 2026-06-08 02:11 UTC: The owner reported that the latest build was still not fixed and attached the screenshot showing `No saved visualization presets`.
 - 2026-06-08 06:50 UTC: A new work session started and the PR was moved back to draft.
 - 2026-06-08 UTC: A new Cypress regression reproduced the remaining stale-selector path by forcing `localStorage.setItem('audio-recorder-presets', ...)` to throw while the preset remained saved in app memory.
+- 2026-06-08 07:20 UTC: CI run `27122134136` failed after tests and the library build passed because `electron-builder` received a 504 while downloading Electron `33.4.11` for Windows.
+- 2026-06-08 07:24 UTC: CI run `27122342581` repeated the same external Electron download failure on the retry commit.
 
 ## What The First Fix Covered
 
@@ -122,6 +126,22 @@ Local checks after the fix:
 After merging upstream `main`, the focused Cypress run reports 22 passing tests.
 
 Browser verification also confirmed the first pipeline stage `Preset` select contained `Pipeline Memory Preset` after `localStorage` preset persistence was forced to fail. The focused screenshot is saved at `images/playwright-after-fix-preset-select.png`.
+
+## CI Hardening
+
+The application checks passed in the failed CI runs. In run `27122342581`, Jest reported 341 passing tests before the portable build step failed. The failing line was the Electron runtime download:
+
+- `cannot resolve https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip: status code 504`
+
+The portable build workflow now caches Electron runtime downloads and passes the already installed `node_modules/electron/dist` runtime to `electron-builder` with `-c.electronDist=...`. That avoids a second Electron runtime download in the packaging step. The packaging command is also retried up to three times for remaining transient packaging failures.
+
+Local workflow-change validation:
+
+- `npx electron-builder --linux dir -c.electronDist=node_modules/electron/dist --publish never`
+- `npm run typecheck`
+- `npm run lint`
+- `npm test -- --runInBand`
+- `npm run build`
 
 ## Proposed Follow-ups
 
