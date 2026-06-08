@@ -24,6 +24,7 @@
   const pipelineTimezoneBtn = document.getElementById('pipelineTimezoneBtn');
   const validationStatus = document.getElementById('pipelineValidationStatus');
   const stagesContainer = document.getElementById('pipelineStages');
+  const stageNav = document.getElementById('pipelineStageNav');
   const pipelineTab = document.getElementById('pipelineTab');
   const pipelineSidebar = document.getElementById('pipelineSidebar');
   const savePipelineBtn = document.getElementById('savePipelineBtn');
@@ -107,6 +108,8 @@
   let resetHoldTimer = 0;
   let resetHoldCompleted = false;
   let draggedTrack = null;
+  let activeStageId = '';
+  let stageObserver = null;
   const pipelinePreviewCache = new Map();
 
   function createId(prefix) {
@@ -473,6 +476,7 @@
     if (shouldRender || affectsSchedule) {
       renderStages();
     } else {
+      renderStageNav();
       updateRunState();
     }
   }
@@ -512,6 +516,15 @@
 
   function actionIncludesUpload(action) {
     return action === 'visualize-upload' || action === 'upload-youtube';
+  }
+
+  function getStageActionLabel(action) {
+    const labels = {
+      'visualize-upload': 'Visualization + update',
+      'upload-youtube': 'Update',
+      'visualize-only': 'Visualization',
+    };
+    return labels[action] || 'Visualization + update';
   }
 
   function isAlbumStage(stage) {
@@ -1201,6 +1214,125 @@
     });
 
     return tasks;
+  }
+
+  function getStageDisplayDate(stage) {
+    if (!actionIncludesUpload(stage.action)) {
+      return '';
+    }
+    if (stage.publishImmediately) {
+      return 'Immediately';
+    }
+    if (stage.scheduleMode === 'absolute' && stage.publishAtLocal) {
+      return stage.publishAtLocal.replace('T', ' ');
+    }
+    const offset = Number(stage.relativeOffsetMinutes || 0);
+    const sign = offset > 0 ? '+' : '';
+    return `${sign}${offset} min`;
+  }
+
+  function setActiveStage(stageId) {
+    activeStageId = stageId || '';
+    if (!stageNav) {
+      return;
+    }
+    stageNav.querySelectorAll('.pipeline-stage-nav-btn').forEach(button => {
+      const isActive = button.dataset.stageId === activeStageId;
+      button.classList.toggle('is-active', isActive);
+      if (isActive) {
+        button.setAttribute('aria-current', 'step');
+      } else {
+        button.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function refreshStageObserver() {
+    if (stageObserver) {
+      stageObserver.disconnect();
+      stageObserver = null;
+    }
+
+    const stageItems = Array.from(stagesContainer.querySelectorAll('.pipeline-stage'));
+    if (!stageItems.length || typeof IntersectionObserver !== 'function') {
+      setActiveStage(stageItems[0]?.dataset.stageId || '');
+      return;
+    }
+
+    stageObserver = new IntersectionObserver(entries => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+      if (visible[0]) {
+        setActiveStage(visible[0].target.dataset.stageId);
+      }
+    }, {
+      root: null,
+      rootMargin: '-18% 0px -55% 0px',
+      threshold: [0, 0.2, 0.6],
+    });
+
+    stageItems.forEach(item => stageObserver.observe(item));
+    setActiveStage(activeStageId && stageItems.some(item => item.dataset.stageId === activeStageId)
+      ? activeStageId
+      : stageItems[0].dataset.stageId);
+  }
+
+  function scrollToStage(stageId) {
+    const stageElement = stagesContainer.querySelector(`[data-stage-id="${stageId}"]`);
+    if (!stageElement) {
+      return;
+    }
+    setActiveStage(stageId);
+    const behavior = window.Cypress ? 'auto' : 'smooth';
+    stageElement.scrollIntoView({ behavior, block: 'start' });
+  }
+
+  function renderStageNav() {
+    if (!stageNav) {
+      return;
+    }
+    stageNav.innerHTML = '';
+    if (!stages.length) {
+      stageNav.hidden = true;
+      return;
+    }
+
+    stageNav.hidden = false;
+    stages.forEach((stage, index) => {
+      const button = document.createElement('button');
+      const dateText = getStageDisplayDate(stage);
+      button.type = 'button';
+      button.className = 'pipeline-stage-nav-btn';
+      button.dataset.stageId = stage.id;
+      button.setAttribute('aria-label', `Go to stage ${index + 1}: ${stage.name || 'Untitled stage'}`);
+      button.addEventListener('click', () => scrollToStage(stage.id));
+
+      const number = document.createElement('span');
+      number.className = 'pipeline-stage-nav-number';
+      number.textContent = String(index + 1);
+
+      const details = document.createElement('span');
+      details.className = 'pipeline-stage-nav-details';
+
+      const title = document.createElement('span');
+      title.className = 'pipeline-stage-nav-title';
+      title.textContent = stage.name || 'Untitled stage';
+
+      const meta = document.createElement('span');
+      meta.className = 'pipeline-stage-nav-meta';
+      meta.textContent = [
+        getStageActionLabel(stage.action),
+        dateText,
+      ].filter(Boolean).join(' · ');
+
+      details.appendChild(title);
+      details.appendChild(meta);
+      button.appendChild(number);
+      button.appendChild(details);
+      stageNav.appendChild(button);
+    });
+    setActiveStage(activeStageId || stages[0].id);
   }
 
   function getSavedPresetSettings(presetId) {
@@ -1967,7 +2099,9 @@
       empty.className = 'pipeline-empty';
       empty.textContent = 'No stages yet.';
       stagesContainer.appendChild(empty);
+      renderStageNav();
       updateRunState();
+      refreshStageObserver();
       return;
     }
 
@@ -2201,8 +2335,10 @@
       item.appendChild(actions);
       stagesContainer.appendChild(item);
     });
+    renderStageNav();
 
     updateRunState();
+    refreshStageObserver();
   }
 
   function getNextPipelineName() {
@@ -2270,7 +2406,13 @@
   function syncPipelineSidebar() {
     const isPipelineActive = pipelineTab.classList.contains('active');
     pipelineSidebar.classList.toggle('is-open', isPipelineActive);
+    if (stageNav) {
+      stageNav.classList.toggle('is-open', isPipelineActive && stages.length > 0);
+    }
     document.body.classList.toggle('pipeline-mode-active', isPipelineActive);
+    if (isPipelineActive) {
+      refreshStageObserver();
+    }
   }
 
   function openResetModal() {
