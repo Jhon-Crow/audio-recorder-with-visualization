@@ -151,6 +151,14 @@ describe('Pipeline Mode', () => {
       expect(rect.height).to.be.lessThan(260);
       expect(rect.bottom).to.be.closeTo(Cypress.config('viewportHeight') - bottomOffset, 4);
     });
+    cy.get('#pipelineStageNav').then(($nav) => {
+      cy.get('#pipelineSidebar').then(($sidebar) => {
+        const navRect = $nav[0].getBoundingClientRect();
+        const sidebarRect = $sidebar[0].getBoundingClientRect();
+        expect(navRect.right).to.be.lessThan(sidebarRect.left + 1);
+        expect(sidebarRect.left - navRect.right).to.be.lessThan(72);
+      });
+    });
     cy.get('.pipeline-workspace').then(($workspace) => {
       expect($workspace.css('display')).to.eq('block');
     });
@@ -169,6 +177,10 @@ describe('Pipeline Mode', () => {
       .and('contain.text', 'Visualization + update')
       .invoke('text')
       .should('match', /\d{4}-\d{2}-\d{2}/);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1).find('.pipeline-stage-nav-meta').then(($meta) => {
+      const meta = $meta[0];
+      expect(meta.scrollWidth).to.be.at.most(meta.clientWidth + 1);
+    });
 
     cy.get('.pipeline-stage').eq(2).then(($stage) => {
       const stageId = $stage.attr('data-stage-id');

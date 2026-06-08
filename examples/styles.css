@@ -133,10 +133,10 @@ body {
 .pipeline-stage-nav {
   position: fixed;
   top: auto;
-  right: calc(300px + var(--spacing-lg));
+  right: calc(64px + var(--spacing-lg));
   bottom: var(--spacing-lg);
   z-index: 245;
-  width: 248px;
+  width: min(360px, calc(100vw - 64px - (var(--spacing-lg) * 3)));
   max-height: calc(100vh - (var(--spacing-lg) * 2));
   display: flex;
   flex-direction: column;
@@ -227,7 +227,7 @@ body {
   font-size: 11px;
   line-height: 1.25;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .preset-list {
