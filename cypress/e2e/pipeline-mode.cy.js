@@ -139,6 +139,82 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
   });
 
+  it('shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards', () => {
+    cy.get('#pipelineStageNav')
+      .should('have.class', 'is-open')
+      .and('have.css', 'position', 'fixed')
+      .and('have.css', 'pointer-events', 'auto');
+    cy.get('#pipelineStageNav').parent().should('match', 'body');
+    cy.get('#pipelineStageNav').then(($nav) => {
+      const rect = $nav[0].getBoundingClientRect();
+      const bottomOffset = parseFloat(getComputedStyle($nav[0]).bottom);
+      expect(rect.height).to.be.lessThan(260);
+      expect(rect.bottom).to.be.closeTo(Cypress.config('viewportHeight') - bottomOffset, 4);
+    });
+    cy.get('.pipeline-workspace').then(($workspace) => {
+      expect($workspace.css('display')).to.eq('block');
+    });
+    cy.get('.pipeline-stage').first().then(($stage) => {
+      expect($stage[0].getBoundingClientRect().width).to.be.greaterThan(900);
+    });
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').should('have.length', 3);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(0)
+      .should('contain.text', '1')
+      .and('contain.text', 'Pre-save short')
+      .and('contain.text', 'Visualization + update')
+      .invoke('text')
+      .should('match', /-\d+ min/);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1)
+      .should('contain.text', 'Release')
+      .and('contain.text', 'Visualization + update')
+      .invoke('text')
+      .should('match', /\d{4}-\d{2}-\d{2}/);
+
+    cy.get('.pipeline-stage').eq(2).then(($stage) => {
+      const stageId = $stage.attr('data-stage-id');
+      cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(2).click();
+      cy.get(`#pipelineStageNav .pipeline-stage-nav-btn[data-stage-id="${stageId}"]`)
+        .should('have.class', 'is-active')
+        .and('have.attr', 'aria-current', 'step');
+      cy.get(`.pipeline-stage[data-stage-id="${stageId}"]`).then(($target) => {
+        expect($target[0].getBoundingClientRect().top).to.be.lessThan(120);
+      });
+    });
+
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-inline-check input[aria-label="Publish this pipeline stage immediately"]').check();
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(2).should('contain.text', 'Immediately');
+
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').should('have.length', 4);
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#pipelineStageNav').should('not.be.visible');
+  });
+
+  it('keeps the stage navigator fixed at the bottom of the viewport on narrow screens', () => {
+    cy.viewport(820, 720);
+    cy.get('#pipelineStageNav')
+      .should('have.class', 'is-open')
+      .and('have.css', 'position', 'fixed');
+    cy.get('#pipelineStageNav').parent().should('match', 'body');
+    cy.get('#pipelineStageNav').then(($nav) => {
+      const rect = $nav[0].getBoundingClientRect();
+      const styles = getComputedStyle($nav[0]);
+      const bottomOffset = parseFloat(styles.bottom);
+      const leftOffset = parseFloat(styles.left);
+      const rightOffset = parseFloat(styles.right);
+      expect(rect.bottom).to.be.closeTo(720 - bottomOffset, 4);
+      expect(rect.left).to.be.greaterThan(leftOffset - 4);
+      expect(rect.right).to.be.closeTo(820 - rightOffset, 4);
+    });
+
+    cy.scrollTo('bottom');
+    cy.get('#pipelineStageNav').then(($nav) => {
+      const rect = $nav[0].getBoundingClientRect();
+      const bottomOffset = parseFloat(getComputedStyle($nav[0]).bottom);
+      expect(rect.bottom).to.be.closeTo(720 - bottomOffset, 4);
+    });
+  });
+
   it('requires files before running and resets selected fields with a hold action', () => {
     selectFilesForEveryStage();
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
