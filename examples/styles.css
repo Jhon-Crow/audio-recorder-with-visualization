@@ -1405,7 +1405,7 @@ button:focus-visible {
   --pipeline-preview-aspect: 16 / 9;
   --pipeline-preview-image: none;
   content: "";
-  position: fixed;
+  position: fixed !important;
   width: min(300px, 82vw);
   aspect-ratio: var(--pipeline-preview-aspect);
   min-height: 84px;

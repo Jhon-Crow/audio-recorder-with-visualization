@@ -1137,8 +1137,8 @@
     const tooltip = getPipelinePreviewTooltip();
     tooltip.style.setProperty('--pipeline-preview-aspect', trigger.style.getPropertyValue('--pipeline-preview-aspect') || '16 / 9');
     tooltip.style.setProperty('--pipeline-preview-image', trigger.style.getPropertyValue('--pipeline-preview-image') || 'none');
-    tooltip.dataset.tooltip = trigger.dataset.tooltip || '';
     tooltip.dataset.previewState = trigger.dataset.previewState || '';
+    tooltip.setAttribute('aria-label', trigger.dataset.tooltip || '');
     tooltip.classList.add('is-visible');
     tooltip.setAttribute('aria-hidden', 'false');
     positionPipelinePreviewTooltip(trigger, tooltip);
