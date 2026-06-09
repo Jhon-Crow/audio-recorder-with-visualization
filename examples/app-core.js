@@ -305,14 +305,16 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   }
 
   function savePresets(presets) {
+    let persisted = false;
     try {
       localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
-      window.dispatchEvent(new CustomEvent('audioRecorderPresetsChanged', {
-        detail: { presets },
-      }));
+      persisted = true;
     } catch (error) {
       console.warn('Failed to save presets:', error);
     }
+    window.dispatchEvent(new CustomEvent('audioRecorderPresetsChanged', {
+      detail: { presets, persisted },
+    }));
   }
 
   function normalizeFolderPreset(preset, index = 0) {

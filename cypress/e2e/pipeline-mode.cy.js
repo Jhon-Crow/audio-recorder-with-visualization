@@ -320,6 +320,76 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('updates pipeline preset choices immediately after saving a new preset', () => {
+    cy.window().then((win) => {
+      win.localStorage.removeItem('audio-recorder-presets');
+      win.localStorage.removeItem('audio-recorder-pipeline-stages');
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').as('firstStageName');
+    cy.get('@firstStageName').clear().type('Unsaved pipeline title');
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'No saved visualization presets')
+        .and('have.value', '');
+    });
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#savePresetBtn').click();
+    cy.get('#presetNameInput').clear().type('Pipeline Fresh Preset');
+    cy.get('#presetConfirmSaveBtn').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'Pipeline Fresh Preset')
+        .invoke('val')
+        .should('match', /^preset:preset-/);
+    });
+    cy.get('@firstStageName').should('have.value', 'Unsaved pipeline title');
+  });
+
+  it('updates pipeline preset choices when preset persistence fails but the in-memory preset is saved', () => {
+    cy.window().then((win) => {
+      win.localStorage.removeItem('audio-recorder-presets');
+      win.localStorage.removeItem('audio-recorder-pipeline-stages');
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'No saved visualization presets')
+        .and('have.value', '');
+    });
+
+    cy.window().then((win) => {
+      const originalSetItem = win.Storage.prototype.setItem;
+      cy.stub(win.Storage.prototype, 'setItem').callsFake(function setItem(key, value) {
+        if (key === 'audio-recorder-presets') {
+          throw new Error('Quota exceeded');
+        }
+        return originalSetItem.call(this, key, value);
+      });
+    });
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#savePresetBtn').click();
+    cy.get('#presetNameInput').clear().type('Pipeline Memory Preset');
+    cy.get('#presetConfirmSaveBtn').click();
+
+    cy.get('#presetList .preset-load-btn').should('contain.text', 'Pipeline Memory Preset');
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Preset').find('select')
+        .should('contain.text', 'Pipeline Memory Preset')
+        .invoke('val')
+        .should('match', /^preset:preset-/);
+    });
+  });
+
   it('shows image-backed visualization previews for vertical stages and landscape album tracks', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([

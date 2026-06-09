@@ -1,0 +1,986 @@
+build	Set up job	﻿2026-06-08T07:20:05.1760152Z Current runner version: '2.334.0'
+build	Set up job	2026-06-08T07:20:05.1811792Z ##[group]Runner Image Provisioner
+build	Set up job	2026-06-08T07:20:05.1813058Z Hosted Compute Agent
+build	Set up job	2026-06-08T07:20:05.1813928Z Version: 20260520.533
+build	Set up job	2026-06-08T07:20:05.1814925Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+build	Set up job	2026-06-08T07:20:05.1816138Z Build Date: 2026-05-20T17:44:04Z
+build	Set up job	2026-06-08T07:20:05.1817116Z Worker ID: {505018ef-d5b9-40a5-a97b-5f4f3c1bb100}
+build	Set up job	2026-06-08T07:20:05.1818187Z Azure Region: centralus
+build	Set up job	2026-06-08T07:20:05.1819072Z ##[endgroup]
+build	Set up job	2026-06-08T07:20:05.1821419Z ##[group]Operating System
+build	Set up job	2026-06-08T07:20:05.1822455Z Microsoft Windows Server 2025
+build	Set up job	2026-06-08T07:20:05.1823355Z 10.0.26100
+build	Set up job	2026-06-08T07:20:05.1824058Z Datacenter
+build	Set up job	2026-06-08T07:20:05.1824801Z ##[endgroup]
+build	Set up job	2026-06-08T07:20:05.1825572Z ##[group]Runner Image
+build	Set up job	2026-06-08T07:20:05.1826442Z Image: windows-2025
+build	Set up job	2026-06-08T07:20:05.1827239Z Version: 20260525.149.1
+build	Set up job	2026-06-08T07:20:05.1828866Z Included Software: https://github.com/actions/runner-images/blob/win25/20260525.149/images/windows/Windows2025-Readme.md
+build	Set up job	2026-06-08T07:20:05.1831884Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260525.149
+build	Set up job	2026-06-08T07:20:05.1833356Z ##[endgroup]
+build	Set up job	2026-06-08T07:20:05.1835118Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-06-08T07:20:05.1837595Z Contents: read
+build	Set up job	2026-06-08T07:20:05.1838424Z Metadata: read
+build	Set up job	2026-06-08T07:20:05.1839247Z Packages: read
+build	Set up job	2026-06-08T07:20:05.1840388Z ##[endgroup]
+build	Set up job	2026-06-08T07:20:05.1843054Z Secret source: None
+build	Set up job	2026-06-08T07:20:05.1844186Z Prepare workflow directory
+build	Set up job	2026-06-08T07:20:05.2278627Z Prepare all required actions
+build	Set up job	2026-06-08T07:20:05.2328074Z Getting action download info
+build	Set up job	2026-06-08T07:20:05.6906083Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	Set up job	2026-06-08T07:20:05.8789145Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+build	Set up job	2026-06-08T07:20:06.0262319Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	Set up job	2026-06-08T07:20:06.5360182Z Complete job name: build
+build	Checkout repository	﻿2026-06-08T07:20:06.8669026Z ##[group]Run actions/checkout@v4
+build	Checkout repository	2026-06-08T07:20:06.8670530Z with:
+build	Checkout repository	2026-06-08T07:20:06.8671448Z   repository: Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:06.8679199Z   token: ***
+build	Checkout repository	2026-06-08T07:20:06.8679938Z   ssh-strict: true
+build	Checkout repository	2026-06-08T07:20:06.8680670Z   ssh-user: git
+build	Checkout repository	2026-06-08T07:20:06.8681422Z   persist-credentials: true
+build	Checkout repository	2026-06-08T07:20:06.8682263Z   clean: true
+build	Checkout repository	2026-06-08T07:20:06.8683030Z   sparse-checkout-cone-mode: true
+build	Checkout repository	2026-06-08T07:20:06.8684084Z   fetch-depth: 1
+build	Checkout repository	2026-06-08T07:20:06.8684908Z   fetch-tags: false
+build	Checkout repository	2026-06-08T07:20:06.8685693Z   show-progress: true
+build	Checkout repository	2026-06-08T07:20:06.8686469Z   lfs: false
+build	Checkout repository	2026-06-08T07:20:06.8687194Z   submodules: false
+build	Checkout repository	2026-06-08T07:20:06.8687982Z   set-safe-directory: true
+build	Checkout repository	2026-06-08T07:20:06.8689312Z env:
+build	Checkout repository	2026-06-08T07:20:06.8690077Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Checkout repository	2026-06-08T07:20:06.8691037Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:07.1672148Z Syncing repository: Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:07.1675673Z ##[group]Getting Git version info
+build	Checkout repository	2026-06-08T07:20:07.1677602Z Working directory is 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	Checkout repository	2026-06-08T07:20:07.2512666Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	Checkout repository	2026-06-08T07:20:07.6214536Z git version 2.54.0.windows.1
+build	Checkout repository	2026-06-08T07:20:07.6293444Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:07.6316024Z Temporarily overriding HOME='D:\a\_temp\5d320c26-2854-4691-9806-c6522fa6e8b6' before making global git config changes
+build	Checkout repository	2026-06-08T07:20:07.6319679Z Adding repository directory to the temporary git global config as a safe directory
+build	Checkout repository	2026-06-08T07:20:07.6330349Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:07.6629668Z Deleting the contents of 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	Checkout repository	2026-06-08T07:20:07.6637592Z ##[group]Initializing the repository
+build	Checkout repository	2026-06-08T07:20:07.6647332Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:07.8699111Z Initialized empty Git repository in D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/.git/
+build	Checkout repository	2026-06-08T07:20:07.8756014Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:07.9072868Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:07.9075052Z ##[group]Disabling automatic garbage collection
+build	Checkout repository	2026-06-08T07:20:07.9081040Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+build	Checkout repository	2026-06-08T07:20:07.9424352Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:07.9426400Z ##[group]Setting up auth
+build	Checkout repository	2026-06-08T07:20:07.9436404Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	Checkout repository	2026-06-08T07:20:07.9738799Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	Checkout repository	2026-06-08T07:20:09.9070764Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Checkout repository	2026-06-08T07:20:09.9380035Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	Checkout repository	2026-06-08T07:20:10.5463929Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Checkout repository	2026-06-08T07:20:10.5784796Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	Checkout repository	2026-06-08T07:20:11.1224411Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+build	Checkout repository	2026-06-08T07:20:11.1535279Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:11.1536482Z ##[group]Fetching the repository
+build	Checkout repository	2026-06-08T07:20:11.1553865Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +84119f41b51bdbbee4aafe48769003297f123e7b:refs/remotes/pull/144/merge
+build	Checkout repository	2026-06-08T07:20:13.1332669Z From https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	Checkout repository	2026-06-08T07:20:13.1334109Z  * [new ref]         84119f41b51bdbbee4aafe48769003297f123e7b -> pull/144/merge
+build	Checkout repository	2026-06-08T07:20:13.1722937Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:13.1723655Z ##[group]Determining the checkout info
+build	Checkout repository	2026-06-08T07:20:13.1724875Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:13.1735643Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+build	Checkout repository	2026-06-08T07:20:13.2054101Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+build	Checkout repository	2026-06-08T07:20:13.2378296Z ##[group]Checking out the ref
+build	Checkout repository	2026-06-08T07:20:13.2392514Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/144/merge
+build	Checkout repository	2026-06-08T07:20:13.5403050Z Note: switching to 'refs/remotes/pull/144/merge'.
+build	Checkout repository	2026-06-08T07:20:13.5403613Z
+build	Checkout repository	2026-06-08T07:20:13.5403973Z You are in 'detached HEAD' state. You can look around, make experimental
+build	Checkout repository	2026-06-08T07:20:13.5404872Z changes and commit them, and you can discard any commits you make in this
+build	Checkout repository	2026-06-08T07:20:13.5405791Z state without impacting any branches by switching back to a branch.
+build	Checkout repository	2026-06-08T07:20:13.5406322Z
+build	Checkout repository	2026-06-08T07:20:13.5406666Z If you want to create a new branch to retain commits you create, you may
+build	Checkout repository	2026-06-08T07:20:13.5407500Z do so (now or later) by using -c with the switch command. Example:
+build	Checkout repository	2026-06-08T07:20:13.5407991Z
+build	Checkout repository	2026-06-08T07:20:13.5408195Z   git switch -c <new-branch-name>
+build	Checkout repository	2026-06-08T07:20:13.5408508Z
+build	Checkout repository	2026-06-08T07:20:13.5408678Z Or undo this operation with:
+build	Checkout repository	2026-06-08T07:20:13.5410083Z
+build	Checkout repository	2026-06-08T07:20:13.5410253Z   git switch -
+build	Checkout repository	2026-06-08T07:20:13.5410484Z
+build	Checkout repository	2026-06-08T07:20:13.5410899Z Turn off this advice by setting config variable advice.detachedHead to false
+build	Checkout repository	2026-06-08T07:20:13.5411480Z
+build	Checkout repository	2026-06-08T07:20:13.5412336Z HEAD is now at 84119f4 Merge ad70475f2d15b9c54741f07cc77e380253c53200 into c996ac5d0882090bba83bc5ce73e293a08ad841c
+build	Checkout repository	2026-06-08T07:20:13.5562412Z ##[endgroup]
+build	Checkout repository	2026-06-08T07:20:13.5888836Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+build	Checkout repository	2026-06-08T07:20:13.6140738Z 84119f41b51bdbbee4aafe48769003297f123e7b
+build	Setup Node.js	﻿2026-06-08T07:20:13.6666737Z ##[group]Run actions/setup-node@v4
+build	Setup Node.js	2026-06-08T07:20:13.6667124Z with:
+build	Setup Node.js	2026-06-08T07:20:13.6667317Z   node-version: 20
+build	Setup Node.js	2026-06-08T07:20:13.6667508Z   cache: npm
+build	Setup Node.js	2026-06-08T07:20:13.6667709Z   always-auth: false
+build	Setup Node.js	2026-06-08T07:20:13.6667910Z   check-latest: false
+build	Setup Node.js	2026-06-08T07:20:13.6670573Z   token: ***
+build	Setup Node.js	2026-06-08T07:20:13.6670756Z env:
+build	Setup Node.js	2026-06-08T07:20:13.6670950Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Setup Node.js	2026-06-08T07:20:13.6671231Z ##[endgroup]
+build	Setup Node.js	2026-06-08T07:20:13.8353752Z Attempting to download 20...
+build	Setup Node.js	2026-06-08T07:20:13.8528343Z (node:3096) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+build	Setup Node.js	2026-06-08T07:20:13.8530103Z (Use `node --trace-deprecation ...` to show where the warning was created)
+build	Setup Node.js	2026-06-08T07:20:14.4816506Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-win32-x64.7z
+build	Setup Node.js	2026-06-08T07:20:14.9062311Z Extracting ...
+build	Setup Node.js	2026-06-08T07:20:22.6840711Z Adding to the cache ...
+build	Setup Node.js	2026-06-08T07:20:27.2394571Z ##[group]Environment details
+build	Setup Node.js	2026-06-08T07:20:29.0745199Z node: v20.20.2
+build	Setup Node.js	2026-06-08T07:20:29.0745658Z npm: 10.8.2
+build	Setup Node.js	2026-06-08T07:20:29.0745928Z yarn: 1.22.22
+build	Setup Node.js	2026-06-08T07:20:29.0746577Z ##[endgroup]
+build	Setup Node.js	2026-06-08T07:20:29.1478390Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\20.20.2\x64\npm.cmd config get cache"
+build	Setup Node.js	2026-06-08T07:20:29.4600689Z C:\npm\cache
+build	Setup Node.js	2026-06-08T07:20:29.7362905Z Cache hit for: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	Setup Node.js	2026-06-08T07:20:29.7481668Z (node:3096) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build	Setup Node.js	2026-06-08T07:20:30.9393798Z Received 115563501 of 132340717 (87.3%), 109.0 MBs/sec
+build	Setup Node.js	2026-06-08T07:20:31.1636107Z Received 132340717 of 132340717 (100.0%), 102.2 MBs/sec
+build	Setup Node.js	2026-06-08T07:20:31.1639386Z Cache Size: ~126 MB (132340717 B)
+build	Setup Node.js	2026-06-08T07:20:31.1717770Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/4fa374c5-5263-4651-9241-52f0b01c890d/cache.tzst -P -C D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization --force-local --use-compress-program "zstd -d"
+build	Setup Node.js	2026-06-08T07:20:36.4989148Z Cache restored successfully
+build	Setup Node.js	2026-06-08T07:20:36.5152370Z Cache restored from key: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	Install dependencies	﻿2026-06-08T07:20:36.5588385Z ##[group]Run npm ci
+build	Install dependencies	2026-06-08T07:20:36.5588760Z ^[[36;1mnpm ci^[[0m
+build	Install dependencies	2026-06-08T07:20:36.7811111Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	Install dependencies	2026-06-08T07:20:36.7811492Z env:
+build	Install dependencies	2026-06-08T07:20:36.7811702Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Install dependencies	2026-06-08T07:20:36.7811962Z ##[endgroup]
+build	Install dependencies	2026-06-08T07:20:47.3468326Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+build	Install dependencies	2026-06-08T07:20:47.4842955Z npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+build	Install dependencies	2026-06-08T07:20:47.5067899Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:20:47.5980937Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+build	Install dependencies	2026-06-08T07:20:47.8361956Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.8722463Z npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+build	Install dependencies	2026-06-08T07:20:47.9213711Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9307055Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9316916Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9321583Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9323683Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9324876Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9330204Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9335926Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9339979Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9345807Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	Install dependencies	2026-06-08T07:20:47.9817524Z npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+build	Install dependencies	2026-06-08T07:20:48.1407915Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:20:48.1416849Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+build	Install dependencies	2026-06-08T07:20:48.4067048Z npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+build	Install dependencies	2026-06-08T07:20:48.7907098Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+build	Install dependencies	2026-06-08T07:20:48.7933125Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+build	Install dependencies	2026-06-08T07:20:52.8875271Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+build	Install dependencies	2026-06-08T07:22:32.9075072Z
+build	Install dependencies	2026-06-08T07:22:32.9076022Z > audio-recorder-with-visualization@1.0.0 prepare
+build	Install dependencies	2026-06-08T07:22:32.9078109Z > npm run build
+build	Install dependencies	2026-06-08T07:22:32.9078383Z
+build	Install dependencies	2026-06-08T07:22:33.2573573Z
+build	Install dependencies	2026-06-08T07:22:33.2574515Z > audio-recorder-with-visualization@1.0.0 build
+build	Install dependencies	2026-06-08T07:22:33.2575373Z > rollup -c
+build	Install dependencies	2026-06-08T07:22:33.2575569Z
+build	Install dependencies	2026-06-08T07:22:33.8670565Z (node:5696) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	Install dependencies	2026-06-08T07:22:33.8672726Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	Install dependencies	2026-06-08T07:22:33.8674568Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	Install dependencies	2026-06-08T07:22:33.8692946Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	Install dependencies	2026-06-08T07:22:34.5508599Z ^[[36m
+build	Install dependencies	2026-06-08T07:22:34.5509795Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	Install dependencies	2026-06-08T07:22:38.5014847Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m3.9s^[[22m^[[39m
+build	Install dependencies	2026-06-08T07:22:38.5016116Z ^[[36m
+build	Install dependencies	2026-06-08T07:22:38.5016825Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	Install dependencies	2026-06-08T07:22:41.3881570Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	Install dependencies	2026-06-08T07:22:41.3883927Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.8s^[[22m^[[39m
+build	Install dependencies	2026-06-08T07:22:41.3885410Z ^[[36m
+build	Install dependencies	2026-06-08T07:22:41.3886132Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	Install dependencies	2026-06-08T07:22:41.5190792Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m131ms^[[22m^[[39m
+build	Install dependencies	2026-06-08T07:22:41.6636292Z
+build	Install dependencies	2026-06-08T07:22:41.6637196Z added 1134 packages, and audited 1135 packages in 2m
+build	Install dependencies	2026-06-08T07:22:41.6637506Z
+build	Install dependencies	2026-06-08T07:22:41.6637670Z 197 packages are looking for funding
+build	Install dependencies	2026-06-08T07:22:41.6637968Z   run `npm fund` for details
+build	Install dependencies	2026-06-08T07:22:42.0021785Z
+build	Install dependencies	2026-06-08T07:22:42.0022539Z 44 vulnerabilities (1 low, 14 moderate, 28 high, 1 critical)
+build	Install dependencies	2026-06-08T07:22:42.0022842Z
+build	Install dependencies	2026-06-08T07:22:42.0023029Z To address issues that do not require attention, run:
+build	Install dependencies	2026-06-08T07:22:42.0023367Z   npm audit fix
+build	Install dependencies	2026-06-08T07:22:42.0023490Z
+build	Install dependencies	2026-06-08T07:22:42.0023687Z To address all issues (including breaking changes), run:
+build	Install dependencies	2026-06-08T07:22:42.0024017Z   npm audit fix --force
+build	Install dependencies	2026-06-08T07:22:42.0024168Z
+build	Install dependencies	2026-06-08T07:22:42.0024275Z Run `npm audit` for details.
+build	Run tests	﻿2026-06-08T07:22:43.2364662Z ##[group]Run npm test
+build	Run tests	2026-06-08T07:22:43.2365001Z ^[[36;1mnpm test^[[0m
+build	Run tests	2026-06-08T07:22:43.2441439Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	Run tests	2026-06-08T07:22:43.2441807Z env:
+build	Run tests	2026-06-08T07:22:43.2442030Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Run tests	2026-06-08T07:22:43.2442308Z ##[endgroup]
+build	Run tests	2026-06-08T07:22:43.9575732Z
+build	Run tests	2026-06-08T07:22:43.9576519Z > audio-recorder-with-visualization@1.0.0 test
+build	Run tests	2026-06-08T07:22:43.9576942Z > jest
+build	Run tests	2026-06-08T07:22:43.9577069Z
+build	Run tests	2026-06-08T07:22:56.9173565Z PASS tests/BaseVisualizer.test.ts (10.231 s)
+build	Run tests	2026-06-08T07:22:59.0266814Z PASS tests/Visualizers.test.ts
+build	Run tests	2026-06-08T07:22:59.0776989Z PASS tests/MoreVisualizers.test.ts (12.363 s)
+build	Run tests	2026-06-08T07:22:59.2613119Z PASS tests/AudioRecorder.test.ts (12.563 s)
+build	Run tests	2026-06-08T07:22:59.3293384Z   ● Console
+build	Run tests	2026-06-08T07:22:59.3342415Z
+build	Run tests	2026-06-08T07:22:59.3387773Z     console.log
+build	Run tests	2026-06-08T07:22:59.3458571Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.3470813Z
+build	Run tests	2026-06-08T07:22:59.3913727Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.3981515Z
+build	Run tests	2026-06-08T07:22:59.3982655Z     console.log
+build	Run tests	2026-06-08T07:22:59.3985451Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.4042156Z
+build	Run tests	2026-06-08T07:22:59.4086700Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.4147208Z
+build	Run tests	2026-06-08T07:22:59.4157763Z     console.log
+build	Run tests	2026-06-08T07:22:59.4158641Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.4159165Z
+build	Run tests	2026-06-08T07:22:59.4249924Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.4283033Z
+build	Run tests	2026-06-08T07:22:59.4340799Z     console.log
+build	Run tests	2026-06-08T07:22:59.4475753Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.4510247Z
+build	Run tests	2026-06-08T07:22:59.4511593Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.4512333Z
+build	Run tests	2026-06-08T07:22:59.4512684Z     console.log
+build	Run tests	2026-06-08T07:22:59.4513358Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.4513925Z
+build	Run tests	2026-06-08T07:22:59.4514352Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.4514901Z
+build	Run tests	2026-06-08T07:22:59.4515240Z     console.log
+build	Run tests	2026-06-08T07:22:59.4515864Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.4516378Z
+build	Run tests	2026-06-08T07:22:59.4516821Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.4517365Z
+build	Run tests	2026-06-08T07:22:59.4517763Z     console.log
+build	Run tests	2026-06-08T07:22:59.4518419Z       [AudioRecorder] Debug visual activated
+build	Run tests	2026-06-08T07:22:59.4565883Z
+build	Run tests	2026-06-08T07:22:59.4682462Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.4763039Z
+build	Run tests	2026-06-08T07:22:59.4854422Z     console.log
+build	Run tests	2026-06-08T07:22:59.4993777Z       [AudioRecorder] Debug visual deactivated
+build	Run tests	2026-06-08T07:22:59.5050391Z
+build	Run tests	2026-06-08T07:22:59.5193478Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5242888Z
+build	Run tests	2026-06-08T07:22:59.5271144Z     console.log
+build	Run tests	2026-06-08T07:22:59.5291184Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5328354Z
+build	Run tests	2026-06-08T07:22:59.5331606Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5332274Z
+build	Run tests	2026-06-08T07:22:59.5332592Z     console.log
+build	Run tests	2026-06-08T07:22:59.5333282Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5333859Z
+build	Run tests	2026-06-08T07:22:59.5334402Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5334977Z
+build	Run tests	2026-06-08T07:22:59.5335269Z     console.log
+build	Run tests	2026-06-08T07:22:59.5335943Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5336452Z
+build	Run tests	2026-06-08T07:22:59.5362875Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5374430Z
+build	Run tests	2026-06-08T07:22:59.5435865Z     console.log
+build	Run tests	2026-06-08T07:22:59.5436425Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5436928Z
+build	Run tests	2026-06-08T07:22:59.5437250Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5437818Z
+build	Run tests	2026-06-08T07:22:59.5441305Z     console.log
+build	Run tests	2026-06-08T07:22:59.5441821Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.5442203Z
+build	Run tests	2026-06-08T07:22:59.5442500Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5442946Z
+build	Run tests	2026-06-08T07:22:59.5443135Z     console.log
+build	Run tests	2026-06-08T07:22:59.5443647Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.5444047Z
+build	Run tests	2026-06-08T07:22:59.5444326Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5444792Z
+build	Run tests	2026-06-08T07:22:59.5444969Z     console.log
+build	Run tests	2026-06-08T07:22:59.5445422Z       [AudioRecorder] Debug visual activated
+build	Run tests	2026-06-08T07:22:59.5445831Z
+build	Run tests	2026-06-08T07:22:59.5446100Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5446532Z
+build	Run tests	2026-06-08T07:22:59.5446724Z     console.log
+build	Run tests	2026-06-08T07:22:59.5447191Z       [AudioRecorder] Debug visual deactivated
+build	Run tests	2026-06-08T07:22:59.5447579Z
+build	Run tests	2026-06-08T07:22:59.5447867Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5448307Z
+build	Run tests	2026-06-08T07:22:59.5448500Z     console.log
+build	Run tests	2026-06-08T07:22:59.5448958Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5449358Z
+build	Run tests	2026-06-08T07:22:59.5449668Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5450098Z
+build	Run tests	2026-06-08T07:22:59.5450316Z     console.log
+build	Run tests	2026-06-08T07:22:59.5450794Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5451153Z
+build	Run tests	2026-06-08T07:22:59.5451469Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5452232Z
+build	Run tests	2026-06-08T07:22:59.5478283Z     console.log
+build	Run tests	2026-06-08T07:22:59.5498604Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5499577Z
+build	Run tests	2026-06-08T07:22:59.5516674Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5533990Z
+build	Run tests	2026-06-08T07:22:59.5534461Z     console.log
+build	Run tests	2026-06-08T07:22:59.5535181Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5535752Z
+build	Run tests	2026-06-08T07:22:59.5537001Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5537645Z
+build	Run tests	2026-06-08T07:22:59.5537952Z     console.log
+build	Run tests	2026-06-08T07:22:59.5538508Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.5538989Z
+build	Run tests	2026-06-08T07:22:59.5539406Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5539869Z
+build	Run tests	2026-06-08T07:22:59.5540161Z     console.log
+build	Run tests	2026-06-08T07:22:59.5540759Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.5541277Z
+build	Run tests	2026-06-08T07:22:59.5541699Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5542225Z
+build	Run tests	2026-06-08T07:22:59.5542496Z     console.log
+build	Run tests	2026-06-08T07:22:59.5543092Z       [AudioRecorder] Debug visual activated
+build	Run tests	2026-06-08T07:22:59.5543507Z
+build	Run tests	2026-06-08T07:22:59.5543895Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5544386Z
+build	Run tests	2026-06-08T07:22:59.5544636Z     console.log
+build	Run tests	2026-06-08T07:22:59.5692210Z       [AudioRecorder] Debug visual deactivated
+build	Run tests	2026-06-08T07:22:59.5726863Z
+build	Run tests	2026-06-08T07:22:59.5815799Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5816672Z
+build	Run tests	2026-06-08T07:22:59.5817017Z     console.log
+build	Run tests	2026-06-08T07:22:59.5817630Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5818141Z
+build	Run tests	2026-06-08T07:22:59.5818582Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5819071Z
+build	Run tests	2026-06-08T07:22:59.5819293Z     console.log
+build	Run tests	2026-06-08T07:22:59.5819785Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5820184Z
+build	Run tests	2026-06-08T07:22:59.5820544Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5821006Z
+build	Run tests	2026-06-08T07:22:59.5821299Z     console.log
+build	Run tests	2026-06-08T07:22:59.5821873Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5822341Z
+build	Run tests	2026-06-08T07:22:59.5822760Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5823734Z
+build	Run tests	2026-06-08T07:22:59.5824191Z     console.log
+build	Run tests	2026-06-08T07:22:59.5826412Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5826879Z
+build	Run tests	2026-06-08T07:22:59.5827351Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5828113Z
+build	Run tests	2026-06-08T07:22:59.5828369Z     console.log
+build	Run tests	2026-06-08T07:22:59.5829087Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.5829542Z
+build	Run tests	2026-06-08T07:22:59.5829863Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5830323Z
+build	Run tests	2026-06-08T07:22:59.5830532Z     console.log
+build	Run tests	2026-06-08T07:22:59.5831025Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.5831471Z
+build	Run tests	2026-06-08T07:22:59.5831780Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5832228Z
+build	Run tests	2026-06-08T07:22:59.5832447Z     console.log
+build	Run tests	2026-06-08T07:22:59.5832977Z       [AudioRecorder] Debug visual activated
+build	Run tests	2026-06-08T07:22:59.5833383Z
+build	Run tests	2026-06-08T07:22:59.5833722Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5834251Z
+build	Run tests	2026-06-08T07:22:59.5834487Z     console.log
+build	Run tests	2026-06-08T07:22:59.5835035Z       [AudioRecorder] Debug visual deactivated
+build	Run tests	2026-06-08T07:22:59.5835486Z
+build	Run tests	2026-06-08T07:22:59.5835852Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5836284Z
+build	Run tests	2026-06-08T07:22:59.5836543Z     console.log
+build	Run tests	2026-06-08T07:22:59.5837095Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5837552Z
+build	Run tests	2026-06-08T07:22:59.5837947Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5838484Z
+build	Run tests	2026-06-08T07:22:59.5838712Z     console.log
+build	Run tests	2026-06-08T07:22:59.5839268Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5839715Z
+build	Run tests	2026-06-08T07:22:59.5840195Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5840707Z
+build	Run tests	2026-06-08T07:22:59.5840953Z     console.log
+build	Run tests	2026-06-08T07:22:59.5841475Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5841891Z
+build	Run tests	2026-06-08T07:22:59.5842240Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5842786Z
+build	Run tests	2026-06-08T07:22:59.5843077Z     console.log
+build	Run tests	2026-06-08T07:22:59.5844071Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5844563Z
+build	Run tests	2026-06-08T07:22:59.5846139Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5846764Z
+build	Run tests	2026-06-08T07:22:59.5847044Z     console.log
+build	Run tests	2026-06-08T07:22:59.5858027Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.5858581Z
+build	Run tests	2026-06-08T07:22:59.5859009Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5859541Z
+build	Run tests	2026-06-08T07:22:59.5859818Z     console.log
+build	Run tests	2026-06-08T07:22:59.5860498Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.5861031Z
+build	Run tests	2026-06-08T07:22:59.5861386Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5861829Z
+build	Run tests	2026-06-08T07:22:59.5862066Z     console.log
+build	Run tests	2026-06-08T07:22:59.5862674Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5863460Z
+build	Run tests	2026-06-08T07:22:59.5863878Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5864464Z
+build	Run tests	2026-06-08T07:22:59.5864957Z     console.log
+build	Run tests	2026-06-08T07:22:59.5865737Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	Run tests	2026-06-08T07:22:59.5866223Z
+build	Run tests	2026-06-08T07:22:59.5866630Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5867137Z
+build	Run tests	2026-06-08T07:22:59.5867413Z     console.log
+build	Run tests	2026-06-08T07:22:59.5868185Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	Run tests	2026-06-08T07:22:59.5868795Z
+build	Run tests	2026-06-08T07:22:59.5869164Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5869672Z
+build	Run tests	2026-06-08T07:22:59.5869938Z     console.log
+build	Run tests	2026-06-08T07:22:59.5870549Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	Run tests	2026-06-08T07:22:59.5871120Z
+build	Run tests	2026-06-08T07:22:59.5871506Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5872309Z
+build	Run tests	2026-06-08T07:22:59.5872590Z     console.log
+build	Run tests	2026-06-08T07:22:59.5873140Z       [AudioAnalyzer] Connected MediaStream source
+build	Run tests	2026-06-08T07:22:59.5873632Z
+build	Run tests	2026-06-08T07:22:59.5874034Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5874501Z
+build	Run tests	2026-06-08T07:22:59.5874767Z     console.log
+build	Run tests	2026-06-08T07:22:59.5875347Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:22:59.5875835Z
+build	Run tests	2026-06-08T07:22:59.5876246Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5876716Z
+build	Run tests	2026-06-08T07:22:59.5876959Z     console.log
+build	Run tests	2026-06-08T07:22:59.5877556Z       [AudioRecorder] Started microphone capture
+build	Run tests	2026-06-08T07:22:59.5877996Z
+build	Run tests	2026-06-08T07:22:59.5878417Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5878953Z
+build	Run tests	2026-06-08T07:22:59.5879192Z     console.log
+build	Run tests	2026-06-08T07:22:59.5879983Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	Run tests	2026-06-08T07:22:59.5880607Z
+build	Run tests	2026-06-08T07:22:59.5881054Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5881592Z
+build	Run tests	2026-06-08T07:22:59.5881873Z     console.log
+build	Run tests	2026-06-08T07:22:59.5882714Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	Run tests	2026-06-08T07:22:59.5883445Z
+build	Run tests	2026-06-08T07:22:59.5883811Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5884264Z
+build	Run tests	2026-06-08T07:22:59.5884526Z     console.log
+build	Run tests	2026-06-08T07:22:59.5885359Z       [AudioRecorder] Stopped timer fallback visualization
+build	Run tests	2026-06-08T07:22:59.5886001Z
+build	Run tests	2026-06-08T07:22:59.5886399Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5886964Z
+build	Run tests	2026-06-08T07:22:59.5887254Z     console.log
+build	Run tests	2026-06-08T07:22:59.5887844Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5888332Z
+build	Run tests	2026-06-08T07:22:59.5888740Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5889271Z
+build	Run tests	2026-06-08T07:22:59.5889550Z     console.log
+build	Run tests	2026-06-08T07:22:59.5890139Z       [AudioRecorder] Stopped microphone
+build	Run tests	2026-06-08T07:22:59.5890613Z
+build	Run tests	2026-06-08T07:22:59.5890989Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5891480Z
+build	Run tests	2026-06-08T07:22:59.5891736Z     console.log
+build	Run tests	2026-06-08T07:22:59.5892312Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5892808Z
+build	Run tests	2026-06-08T07:22:59.5893241Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5893827Z
+build	Run tests	2026-06-08T07:22:59.5894043Z     console.log
+build	Run tests	2026-06-08T07:22:59.5894561Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5894921Z
+build	Run tests	2026-06-08T07:22:59.5895277Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5895775Z
+build	Run tests	2026-06-08T07:22:59.5896002Z     console.log
+build	Run tests	2026-06-08T07:22:59.5896552Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5896940Z
+build	Run tests	2026-06-08T07:22:59.5897395Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5898250Z
+build	Run tests	2026-06-08T07:22:59.5898547Z     console.log
+build	Run tests	2026-06-08T07:22:59.5899143Z       [AudioAnalyzer] Closed AudioContext
+build	Run tests	2026-06-08T07:22:59.5899635Z
+build	Run tests	2026-06-08T07:22:59.5900056Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5900648Z
+build	Run tests	2026-06-08T07:22:59.5900923Z     console.log
+build	Run tests	2026-06-08T07:22:59.5901540Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.5902053Z
+build	Run tests	2026-06-08T07:22:59.5902433Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5903004Z
+build	Run tests	2026-06-08T07:22:59.5903274Z     console.log
+build	Run tests	2026-06-08T07:22:59.5903885Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.5904369Z
+build	Run tests	2026-06-08T07:22:59.5904807Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5905567Z
+build	Run tests	2026-06-08T07:22:59.5905808Z     console.log
+build	Run tests	2026-06-08T07:22:59.5906388Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5906829Z
+build	Run tests	2026-06-08T07:22:59.5907218Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5908004Z
+build	Run tests	2026-06-08T07:22:59.5908233Z     console.log
+build	Run tests	2026-06-08T07:22:59.5908915Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	Run tests	2026-06-08T07:22:59.5909450Z
+build	Run tests	2026-06-08T07:22:59.5909895Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5910452Z
+build	Run tests	2026-06-08T07:22:59.5910698Z     console.log
+build	Run tests	2026-06-08T07:22:59.5911553Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	Run tests	2026-06-08T07:22:59.5912228Z
+build	Run tests	2026-06-08T07:22:59.5912645Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5913150Z
+build	Run tests	2026-06-08T07:22:59.5913428Z     console.log
+build	Run tests	2026-06-08T07:22:59.5914045Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	Run tests	2026-06-08T07:22:59.5914594Z
+build	Run tests	2026-06-08T07:22:59.5915043Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5915598Z
+build	Run tests	2026-06-08T07:22:59.5915875Z     console.log
+build	Run tests	2026-06-08T07:22:59.5916527Z       [AudioAnalyzer] Connected MediaStream source
+build	Run tests	2026-06-08T07:22:59.5917050Z
+build	Run tests	2026-06-08T07:22:59.5917450Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5918025Z
+build	Run tests	2026-06-08T07:22:59.5918306Z     console.log
+build	Run tests	2026-06-08T07:22:59.5918907Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:22:59.5919394Z
+build	Run tests	2026-06-08T07:22:59.5919817Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5920325Z
+build	Run tests	2026-06-08T07:22:59.5920603Z     console.log
+build	Run tests	2026-06-08T07:22:59.5921208Z       [AudioRecorder] Started microphone capture
+build	Run tests	2026-06-08T07:22:59.5921723Z
+build	Run tests	2026-06-08T07:22:59.5922150Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5922698Z
+build	Run tests	2026-06-08T07:22:59.5922939Z     console.log
+build	Run tests	2026-06-08T07:22:59.5939062Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	Run tests	2026-06-08T07:22:59.5939808Z
+build	Run tests	2026-06-08T07:22:59.5940223Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5940762Z
+build	Run tests	2026-06-08T07:22:59.5941008Z     console.log
+build	Run tests	2026-06-08T07:22:59.5941846Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	Run tests	2026-06-08T07:22:59.5942528Z
+build	Run tests	2026-06-08T07:22:59.5942945Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5943484Z
+build	Run tests	2026-06-08T07:22:59.5943854Z     console.log
+build	Run tests	2026-06-08T07:22:59.5944577Z       [AudioRecorder] Page visible, switching to requestAnimationFrame
+build	Run tests	2026-06-08T07:22:59.5945054Z
+build	Run tests	2026-06-08T07:22:59.5945589Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5946090Z
+build	Run tests	2026-06-08T07:22:59.5946314Z     console.log
+build	Run tests	2026-06-08T07:22:59.5946975Z       [AudioRecorder] Stopped timer fallback visualization
+build	Run tests	2026-06-08T07:22:59.5947507Z
+build	Run tests	2026-06-08T07:22:59.5947860Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5948391Z
+build	Run tests	2026-06-08T07:22:59.5948666Z     console.log
+build	Run tests	2026-06-08T07:22:59.5949214Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:22:59.5950658Z
+build	Run tests	2026-06-08T07:22:59.5951106Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5951575Z
+build	Run tests	2026-06-08T07:22:59.5951826Z     console.log
+build	Run tests	2026-06-08T07:22:59.5952398Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.5952869Z
+build	Run tests	2026-06-08T07:22:59.5953237Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5953731Z
+build	Run tests	2026-06-08T07:22:59.5954007Z     console.log
+build	Run tests	2026-06-08T07:22:59.5954556Z       [AudioRecorder] Stopped microphone
+build	Run tests	2026-06-08T07:22:59.5955035Z
+build	Run tests	2026-06-08T07:22:59.5955442Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5955963Z
+build	Run tests	2026-06-08T07:22:59.5956178Z     console.log
+build	Run tests	2026-06-08T07:22:59.5956755Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5957168Z
+build	Run tests	2026-06-08T07:22:59.5957568Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.5958071Z
+build	Run tests	2026-06-08T07:22:59.5958308Z     console.log
+build	Run tests	2026-06-08T07:22:59.5959743Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.5960188Z
+build	Run tests	2026-06-08T07:22:59.5960614Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.5961057Z
+build	Run tests	2026-06-08T07:22:59.5961303Z     console.log
+build	Run tests	2026-06-08T07:22:59.5961787Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.5962189Z
+build	Run tests	2026-06-08T07:22:59.5962532Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6017249Z
+build	Run tests	2026-06-08T07:22:59.6091158Z     console.log
+build	Run tests	2026-06-08T07:22:59.6123360Z       [AudioAnalyzer] Closed AudioContext
+build	Run tests	2026-06-08T07:22:59.6147445Z
+build	Run tests	2026-06-08T07:22:59.6191392Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6205884Z
+build	Run tests	2026-06-08T07:22:59.6248753Z     console.log
+build	Run tests	2026-06-08T07:22:59.6318984Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.6450228Z
+build	Run tests	2026-06-08T07:22:59.6450791Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.6451348Z
+build	Run tests	2026-06-08T07:22:59.6451567Z     console.log
+build	Run tests	2026-06-08T07:22:59.6452126Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.6452626Z
+build	Run tests	2026-06-08T07:22:59.6453386Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.6454003Z
+build	Run tests	2026-06-08T07:22:59.6454243Z     console.log
+build	Run tests	2026-06-08T07:22:59.6454752Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.6455187Z
+build	Run tests	2026-06-08T07:22:59.6455554Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6456065Z
+build	Run tests	2026-06-08T07:22:59.6456268Z     console.log
+build	Run tests	2026-06-08T07:22:59.6456877Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	Run tests	2026-06-08T07:22:59.6457371Z
+build	Run tests	2026-06-08T07:22:59.6457739Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6458257Z
+build	Run tests	2026-06-08T07:22:59.6458449Z     console.log
+build	Run tests	2026-06-08T07:22:59.6459166Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	Run tests	2026-06-08T07:22:59.6459855Z
+build	Run tests	2026-06-08T07:22:59.6460220Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6460747Z
+build	Run tests	2026-06-08T07:22:59.6460983Z     console.log
+build	Run tests	2026-06-08T07:22:59.6461565Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	Run tests	2026-06-08T07:22:59.6462104Z
+build	Run tests	2026-06-08T07:22:59.6462448Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6462935Z
+build	Run tests	2026-06-08T07:22:59.6463164Z     console.log
+build	Run tests	2026-06-08T07:22:59.6463656Z       [AudioAnalyzer] Connected MediaStream source
+build	Run tests	2026-06-08T07:22:59.6464134Z
+build	Run tests	2026-06-08T07:22:59.6464496Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.6464962Z
+build	Run tests	2026-06-08T07:22:59.6465195Z     console.log
+build	Run tests	2026-06-08T07:22:59.6465655Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:22:59.6466068Z
+build	Run tests	2026-06-08T07:22:59.6466425Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.6508997Z
+build	Run tests	2026-06-08T07:22:59.6694998Z     console.log
+build	Run tests	2026-06-08T07:22:59.6807132Z       [AudioRecorder] Started microphone capture
+build	Run tests	2026-06-08T07:22:59.6822305Z
+build	Run tests	2026-06-08T07:22:59.6890646Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.6928567Z
+build	Run tests	2026-06-08T07:22:59.6964974Z     console.log
+build	Run tests	2026-06-08T07:22:59.6965631Z       [AudioRecorder] Stopped microphone
+build	Run tests	2026-06-08T07:22:59.6966047Z
+build	Run tests	2026-06-08T07:22:59.6966420Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.6966891Z
+build	Run tests	2026-06-08T07:22:59.6967104Z     console.log
+build	Run tests	2026-06-08T07:22:59.6967626Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.7076026Z
+build	Run tests	2026-06-08T07:22:59.7101064Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7121076Z
+build	Run tests	2026-06-08T07:22:59.7204140Z     console.log
+build	Run tests	2026-06-08T07:22:59.7208211Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.7208681Z
+build	Run tests	2026-06-08T07:22:59.7209029Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.7209483Z
+build	Run tests	2026-06-08T07:22:59.7210097Z     console.log
+build	Run tests	2026-06-08T07:22:59.7210560Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:22:59.7210932Z
+build	Run tests	2026-06-08T07:22:59.7211238Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.7211656Z
+build	Run tests	2026-06-08T07:22:59.7211850Z     console.log
+build	Run tests	2026-06-08T07:22:59.7212318Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.7212711Z
+build	Run tests	2026-06-08T07:22:59.7213102Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7213568Z
+build	Run tests	2026-06-08T07:22:59.7213818Z     console.log
+build	Run tests	2026-06-08T07:22:59.7214320Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:22:59.7214733Z
+build	Run tests	2026-06-08T07:22:59.7260477Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.7285532Z
+build	Run tests	2026-06-08T07:22:59.7287159Z     console.log
+build	Run tests	2026-06-08T07:22:59.7361278Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.7384636Z
+build	Run tests	2026-06-08T07:22:59.7475558Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7495806Z
+build	Run tests	2026-06-08T07:22:59.7496514Z     console.log
+build	Run tests	2026-06-08T07:22:59.7497110Z       [AudioAnalyzer] Closed AudioContext
+build	Run tests	2026-06-08T07:22:59.7497544Z
+build	Run tests	2026-06-08T07:22:59.7497955Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7498450Z
+build	Run tests	2026-06-08T07:22:59.7498691Z     console.log
+build	Run tests	2026-06-08T07:22:59.7499424Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:22:59.7500107Z
+build	Run tests	2026-06-08T07:22:59.7500460Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.7500958Z
+build	Run tests	2026-06-08T07:22:59.7501229Z     console.log
+build	Run tests	2026-06-08T07:22:59.7501728Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:22:59.7502106Z
+build	Run tests	2026-06-08T07:22:59.7502438Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.7502888Z
+build	Run tests	2026-06-08T07:22:59.7503090Z     console.log
+build	Run tests	2026-06-08T07:22:59.7503590Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:22:59.7504097Z
+build	Run tests	2026-06-08T07:22:59.7504568Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7505093Z
+build	Run tests	2026-06-08T07:22:59.7505383Z     console.log
+build	Run tests	2026-06-08T07:22:59.7506067Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	Run tests	2026-06-08T07:22:59.7506659Z
+build	Run tests	2026-06-08T07:22:59.7507103Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7507666Z
+build	Run tests	2026-06-08T07:22:59.7507911Z     console.log
+build	Run tests	2026-06-08T07:22:59.7523722Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	Run tests	2026-06-08T07:22:59.7531256Z
+build	Run tests	2026-06-08T07:22:59.7557770Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7566793Z
+build	Run tests	2026-06-08T07:22:59.7567179Z     console.log
+build	Run tests	2026-06-08T07:22:59.7567817Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	Run tests	2026-06-08T07:22:59.7568343Z
+build	Run tests	2026-06-08T07:22:59.7568720Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7569199Z
+build	Run tests	2026-06-08T07:22:59.7569809Z     console.log
+build	Run tests	2026-06-08T07:22:59.7636730Z       [AudioAnalyzer] Connected MediaStream source
+build	Run tests	2026-06-08T07:22:59.7682179Z
+build	Run tests	2026-06-08T07:22:59.7737969Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:22:59.7799537Z
+build	Run tests	2026-06-08T07:22:59.7878731Z     console.log
+build	Run tests	2026-06-08T07:22:59.7935771Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:22:59.7964779Z
+build	Run tests	2026-06-08T07:22:59.8118414Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.8215295Z
+build	Run tests	2026-06-08T07:22:59.8252042Z     console.log
+build	Run tests	2026-06-08T07:22:59.8355649Z       [AudioRecorder] Started microphone capture
+build	Run tests	2026-06-08T07:22:59.8380733Z
+build	Run tests	2026-06-08T07:22:59.8592918Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.8708925Z
+build	Run tests	2026-06-08T07:22:59.8765711Z     console.log
+build	Run tests	2026-06-08T07:22:59.8794333Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	Run tests	2026-06-08T07:22:59.8943674Z
+build	Run tests	2026-06-08T07:22:59.9054389Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.9132052Z
+build	Run tests	2026-06-08T07:22:59.9242998Z     console.log
+build	Run tests	2026-06-08T07:22:59.9406921Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	Run tests	2026-06-08T07:22:59.9416029Z
+build	Run tests	2026-06-08T07:22:59.9551484Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:22:59.9668784Z
+build	Run tests	2026-06-08T07:22:59.9723967Z     console.log
+build	Run tests	2026-06-08T07:22:59.9849101Z       [AudioRecorder] Stopped timer fallback visualization
+build	Run tests	2026-06-08T07:22:59.9930487Z
+build	Run tests	2026-06-08T07:23:00.0075578Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.0252758Z
+build	Run tests	2026-06-08T07:23:00.0333931Z     console.log
+build	Run tests	2026-06-08T07:23:00.0383400Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:23:00.0435360Z
+build	Run tests	2026-06-08T07:23:00.0466146Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.0570507Z
+build	Run tests	2026-06-08T07:23:00.0774903Z     console.log
+build	Run tests	2026-06-08T07:23:00.0876557Z       [AudioRecorder] Stopped microphone
+build	Run tests	2026-06-08T07:23:00.0882639Z
+build	Run tests	2026-06-08T07:23:00.0933915Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.1224443Z
+build	Run tests	2026-06-08T07:23:00.1297011Z     console.log
+build	Run tests	2026-06-08T07:23:00.1348602Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:23:00.1458408Z
+build	Run tests	2026-06-08T07:23:00.1539232Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.1602831Z
+build	Run tests	2026-06-08T07:23:00.1710259Z     console.log
+build	Run tests	2026-06-08T07:23:00.1856703Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:23:00.2043611Z
+build	Run tests	2026-06-08T07:23:00.2140744Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.2206077Z
+build	Run tests	2026-06-08T07:23:00.2352249Z     console.log
+build	Run tests	2026-06-08T07:23:00.2368415Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:23:00.2481027Z
+build	Run tests	2026-06-08T07:23:00.2545104Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.2634775Z
+build	Run tests	2026-06-08T07:23:00.2656883Z     console.log
+build	Run tests	2026-06-08T07:23:00.2778112Z       [AudioAnalyzer] Closed AudioContext
+build	Run tests	2026-06-08T07:23:00.2881243Z
+build	Run tests	2026-06-08T07:23:00.2897754Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.3138110Z
+build	Run tests	2026-06-08T07:23:00.3245703Z     console.log
+build	Run tests	2026-06-08T07:23:00.3454977Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:23:00.3602703Z
+build	Run tests	2026-06-08T07:23:00.3752242Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.3833582Z
+build	Run tests	2026-06-08T07:23:00.3896160Z     console.log
+build	Run tests	2026-06-08T07:23:00.4082579Z       [AudioRecorder] AudioRecorder initialized
+build	Run tests	2026-06-08T07:23:00.4083958Z
+build	Run tests	2026-06-08T07:23:00.4122038Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.4270731Z
+build	Run tests	2026-06-08T07:23:00.4372074Z     console.log
+build	Run tests	2026-06-08T07:23:00.4478437Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:23:00.4604708Z
+build	Run tests	2026-06-08T07:23:00.4776617Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.4811139Z
+build	Run tests	2026-06-08T07:23:00.4888505Z     console.log
+build	Run tests	2026-06-08T07:23:00.5041887Z       [AudioAnalyzer] Created AudioContext, sample rate: 44100
+build	Run tests	2026-06-08T07:23:00.5209561Z
+build	Run tests	2026-06-08T07:23:00.5434648Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.5532970Z
+build	Run tests	2026-06-08T07:23:00.5787450Z     console.log
+build	Run tests	2026-06-08T07:23:00.5946744Z       [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+build	Run tests	2026-06-08T07:23:00.6147026Z
+build	Run tests	2026-06-08T07:23:00.6301077Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6307863Z
+build	Run tests	2026-06-08T07:23:00.6358382Z     console.log
+build	Run tests	2026-06-08T07:23:00.6368014Z       [AudioAnalyzer] Connected audio graph without enhancement
+build	Run tests	2026-06-08T07:23:00.6368734Z
+build	Run tests	2026-06-08T07:23:00.6369175Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6369771Z
+build	Run tests	2026-06-08T07:23:00.6370058Z     console.log
+build	Run tests	2026-06-08T07:23:00.6370700Z       [AudioAnalyzer] Connected MediaStream source
+build	Run tests	2026-06-08T07:23:00.6371735Z
+build	Run tests	2026-06-08T07:23:00.6372153Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6372716Z
+build	Run tests	2026-06-08T07:23:00.6373004Z     console.log
+build	Run tests	2026-06-08T07:23:00.6373609Z       [AudioRecorder] Started visualization
+build	Run tests	2026-06-08T07:23:00.6374092Z
+build	Run tests	2026-06-08T07:23:00.6374534Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6375053Z
+build	Run tests	2026-06-08T07:23:00.6375345Z     console.log
+build	Run tests	2026-06-08T07:23:00.6375972Z       [AudioRecorder] Started microphone capture
+build	Run tests	2026-06-08T07:23:00.6376511Z
+build	Run tests	2026-06-08T07:23:00.6376947Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6377459Z
+build	Run tests	2026-06-08T07:23:00.6377751Z     console.log
+build	Run tests	2026-06-08T07:23:00.6452488Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	Run tests	2026-06-08T07:23:00.6465143Z
+build	Run tests	2026-06-08T07:23:00.6465839Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6466486Z
+build	Run tests	2026-06-08T07:23:00.6466747Z     console.log
+build	Run tests	2026-06-08T07:23:00.6467724Z       [AudioRecorder] Started timer fallback visualization with polling interval: 16
+build	Run tests	2026-06-08T07:23:00.6468437Z
+build	Run tests	2026-06-08T07:23:00.6468881Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6469442Z
+build	Run tests	2026-06-08T07:23:00.6469689Z     console.log
+build	Run tests	2026-06-08T07:23:00.6470494Z       [AudioRecorder] Page hidden, switching to timer-based visualization
+build	Run tests	2026-06-08T07:23:00.6471192Z
+build	Run tests	2026-06-08T07:23:00.6471592Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6482066Z
+build	Run tests	2026-06-08T07:23:00.6482415Z     console.log
+build	Run tests	2026-06-08T07:23:00.6483137Z       [AudioRecorder] Stopped timer fallback visualization
+build	Run tests	2026-06-08T07:23:00.6483722Z
+build	Run tests	2026-06-08T07:23:00.6484130Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6484700Z
+build	Run tests	2026-06-08T07:23:00.6484981Z     console.log
+build	Run tests	2026-06-08T07:23:00.6485585Z       [AudioRecorder] Stopped visualization
+build	Run tests	2026-06-08T07:23:00.6486126Z
+build	Run tests	2026-06-08T07:23:00.6486555Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6487065Z
+build	Run tests	2026-06-08T07:23:00.6487349Z     console.log
+build	Run tests	2026-06-08T07:23:00.6487937Z       [AudioRecorder] Stopped microphone
+build	Run tests	2026-06-08T07:23:00.6488436Z
+build	Run tests	2026-06-08T07:23:00.6488863Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6489386Z
+build	Run tests	2026-06-08T07:23:00.6489657Z     console.log
+build	Run tests	2026-06-08T07:23:00.6504152Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:23:00.6588880Z
+build	Run tests	2026-06-08T07:23:00.6608772Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6621614Z
+build	Run tests	2026-06-08T07:23:00.6674625Z     console.log
+build	Run tests	2026-06-08T07:23:00.6697759Z       [AudioRecorder] Cancelled recording
+build	Run tests	2026-06-08T07:23:00.6698280Z
+build	Run tests	2026-06-08T07:23:00.6698999Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6699554Z
+build	Run tests	2026-06-08T07:23:00.6699787Z     console.log
+build	Run tests	2026-06-08T07:23:00.6700876Z       [AudioAnalyzer] Disconnected source
+build	Run tests	2026-06-08T07:23:00.6701312Z
+build	Run tests	2026-06-08T07:23:00.6701768Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6702296Z
+build	Run tests	2026-06-08T07:23:00.6702556Z     console.log
+build	Run tests	2026-06-08T07:23:00.6703109Z       [AudioAnalyzer] Closed AudioContext
+build	Run tests	2026-06-08T07:23:00.6703555Z
+build	Run tests	2026-06-08T07:23:00.6703955Z       at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+build	Run tests	2026-06-08T07:23:00.6704457Z
+build	Run tests	2026-06-08T07:23:00.6704735Z     console.log
+build	Run tests	2026-06-08T07:23:00.6705293Z       [AudioRecorder] Destroyed AudioRecorder
+build	Run tests	2026-06-08T07:23:00.6705752Z
+build	Run tests	2026-06-08T07:23:00.6706281Z       at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+build	Run tests	2026-06-08T07:23:00.6706803Z
+build	Run tests	2026-06-08T07:23:00.6707164Z PASS tests/YouTubeUploader.test.ts
+build	Run tests	2026-06-08T07:23:00.6707838Z PASS tests/EventEmitter.test.ts
+build	Run tests	2026-06-08T07:23:00.9190485Z PASS tests/VideoRecorder.test.ts
+build	Run tests	2026-06-08T07:23:00.9557962Z PASS tests/AudioAnalyzer.test.ts
+build	Run tests	2026-06-08T07:23:16.8648970Z PASS tests/AudioToVideoConverter.test.ts (17.084 s)
+build	Run tests	2026-06-08T07:23:17.0093519Z
+build	Run tests	2026-06-08T07:23:17.0098599Z Test Suites: 9 passed, 9 total
+build	Run tests	2026-06-08T07:23:17.0099223Z Tests:       341 passed, 341 total
+build	Run tests	2026-06-08T07:23:17.0099669Z Snapshots:   0 total
+build	Run tests	2026-06-08T07:23:17.0099978Z Time:        32.23 s
+build	Run tests	2026-06-08T07:23:17.0100245Z Ran all test suites.
+build	Build library	﻿2026-06-08T07:23:17.1557922Z ##[group]Run npm run build
+build	Build library	2026-06-08T07:23:17.1558517Z ^[[36;1mnpm run build^[[0m
+build	Build library	2026-06-08T07:23:17.1642735Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	Build library	2026-06-08T07:23:17.1643076Z env:
+build	Build library	2026-06-08T07:23:17.1643277Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Build library	2026-06-08T07:23:17.1643530Z ##[endgroup]
+build	Build library	2026-06-08T07:23:17.7561520Z
+build	Build library	2026-06-08T07:23:17.7562281Z > audio-recorder-with-visualization@1.0.0 build
+build	Build library	2026-06-08T07:23:17.7562821Z > rollup -c
+build	Build library	2026-06-08T07:23:17.7562939Z
+build	Build library	2026-06-08T07:23:17.9618916Z (node:3248) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	Build library	2026-06-08T07:23:17.9621776Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	Build library	2026-06-08T07:23:17.9623604Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	Build library	2026-06-08T07:23:17.9627281Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	Build library	2026-06-08T07:23:18.6751578Z ^[[36m
+build	Build library	2026-06-08T07:23:18.6752685Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	Build library	2026-06-08T07:23:22.6794469Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m4s^[[22m^[[39m
+build	Build library	2026-06-08T07:23:22.6796120Z ^[[36m
+build	Build library	2026-06-08T07:23:22.6797063Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	Build library	2026-06-08T07:23:25.3148998Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	Build library	2026-06-08T07:23:25.3151992Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.6s^[[22m^[[39m
+build	Build library	2026-06-08T07:23:25.3153073Z ^[[36m
+build	Build library	2026-06-08T07:23:25.3153902Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	Build library	2026-06-08T07:23:25.4360832Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m121ms^[[22m^[[39m
+build	Build portable EXE	﻿2026-06-08T07:23:25.6576324Z ##[group]Run npm run electron:build
+build	Build portable EXE	2026-06-08T07:23:25.6576724Z ^[[36;1mnpm run electron:build^[[0m
+build	Build portable EXE	2026-06-08T07:23:25.6634172Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	Build portable EXE	2026-06-08T07:23:25.6634524Z env:
+build	Build portable EXE	2026-06-08T07:23:25.6634743Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	Build portable EXE	2026-06-08T07:23:25.6637904Z   GH_TOKEN: ***
+build	Build portable EXE	2026-06-08T07:23:25.6638116Z ##[endgroup]
+build	Build portable EXE	2026-06-08T07:23:26.2362890Z
+build	Build portable EXE	2026-06-08T07:23:26.2363647Z > audio-recorder-with-visualization@1.0.0 electron:build
+build	Build portable EXE	2026-06-08T07:23:26.5568260Z > npm run build && electron-builder --win portable
+build	Build portable EXE	2026-06-08T07:23:26.5569151Z
+build	Build portable EXE	2026-06-08T07:23:26.5569171Z
+build	Build portable EXE	2026-06-08T07:23:26.5569488Z > audio-recorder-with-visualization@1.0.0 build
+build	Build portable EXE	2026-06-08T07:23:26.5570023Z > rollup -c
+build	Build portable EXE	2026-06-08T07:23:26.5570207Z
+build	Build portable EXE	2026-06-08T07:23:26.7454949Z (node:7156) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/rollup.config.js is not specified and it doesn't parse as CommonJS.
+build	Build portable EXE	2026-06-08T07:23:26.7457269Z Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+build	Build portable EXE	2026-06-08T07:23:26.7458873Z To eliminate this warning, add "type": "module" to D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\package.json.
+build	Build portable EXE	2026-06-08T07:23:26.7460229Z (Use `node --trace-warnings ...` to show where the warning was created)
+build	Build portable EXE	2026-06-08T07:23:27.4411580Z ^[[36m
+build	Build portable EXE	2026-06-08T07:23:27.4412487Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/index.js, dist/index.esm.js^[[22m...^[[39m
+build	Build portable EXE	2026-06-08T07:23:31.4580253Z ^[[32mcreated ^[[1mdist/index.js, dist/index.esm.js^[[22m in ^[[1m4s^[[22m^[[39m
+build	Build portable EXE	2026-06-08T07:23:31.4581460Z ^[[36m
+build	Build portable EXE	2026-06-08T07:23:31.4582255Z ^[[1msrc/index.ts^[[22m → ^[[1mdist/audio-recorder-visualization.umd.js^[[22m...^[[39m
+build	Build portable EXE	2026-06-08T07:23:34.0922141Z ^[[1m^[[33m(!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.^[[39m^[[22m
+build	Build portable EXE	2026-06-08T07:23:34.0924375Z ^[[32mcreated ^[[1mdist/audio-recorder-visualization.umd.js^[[22m in ^[[1m2.6s^[[22m^[[39m
+build	Build portable EXE	2026-06-08T07:23:34.0925137Z ^[[36m
+build	Build portable EXE	2026-06-08T07:23:34.0925752Z ^[[1mdist/index.d.ts^[[22m → ^[[1mdist/index.d.ts^[[22m...^[[39m
+build	Build portable EXE	2026-06-08T07:23:34.2147027Z ^[[32mcreated ^[[1mdist/index.d.ts^[[22m in ^[[1m122ms^[[22m^[[39m
+build	Build portable EXE	2026-06-08T07:23:35.1456430Z   • electron-builder  version=25.1.8 os=10.0.26100
+build	Build portable EXE	2026-06-08T07:23:35.1463262Z   • publishing will be skipped  reason=current build is a part of pull request solution=set env PUBLISH_FOR_PULL_REQUEST to true to force code signing
+build	Build portable EXE	2026-06-08T07:23:35.1464935Z There are serious security concerns with PUBLISH_FOR_PULL_REQUEST=true (see the  CircleCI documentation (https://circleci.com/docs/1.0/fork-pr-builds/) for details)
+build	Build portable EXE	2026-06-08T07:23:35.1466192Z If you have SSH keys, sensitive env vars or AWS credentials stored in your project settings and untrusted forks can make pull requests against your repo, then this option isn't for you.
+build	Build portable EXE	2026-06-08T07:23:35.1543247Z   • loaded configuration  file=package.json ("build" field)
+build	Build portable EXE	2026-06-08T07:23:35.3345286Z   • executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false appDir=./
+build	Build portable EXE	2026-06-08T07:23:35.3358435Z   • installing native dependencies  arch=x64
+build	Build portable EXE	2026-06-08T07:23:36.3848942Z   • completed installing native dependencies
+build	Build portable EXE	2026-06-08T07:23:36.3919281Z   • packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=electron-dist\win-unpacked
+build	Build portable EXE	2026-06-08T07:23:36.5703479Z   ⨯ cannot resolve https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip: status code 504
+build	Build portable EXE	2026-06-08T07:23:36.5704880Z github.com/develar/app-builder/pkg/download.(*Downloader).follow
+build	Build portable EXE	2026-06-08T07:23:36.5705486Z 	/Users/runner/work/app-builder/app-builder/pkg/download/downloader.go:237
+build	Build portable EXE	2026-06-08T07:23:36.5706323Z github.com/develar/app-builder/pkg/download.(*Downloader).DownloadNoRetry
+build	Build portable EXE	2026-06-08T07:23:36.5706966Z 	/Users/runner/work/app-builder/app-builder/pkg/download/downloader.go:128
+build	Build portable EXE	2026-06-08T07:23:36.5712535Z github.com/develar/app-builder/pkg/download.(*Downloader).Download
+build	Build portable EXE	2026-06-08T07:23:36.5713501Z 	/Users/runner/work/app-builder/app-builder/pkg/download/downloader.go:112
+build	Build portable EXE	2026-06-08T07:23:36.5714565Z github.com/develar/app-builder/pkg/electron.(*ElectronDownloader).doDownload
+build	Build portable EXE	2026-06-08T07:23:36.5715689Z 	/Users/runner/work/app-builder/app-builder/pkg/electron/electronDownloader.go:203
+build	Build portable EXE	2026-06-08T07:23:36.5716812Z github.com/develar/app-builder/pkg/electron.(*ElectronDownloader).Download
+build	Build portable EXE	2026-06-08T07:23:36.5718152Z 	/Users/runner/work/app-builder/app-builder/pkg/electron/electronDownloader.go:188
+build	Build portable EXE	2026-06-08T07:23:36.5719503Z github.com/develar/app-builder/pkg/electron.downloadElectron.func1.1
+build	Build portable EXE	2026-06-08T07:23:36.5720524Z 	/Users/runner/work/app-builder/app-builder/pkg/electron/electronDownloader.go:73
+build	Build portable EXE	2026-06-08T07:23:36.5721562Z github.com/develar/app-builder/pkg/util.MapAsyncConcurrency.func2
+build	Build portable EXE	2026-06-08T07:23:36.5722472Z 	/Users/runner/work/app-builder/app-builder/pkg/util/async.go:68
+build	Build portable EXE	2026-06-08T07:23:36.5723210Z runtime.goexit
+build	Build portable EXE	2026-06-08T07:23:36.5723886Z 	/Users/runner/hostedtoolcache/go/1.21.13/arm64/src/runtime/asm_amd64.s:1650
+build	Build portable EXE	2026-06-08T07:23:36.5919742Z   ⨯ D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\app-builder-bin\win\x64\app-builder.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+build	Build portable EXE	2026-06-08T07:23:36.5921452Z Exit code:
+build	Build portable EXE	2026-06-08T07:23:36.5923254Z 1  failedTask=build stackTrace=Error: D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\app-builder-bin\win\x64\app-builder.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+build	Build portable EXE	2026-06-08T07:23:36.5924857Z Exit code:
+build	Build portable EXE	2026-06-08T07:23:36.5925280Z 1
+build	Build portable EXE	2026-06-08T07:23:36.5926548Z     at ChildProcess.<anonymous> (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\builder-util\src\util.ts:255:14)
+build	Build portable EXE	2026-06-08T07:23:36.5927820Z     at Object.onceWrapper (node:events:639:26)
+build	Build portable EXE	2026-06-08T07:23:36.5928487Z     at ChildProcess.emit (node:events:524:28)
+build	Build portable EXE	2026-06-08T07:23:36.5929777Z     at ChildProcess.cp.emit (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\cross-spawn\lib\enoent.js:34:29)
+build	Build portable EXE	2026-06-08T07:23:36.5931434Z     at maybeClose (node:internal/child_process:1104:16)
+build	Build portable EXE	2026-06-08T07:23:36.5932346Z     at Process.ChildProcess._handle.onexit (node:internal/child_process:304:5)
+build	Build portable EXE	2026-06-08T07:23:36.7243076Z ##[error]Process completed with exit code 1.
+build	Post Checkout repository	﻿2026-06-08T07:23:36.7515847Z Post job cleanup.
+build	Post Checkout repository	2026-06-08T07:23:36.9449638Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	Post Checkout repository	2026-06-08T07:23:36.9714825Z git version 2.54.0.windows.1
+build	Post Checkout repository	2026-06-08T07:23:36.9795623Z Temporarily overriding HOME='D:\a\_temp\e44d7127-0998-4223-82e5-7da70ba3340d' before making global git config changes
+build	Post Checkout repository	2026-06-08T07:23:36.9798494Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Checkout repository	2026-06-08T07:23:36.9808586Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	Post Checkout repository	2026-06-08T07:23:37.0159678Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	Post Checkout repository	2026-06-08T07:23:37.0499509Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	Post Checkout repository	2026-06-08T07:23:37.5814284Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Checkout repository	2026-06-08T07:23:37.6085928Z http.https://github.com/.extraheader
+build	Post Checkout repository	2026-06-08T07:23:37.6144913Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+build	Post Checkout repository	2026-06-08T07:23:37.6440593Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	Post Checkout repository	2026-06-08T07:23:38.1880184Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Checkout repository	2026-06-08T07:23:38.2173720Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	Complete job	﻿2026-06-08T07:23:38.7606528Z Cleaning up orphan processes
+build	Complete job	2026-06-08T07:23:38.7966650Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
