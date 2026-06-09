@@ -1,0 +1,116 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index c9fa32b..087de8f 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -244,6 +244,37 @@ describe('Pipeline Mode', () => {
+     });
+   });
+
++  it('updates pipeline preset choices immediately after saving a new preset', () => {
++    cy.window().then((win) => {
++      win.localStorage.removeItem('audio-recorder-presets');
++      win.localStorage.removeItem('audio-recorder-pipeline-stages');
++    });
++    cy.reload();
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').as('firstStageName');
++    cy.get('@firstStageName').clear().type('Unsaved pipeline title');
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.contains('label', 'Preset').find('select')
++        .should('contain.text', 'No saved visualization presets')
++        .and('have.value', '');
++    });
++
++    cy.get('#presetEdgeTrigger').trigger('pointerenter');
++    cy.get('#savePresetBtn').click();
++    cy.get('#presetNameInput').clear().type('Pipeline Fresh Preset');
++    cy.get('#presetConfirmSaveBtn').click();
++
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.contains('label', 'Preset').find('select')
++        .should('contain.text', 'Pipeline Fresh Preset')
++        .invoke('val')
++        .should('match', /^preset:preset-/);
++    });
++    cy.get('@firstStageName').should('have.value', 'Unsaved pipeline title');
++  });
++
+   it('shows image-backed visualization previews for vertical stages and landscape album tracks', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 802449b..5f2b2ba 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -648,6 +648,7 @@
+   }
+
+   function setSelectOptions(select, options, value) {
++    select.innerHTML = '';
+     options.forEach(([optionValue, label]) => {
+       const option = document.createElement('option');
+       option.value = optionValue;
+@@ -660,6 +661,32 @@
+     }
+   }
+
++  function refreshStagePresetSelections() {
++    const choices = getPresetChoices();
++    let changed = false;
++
++    stages = stages.map((stage, index) => {
++      const normalized = normalizeStage(stage, index);
++      if (normalized.presetId !== stage.presetId) {
++        changed = true;
++      }
++      return normalized;
++    });
++
++    stagesContainer.querySelectorAll('.pipeline-preset-select').forEach(select => {
++      const stage = stages.find(item => item.id === select.dataset.stageId);
++      if (!stage) {
++        return;
++      }
++      setSelectOptions(select, choices, stage.presetId || '');
++    });
++
++    if (changed) {
++      saveStages();
++    }
++    updateRunState();
++  }
++
+   function createField(labelText, className = 'span-4', tooltip = '') {
+     const label = document.createElement('label');
+     label.className = `pipeline-field ${className}`.trim();
+@@ -1662,6 +1689,8 @@
+
+     const presetField = createField('Album preset', 'span-4', 'Visualizer preset used for album render tasks.');
+     const presetSelect = document.createElement('select');
++    presetSelect.className = 'pipeline-preset-select';
++    presetSelect.dataset.stageId = stage.id;
+     setSelectOptions(presetSelect, getPresetChoices(), stage.presetId || 'current');
+     presetSelect.addEventListener('change', () => {
+       updateStage(stage.id, { presetId: presetSelect.value });
+@@ -2133,6 +2162,8 @@
+
+         const presetField = createField('Preset', 'span-3', 'Visualizer preset used while rendering this stage.');
+         const preset = document.createElement('select');
++        preset.className = 'pipeline-preset-select';
++        preset.dataset.stageId = stage.id;
+         setSelectOptions(preset, getPresetChoices(), stage.presetId || 'current');
+         preset.addEventListener('change', () => updateStage(stage.id, { presetId: preset.value }));
+         presetField.appendChild(preset);
+@@ -2467,9 +2498,7 @@
+     }
+   });
+   window.addEventListener('audioRecorderPresetsChanged', () => {
+-    stages = stages.map(normalizeStage);
+-    saveStages();
+-    renderStages();
++    refreshStagePresetSelections();
+   });
+   window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
+     renderStages();

@@ -664,6 +664,7 @@
   }
 
   function setSelectOptions(select, options, value) {
+    select.innerHTML = '';
     options.forEach(([optionValue, label]) => {
       const option = document.createElement('option');
       option.value = optionValue;
@@ -674,6 +675,32 @@
     if (select.value !== value && options.length) {
       select.value = options[0][0];
     }
+  }
+
+  function refreshStagePresetSelections() {
+    const choices = getPresetChoices();
+    let changed = false;
+
+    stages = stages.map((stage, index) => {
+      const normalized = normalizeStage(stage, index);
+      if (normalized.presetId !== stage.presetId) {
+        changed = true;
+      }
+      return normalized;
+    });
+
+    stagesContainer.querySelectorAll('.pipeline-preset-select').forEach(select => {
+      const stage = stages.find(item => item.id === select.dataset.stageId);
+      if (!stage) {
+        return;
+      }
+      setSelectOptions(select, choices, stage.presetId || '');
+    });
+
+    if (changed) {
+      saveStages();
+    }
+    updateRunState();
   }
 
   function createField(labelText, className = 'span-4', tooltip = '') {
@@ -1924,6 +1951,8 @@
 
     const presetField = createField('Album preset', 'span-4', 'Visualizer preset used for album render tasks.');
     const presetSelect = document.createElement('select');
+    presetSelect.className = 'pipeline-preset-select';
+    presetSelect.dataset.stageId = stage.id;
     setSelectOptions(presetSelect, getPresetChoices(), stage.presetId || 'current');
     presetSelect.addEventListener('change', () => {
       updateStage(stage.id, { presetId: presetSelect.value });
@@ -2397,6 +2426,8 @@
 
         const presetField = createField('Preset', 'span-3', 'Visualizer preset used while rendering this stage.');
         const preset = document.createElement('select');
+        preset.className = 'pipeline-preset-select';
+        preset.dataset.stageId = stage.id;
         setSelectOptions(preset, getPresetChoices(), stage.presetId || 'current');
         preset.addEventListener('change', () => updateStage(stage.id, { presetId: preset.value }));
         presetField.appendChild(preset);
@@ -2766,9 +2797,7 @@
     }
   });
   window.addEventListener('audioRecorderPresetsChanged', () => {
-    stages = stages.map(normalizeStage);
-    saveStages();
-    renderStages();
+    refreshStagePresetSelections();
   });
   window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
     renderStages();
