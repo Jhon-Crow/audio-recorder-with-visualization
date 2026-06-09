@@ -29,7 +29,9 @@ jobs:
       - name: Cache Electron runtime downloads
         uses: actions/cache@v4
         with:
-          path: ~\AppData\Local\electron\Cache
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
           key: electron-runtime-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             electron-runtime-${{ runner.os }}-
