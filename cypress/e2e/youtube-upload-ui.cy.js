@@ -170,6 +170,33 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('be.visible');
   });
 
+  it('restores Electron Google authorization with the saved client ID before showing the auth form', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-desktop-client-id.apps.googleusercontent.com');
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            accessToken: 'refreshed-electron-token',
+            expiresIn: 3600,
+            scope: combinedYouTubeScope,
+          }),
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('@authorizeYouTube')
+      .should('have.been.calledOnce')
+      .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeAuthModal').should('not.be.visible');
+    cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+  });
+
   it('restores saved Google authorization after a restart', () => {
     const futureExpiry = Date.now() + 3600 * 1000;
 
