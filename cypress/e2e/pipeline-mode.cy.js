@@ -105,6 +105,20 @@ describe('Pipeline Mode', () => {
     }));
   }
 
+  function expectPreviewImageDimensions(previewImage, expectedWidth, expectedHeight) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        expect(image.width, 'decoded preview width').to.equal(expectedWidth);
+        expect(image.height, 'decoded preview height').to.equal(expectedHeight);
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
+
   function seedSavedVisualizationPresets(win) {
     win.localStorage.setItem('audio-recorder-presets', JSON.stringify(savedVisualizationPresets));
   }
@@ -556,7 +570,9 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
       .should('have.attr', 'data-preview-state', 'ready')
       .then(($trigger) => {
-        expectPreviewBrightSpotNear($trigger[0].style.getPropertyValue('--pipeline-preview-image'), 0.63, 0.39);
+        const previewImage = $trigger[0].style.getPropertyValue('--pipeline-preview-image');
+        expectPreviewBrightSpotNear(previewImage, 0.63, 0.39);
+        expectPreviewImageDimensions(previewImage, 360, 203);
       });
   });
 

@@ -15,6 +15,7 @@
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
+  const PREVIEW_RENDER_MAX_SIDE = 960;
   const PREVIEW_FFT_SIZE = 2048;
   const PREVIEW_STAGE_PADDING = 18;
   const PREVIEW_TOOLTIP_GAP = 12;
@@ -946,22 +947,45 @@
 
   function getPreviewRenderSize(stage) {
     const dimensions = parseResolution(stage.resolution);
-    if (dimensions.width >= dimensions.height) {
+    return getContainedSize(dimensions.width, dimensions.height, PREVIEW_MAX_SIDE);
+  }
+
+  function getPreviewInternalRenderSize(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    return getContainedSize(dimensions.width, dimensions.height, PREVIEW_RENDER_MAX_SIDE);
+  }
+
+  function getContainedSize(sourceWidth, sourceHeight, maxSide) {
+    if (sourceWidth >= sourceHeight) {
       return {
-        width: PREVIEW_MAX_SIDE,
-        height: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.height) / dimensions.width)),
+        width: maxSide,
+        height: Math.max(1, Math.round((maxSide * sourceHeight) / sourceWidth)),
       };
     }
 
     return {
-      width: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.width) / dimensions.height)),
-      height: PREVIEW_MAX_SIDE,
+      width: Math.max(1, Math.round((maxSide * sourceWidth) / sourceHeight)),
+      height: maxSide,
     };
   }
 
-  function scalePreviewLength(value, scale) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric * scale : value;
+  function getCanvasDrawSize(canvas, maxSide) {
+    return getContainedSize(canvas.width, canvas.height, maxSide);
+  }
+
+  function createDownsampledCanvas(sourceCanvas, maxSide = PREVIEW_MAX_SIDE) {
+    const size = getCanvasDrawSize(sourceCanvas, maxSide);
+    const canvas = document.createElement('canvas');
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return sourceCanvas;
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(sourceCanvas, 0, 0, size.width, size.height);
+    return canvas;
   }
 
   function getPreviewRenderScale(stage, renderWidth, renderHeight) {
@@ -971,6 +995,11 @@
       y: renderHeight / dimensions.height,
       uniform: Math.min(renderWidth / dimensions.width, renderHeight / dimensions.height),
     };
+  }
+
+  function scalePreviewLength(value, scale) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric * scale : value;
   }
 
   function scalePreviewRenderOptions(options, stage, renderWidth, renderHeight) {
@@ -1205,7 +1234,7 @@
       return pipelinePreviewCache.get(cacheKey);
     }
 
-    const { width, height } = getPreviewRenderSize(stage);
+    const { width, height } = getPreviewInternalRenderSize(stage);
     const renderSettings = resolvePreviewRenderSettings(stage);
     const promise = (async () => {
       const canvas = document.createElement('canvas');
@@ -1219,7 +1248,7 @@
       const VisualizerClass = getVisualizerClass(renderSettings.visualizer);
       if (!VisualizerClass) {
         drawFallbackPreviewFrame(ctx, width, height, renderSettings.visualizerOptions);
-        return createFramedPreviewCanvas(canvas).toDataURL('image/png');
+        return createFramedPreviewCanvas(createDownsampledCanvas(canvas)).toDataURL('image/png');
       }
 
       try {
@@ -1238,7 +1267,7 @@
         if (typeof visualizer.destroy === 'function') {
           visualizer.destroy();
         }
-        return createFramedPreviewCanvas(canvas).toDataURL('image/png');
+        return createFramedPreviewCanvas(createDownsampledCanvas(canvas)).toDataURL('image/png');
       } catch (error) {
         const fallbackCanvas = document.createElement('canvas');
         fallbackCanvas.width = width;
@@ -1248,7 +1277,7 @@
           throw error;
         }
         drawFallbackPreviewFrame(fallbackCtx, width, height, renderSettings.visualizerOptions);
-        return createFramedPreviewCanvas(fallbackCanvas).toDataURL('image/png');
+        return createFramedPreviewCanvas(createDownsampledCanvas(fallbackCanvas)).toDataURL('image/png');
       }
     })();
 
