@@ -691,6 +691,147 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
   });
 
+  it('schedules regular release posts from ordered files and cycle slots', () => {
+    const publishAtValues = [];
+    const uploadTitles = [];
+    let uploadIndex = 0;
+
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      publishAtValues.push(body.status.publishAt);
+      uploadTitles.push(body.snippet.title);
+      uploadIndex += 1;
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: `https://upload.example/regular-post-${uploadIndex}` },
+        body: '',
+      });
+    }).as('startRegularPostUpload');
+
+    cy.intercept('PUT', /^https:\/\/upload\.example\/regular-post-\d+$/, (req) => {
+      req.reply({
+        statusCode: 201,
+        body: { id: `regular-post-${uploadIndex}` },
+      });
+    }).as('finishRegularPostUpload');
+
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'release',
+          name: 'Regular shorts',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-01T08:00',
+          publishImmediately: false,
+          releaseType: 'regular-posts',
+          regularCycleDays: 10,
+          regularPostSlots: [
+            { id: 'slot-day-3', day: 3, time: '09:30' },
+            { id: 'slot-day-7', day: 7, time: '18:00' },
+          ],
+          privacyStatus: 'private',
+        },
+      ]);
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Release type').find('select')
+        .should('contain.text', 'Regular posts')
+        .and('have.value', 'regular-posts');
+
+      cy.get('.pipeline-stage-file-input').selectFile([
+        {
+          contents: Cypress.Buffer.from('regular-one'),
+          fileName: '01 regular one.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-two'),
+          fileName: '02 regular two.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-three'),
+          fileName: '03 regular three.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-four'),
+          fileName: '04 regular four.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-five'),
+          fileName: '05 regular five.mp4',
+          mimeType: 'video/mp4',
+        },
+      ], { force: true });
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-regular-slot').should('have.length', 2);
+      cy.get('.pipeline-regular-post-track').should('have.length', 5);
+      cy.get('.pipeline-regular-post-track .pipeline-track-title').eq(0)
+        .should('have.value', '01 regular one');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-01"]').should('have.class', 'is-cycle-active');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-03"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '1');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-07"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '2');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-23"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '5');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-24"]')
+        .should('not.have.class', 'is-cycle-active');
+
+      cy.get('.pipeline-regular-post-track .pipeline-track-remove').eq(1).click();
+      cy.get('.pipeline-regular-post-track').should('have.length', 4);
+      cy.get('.pipeline-regular-post-track .pipeline-track-title').eq(1)
+        .should('have.value', '03 regular three');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-23"]')
+        .should('not.have.class', 'is-publish');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-18"]')
+        .should('not.have.class', 'is-cycle-active');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    for (let index = 0; index < 4; index += 1) {
+      cy.wait('@startRegularPostUpload');
+      cy.wait('@finishRegularPostUpload');
+    }
+
+    cy.wrap(publishAtValues).should('deep.equal', [
+      '2026-07-03T09:30:00.000Z',
+      '2026-07-07T18:00:00.000Z',
+      '2026-07-13T09:30:00.000Z',
+      '2026-07-17T18:00:00.000Z',
+    ]);
+    cy.wrap(uploadTitles).should('deep.equal', [
+      '01 regular one',
+      '03 regular three',
+      '04 regular four',
+      '05 regular five',
+    ]);
+  });
+
   it('resets added files from a stage without opening the full reset modal', () => {
     cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
       contents: Cypress.Buffer.from('stage-audio'),

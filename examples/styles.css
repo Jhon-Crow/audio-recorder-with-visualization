@@ -1569,6 +1569,20 @@ button:focus-visible {
   gap: var(--spacing-xs);
 }
 
+.pipeline-regular-slots,
+.pipeline-regular-post-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.pipeline-regular-slot {
+  display: grid;
+  grid-template-columns: 32px minmax(72px, 0.8fr) minmax(96px, 1fr) 44px;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
 .pipeline-album-track {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 44px;
@@ -1591,6 +1605,98 @@ button:focus-visible {
   width: 44px;
   height: 40px;
   padding: 0;
+}
+
+.pipeline-regular-calendar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.pipeline-regular-calendar-summary {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pipeline-regular-calendar-month {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.pipeline-regular-calendar-month h4 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.pipeline-regular-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(34px, 1fr));
+  gap: 4px;
+}
+
+.pipeline-regular-calendar-weekday {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pipeline-regular-calendar-blank,
+.pipeline-regular-calendar-day {
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+}
+
+.pipeline-regular-calendar-day {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 2px;
+  align-items: start;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.pipeline-regular-calendar-day.is-cycle-active {
+  border-color: rgba(255, 221, 87, 0.34);
+  background: rgba(255, 221, 87, 0.12);
+  color: var(--color-text-secondary);
+}
+
+.pipeline-regular-calendar-day.is-publish {
+  border-color: rgba(0, 255, 136, 0.72);
+  background: rgba(0, 255, 136, 0.18);
+  color: var(--color-text-primary);
+}
+
+.pipeline-regular-calendar-number {
+  min-width: 0;
+}
+
+.pipeline-regular-calendar-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 2px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .pipeline-stage-actions {
@@ -1735,6 +1841,14 @@ button:focus-visible {
 
   .pipeline-stage-actions {
     flex-direction: row;
+  }
+
+  .pipeline-regular-slot {
+    grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  }
+
+  .pipeline-regular-calendar-grid {
+    grid-template-columns: repeat(7, minmax(28px, 1fr));
   }
 }
 
