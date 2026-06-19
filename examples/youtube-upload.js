@@ -345,6 +345,25 @@
     return Boolean(accessToken) && Date.now() < accessTokenExpiresAt - TOKEN_EXPIRY_SKEW_MS;
   }
 
+  async function restoreElectronYouTubeAuthorization() {
+    if (hasValidAccessToken() || !isElectronYouTubeOAuthAvailable()) {
+      return hasValidAccessToken();
+    }
+
+    const savedClientId = clientIdInput.value.trim();
+    if (!GOOGLE_CLIENT_ID_PATTERN.test(savedClientId)) {
+      return false;
+    }
+
+    try {
+      await requestAccessToken(savedClientId);
+      return hasValidAccessToken();
+    } catch (error) {
+      console.warn('Failed to restore stored Electron YouTube authorization:', error);
+      return false;
+    }
+  }
+
   function getRequiredYouTubeScope() {
     return YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE || YOUTUBE_UPLOAD_SCOPE;
   }
@@ -931,7 +950,14 @@
     if (hasValidAccessToken()) {
       openUploadModal();
     } else {
-      openAuthModal();
+      restoreElectronYouTubeAuthorization()
+        .then((restored) => {
+          if (restored) {
+            openUploadModal();
+          } else {
+            openAuthModal();
+          }
+        });
     }
   });
 
