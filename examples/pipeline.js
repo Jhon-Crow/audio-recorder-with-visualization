@@ -959,6 +959,39 @@
     };
   }
 
+  function scalePreviewLength(value, scale) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric * scale : value;
+  }
+
+  function getPreviewRenderScale(stage, renderWidth, renderHeight) {
+    const dimensions = parseResolution(stage.resolution);
+    return {
+      x: renderWidth / dimensions.width,
+      y: renderHeight / dimensions.height,
+      uniform: Math.min(renderWidth / dimensions.width, renderHeight / dimensions.height),
+    };
+  }
+
+  function scalePreviewRenderOptions(options, stage, renderWidth, renderHeight) {
+    const scale = getPreviewRenderScale(stage, renderWidth, renderHeight);
+    const scaledOptions = clonePlainObject(options);
+    scaledOptions.offsetX = scalePreviewLength(scaledOptions.offsetX, scale.x);
+    scaledOptions.offsetY = scalePreviewLength(scaledOptions.offsetY, scale.y);
+
+    if (scaledOptions.backgroundSizeMode === 'custom') {
+      scaledOptions.backgroundWidth = scalePreviewLength(scaledOptions.backgroundWidth, scale.x);
+      scaledOptions.backgroundHeight = scalePreviewLength(scaledOptions.backgroundHeight, scale.y);
+    }
+
+    if (scaledOptions.custom) {
+      scaledOptions.custom.centerImageOffsetX = scalePreviewLength(scaledOptions.custom.centerImageOffsetX, scale.x);
+      scaledOptions.custom.centerImageOffsetY = scalePreviewLength(scaledOptions.custom.centerImageOffsetY, scale.y);
+    }
+
+    return scaledOptions;
+  }
+
   function getPresetLabel(presetId) {
     const normalizedId = String(presetId || '').startsWith('preset:')
       ? String(presetId).slice('preset:'.length)
@@ -1190,7 +1223,7 @@
       }
 
       try {
-        const options = clonePlainObject(renderSettings.visualizerOptions);
+        const options = scalePreviewRenderOptions(renderSettings.visualizerOptions, stage, width, height);
         const visualizer = new VisualizerClass(options);
         await Promise.resolve(visualizer.init(canvas, options));
         visualizer.draw(ctx, {

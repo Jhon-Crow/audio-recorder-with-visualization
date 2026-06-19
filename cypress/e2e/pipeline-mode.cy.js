@@ -26,6 +26,19 @@ describe('Pipeline Mode', () => {
         backgroundSizeMode: 'cover',
       },
     },
+    {
+      id: 'preset-cypress-offset-circular',
+      name: 'Cypress Offset Circular',
+      settings: {
+        visualizer: 'circular',
+        primaryColor: '#ffffff',
+        secondaryColor: '#ffffff',
+        backgroundColor: '#000000',
+        offsetX: 480,
+        offsetY: -180,
+        visualizationScale: 120,
+      },
+    },
   ];
 
   const combinedYouTubeScope = [
@@ -46,6 +59,45 @@ describe('Pipeline Mode', () => {
         const center = ctx.getImageData(Math.floor(image.width / 2), Math.floor(image.height * 0.42), 1, 1).data;
 
         expect(center[0] + center[1] + center[2], 'background image center brightness').to.be.greaterThan(120);
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
+
+  function expectPreviewBrightSpotNear(previewImage, expectedXRatio, expectedYRatio) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        const canvas = win.document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        const data = ctx.getImageData(0, 0, image.width, image.height).data;
+        let totalBrightness = 0;
+        let weightedX = 0;
+        let weightedY = 0;
+
+        for (let y = 0; y < image.height; y += 1) {
+          for (let x = 0; x < image.width; x += 1) {
+            const index = (y * image.width + x) * 4;
+            const brightness = Math.max(0, data[index] + data[index + 1] + data[index + 2] - 72);
+            if (brightness > 0) {
+              totalBrightness += brightness;
+              weightedX += x * brightness;
+              weightedY += y * brightness;
+            }
+          }
+        }
+
+        expect(totalBrightness, 'decoded preview brightness').to.be.greaterThan(1000);
+        const centerXRatio = weightedX / totalBrightness / image.width;
+        const centerYRatio = weightedY / totalBrightness / image.height;
+        expect(centerXRatio, 'preview visual x center').to.be.closeTo(expectedXRatio, 0.08);
+        expect(centerYRatio, 'preview visual y center').to.be.closeTo(expectedYRatio, 0.08);
         resolve();
       };
       image.onerror = reject;
@@ -282,8 +334,12 @@ describe('Pipeline Mode', () => {
       cy.contains('label', 'Preset').find('select').then(($select) => {
         const labels = [...$select[0].options].map((option) => option.textContent);
         const values = [...$select[0].options].map((option) => option.value);
-        expect(labels).to.deep.equal(['Cypress Bars', 'Cypress Waveform']);
-        expect(values).to.deep.equal(['preset:preset-cypress-bars', 'preset:preset-cypress-waveform']);
+        expect(labels).to.deep.equal(['Cypress Bars', 'Cypress Waveform', 'Cypress Offset Circular']);
+        expect(values).to.deep.equal([
+          'preset:preset-cypress-bars',
+          'preset:preset-cypress-waveform',
+          'preset:preset-cypress-offset-circular',
+        ]);
       });
       cy.get('.pipeline-publish-at').should('be.disabled');
       cy.get('.pipeline-relative-days').should('not.be.disabled').and('have.value', '2');
@@ -479,6 +535,28 @@ describe('Pipeline Mode', () => {
       })
       .then(($trigger) => {
         expectPreviewContainsBrightCenter($trigger[0].style.getPropertyValue('--pipeline-preview-image'));
+      });
+  });
+
+  it('applies preset visualization offsets to generated tooltip previews', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'custom',
+          name: 'Offset tooltip preview',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-offset-circular',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .then(($trigger) => {
+        expectPreviewBrightSpotNear($trigger[0].style.getPropertyValue('--pipeline-preview-image'), 0.63, 0.39);
       });
   });
 
