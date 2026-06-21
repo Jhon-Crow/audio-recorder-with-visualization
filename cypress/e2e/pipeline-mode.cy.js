@@ -237,7 +237,8 @@ describe('Pipeline Mode', () => {
       .and('contain.text', 'Pre-save short')
       .and('contain.text', 'Visualization + update')
       .invoke('text')
-      .should('match', /-\d+ min/);
+      .should('match', /\d{4}-\d{2}-\d{2}/)
+      .and('match', /\(-\d+[dhm]( \d+[hm])*\)/);
     cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1)
       .should('contain.text', 'Release')
       .and('contain.text', 'Visualization + update')
