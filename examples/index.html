@@ -11,7 +11,7 @@
   <aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">
     <button type="button" class="preset-icon-btn" id="savePresetBtn" data-tooltip="Save preset" aria-label="Save preset">💾</button>
     <div class="preset-list" id="presetList" aria-label="Saved presets"></div>
-    <button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Preset settings" aria-label="Preset settings">⚙️</button>
+    <button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>
   </aside>
   <aside class="pipeline-sidebar" id="pipelineSidebar" aria-label="Pipeline sidebar">
     <button type="button" class="preset-icon-btn" id="savePipelineBtn" data-tooltip="Save pipeline" aria-label="Save pipeline">💾</button>
@@ -1025,13 +1025,35 @@
 
   <div class="modal-overlay" id="presetSettingsModal" aria-hidden="true">
     <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetSettingsTitle">
-      <h2 id="presetSettingsTitle">Preset Settings</h2>
+      <h2 id="presetSettingsTitle">Settings</h2>
       <label>
         Preset Save Path
         <div class="folder-row">
           <input type="text" id="presetSettingsPathInput" readonly>
           <button type="button" class="btn-secondary compact-btn" id="presetSettingsChooseFolderBtn">Choose</button>
         </div>
+      </label>
+      <label data-tooltip="OAuth 2.0 Client ID from Google Cloud Console with YouTube Data API v3 enabled">
+        Google OAuth Client ID
+        <input type="text" id="settingsYoutubeClientId" autocomplete="off" spellcheck="false" aria-label="Google OAuth client ID (settings)">
+      </label>
+      <label data-tooltip="Optional client secret from a Google Desktop app OAuth client. Leave blank when using a Web application client in browser mode.">
+        Google Desktop Client Secret
+        <input type="password" id="settingsYoutubeClientSecret" autocomplete="off" spellcheck="false" aria-label="Google desktop OAuth client secret (settings)">
+      </label>
+      <label data-tooltip="Default timezone for scheduling YouTube uploads. Applies to both single video uploads and the pipeline.">
+        Upload Timezone
+        <select id="settingsUploadTimezone" aria-label="Default YouTube upload timezone">
+          <option value="">Browser timezone</option>
+          <option value="UTC">UTC</option>
+          <option value="Europe/Moscow">Europe/Moscow</option>
+          <option value="America/New_York">America/New_York</option>
+          <option value="America/Chicago">America/Chicago</option>
+          <option value="America/Denver">America/Denver</option>
+          <option value="America/Los_Angeles">America/Los_Angeles</option>
+          <option value="Asia/Yekaterinburg">Asia/Yekaterinburg</option>
+          <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+        </select>
       </label>
       <div class="modal-actions">
         <button type="button" class="btn-primary compact-btn" id="presetSettingsCloseBtn">Done</button>

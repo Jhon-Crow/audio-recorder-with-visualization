@@ -700,4 +700,58 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeUploadModal').should('be.visible');
     cy.get('#youtubeDescription').should('have.value', 'Rendered from Cypress');
   });
+
+  it('shows Google account and timezone fields in the Settings modal', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+
+    cy.get('#presetSettingsBtn').click();
+
+    cy.get('#presetSettingsModal').should('be.visible');
+    cy.get('#settingsYoutubeClientId').should('exist').and('be.visible');
+    cy.get('#settingsYoutubeClientSecret').should('exist').and('be.visible');
+    cy.get('#settingsUploadTimezone').should('exist').and('be.visible');
+    cy.get('#settingsUploadTimezone option[value=""]').should('contain.text', 'Browser timezone');
+    cy.get('#settingsUploadTimezone option[value="UTC"]').should('exist');
+    cy.get('#settingsUploadTimezone option[value="Europe/Moscow"]').should('exist');
+  });
+
+  it('saves OAuth client ID entered in Settings to the auth modal', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+
+    cy.get('#presetSettingsBtn').click();
+    cy.get('#settingsYoutubeClientId').type('123-settings-test.apps.googleusercontent.com');
+    cy.get('#presetSettingsCloseBtn').click();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeAuthModal').should('be.visible');
+    cy.get('#youtubeClientId').should('have.value', '123-settings-test.apps.googleusercontent.com');
+  });
+
+  it('saves the Settings timezone and pre-selects it in the upload modal', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    cy.get('#presetSettingsBtn').click();
+    cy.get('#settingsUploadTimezone').select('Europe/Moscow');
+    cy.get('#presetSettingsCloseBtn').click();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTimezone').should('have.value', 'Europe/Moscow');
+  });
 });

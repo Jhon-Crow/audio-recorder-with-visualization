@@ -41,6 +41,10 @@
   const signInSettingsBtn = document.getElementById('youtubeSignInSettingsBtn');
   const authStatus = document.getElementById('youtubeAuthStatus');
 
+  const settingsClientIdInput = document.getElementById('settingsYoutubeClientId');
+  const settingsClientSecretInput = document.getElementById('settingsYoutubeClientSecret');
+  const settingsTimezoneSelect = document.getElementById('settingsUploadTimezone');
+
   const uploadModal = document.getElementById('youtubeUploadModal');
   const closeUploadBtn = document.getElementById('closeYouTubeUploadBtn');
   const uploadForm = document.getElementById('youtubeUploadForm');
@@ -89,6 +93,36 @@
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   restoreStoredTokenState();
+
+  if (settingsClientIdInput) {
+    settingsClientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+    settingsClientIdInput.addEventListener('input', () => {
+      clientIdInput.value = settingsClientIdInput.value;
+      localStorage.setItem(CLIENT_ID_KEY, settingsClientIdInput.value.trim());
+    });
+  }
+
+  if (settingsClientSecretInput) {
+    settingsClientSecretInput.addEventListener('input', () => {
+      clientSecretInput.value = settingsClientSecretInput.value;
+    });
+  }
+
+  if (settingsTimezoneSelect) {
+    const savedTimezone = localStorage.getItem(TIMEZONE_KEY) || '';
+    if (savedTimezone && !Array.from(settingsTimezoneSelect.options).some(opt => opt.value === savedTimezone)) {
+      const opt = document.createElement('option');
+      opt.value = savedTimezone;
+      opt.textContent = savedTimezone;
+      settingsTimezoneSelect.insertBefore(opt, settingsTimezoneSelect.firstChild);
+    }
+    settingsTimezoneSelect.value = savedTimezone;
+    settingsTimezoneSelect.addEventListener('change', () => {
+      const tz = settingsTimezoneSelect.value;
+      localStorage.setItem(TIMEZONE_KEY, tz);
+      timezoneSelect.value = tz;
+    });
+  }
 
   function showModal(modal) {
     modal.style.display = 'flex';
@@ -665,7 +699,13 @@
   }
 
   function openAuthModal() {
+    if (settingsClientIdInput && settingsClientIdInput.value.trim()) {
+      clientIdInput.value = settingsClientIdInput.value;
+    }
     updateAuthModeFields();
+    if (settingsClientSecretInput && settingsClientSecretInput.value && !clientSecretInput.value) {
+      clientSecretInput.value = settingsClientSecretInput.value;
+    }
     updateAuthSettingsStatus();
     authorizeBtn.textContent = 'Sign in with Google';
     showModal(authModal);
@@ -1045,4 +1085,22 @@
       closeAuthModal();
     }
   });
+
+  clientIdInput.addEventListener('input', () => {
+    if (settingsClientIdInput) {
+      settingsClientIdInput.value = clientIdInput.value;
+    }
+    localStorage.setItem(CLIENT_ID_KEY, clientIdInput.value.trim());
+  });
+
+  const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  if (presetSettingsBtn && settingsClientIdInput) {
+    presetSettingsBtn.addEventListener('click', () => {
+      settingsClientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+      if (settingsTimezoneSelect) {
+        const savedTz = localStorage.getItem(TIMEZONE_KEY) || '';
+        settingsTimezoneSelect.value = savedTz;
+      }
+    });
+  }
 })();
