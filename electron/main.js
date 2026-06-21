@@ -878,6 +878,42 @@ ipcMain.handle('preset-load-files', async (event, folderPath) => {
   }
 });
 
+ipcMain.handle('preset-update-file', async (event, filePath, preset) => {
+  try {
+    if (!filePath) {
+      return { success: false, error: 'No file path provided' };
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'Preset file not found' };
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(preset, null, 2), 'utf8');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating preset file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('preset-delete-file', async (event, filePath) => {
+  try {
+    if (!filePath) {
+      return { success: false, error: 'No file path provided' };
+    }
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting preset file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ==================== PRESENTATION MODE IPC HANDLERS ====================
 
 // Start/toggle presentation mode

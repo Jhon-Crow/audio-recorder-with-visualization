@@ -367,6 +367,12 @@ body {
   font-size: 1.2rem;
 }
 
+.modal-message {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
 .preset-modal label {
   display: flex;
   flex-direction: column;
