@@ -1,5 +1,8 @@
 name: Build Portable EXE
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]
@@ -23,8 +26,47 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Cache Electron runtime downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-runtime-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-runtime-${{ runner.os }}-
+
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            if ($attempt -eq 1) {
+              Remove-Item Env:ELECTRON_MIRROR -ErrorAction SilentlyContinue
+              Write-Host "Using the default Electron download source"
+            } else {
+              $env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+              Write-Host "Using Electron mirror fallback: $env:ELECTRON_MIRROR"
+            }
+
+            Write-Host "npm ci attempt $attempt of $maxAttempts"
+            npm ci
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            $exitCode = $LASTEXITCODE
+            if ($attempt -eq $maxAttempts) {
+              exit $exitCode
+            }
+
+            Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            if (Test-Path node_modules) {
+              Remove-Item node_modules -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            Start-Sleep -Seconds (20 * $attempt)
+          }
 
       - name: Run tests
         run: npm test
@@ -33,7 +75,44 @@ jobs:
         run: npm run build
 
       - name: Build portable EXE
-        run: npm run electron:build
+        shell: pwsh
+        run: |
+          $electronBinary = node -p "require('electron')"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          if (-not (Test-Path $electronBinary)) {
+            throw "Installed Electron binary was not found at $electronBinary"
+          }
+
+          $electronDist = Split-Path -Parent $electronBinary
+          $electronExe = Join-Path $electronDist 'electron.exe'
+          if (-not (Test-Path $electronExe)) {
+            throw "Installed Windows Electron runtime was not found at $electronExe"
+          }
+
+          Write-Host "Using installed Electron runtime from $electronDist"
+
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            if (Test-Path electron-dist) {
+              Remove-Item electron-dist -Recurse -Force
+            }
+
+            Write-Host "electron-builder attempt $attempt of $maxAttempts"
+            npx electron-builder --win portable "-c.electronDist=$electronDist"
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            $exitCode = $LASTEXITCODE
+            if ($attempt -eq $maxAttempts) {
+              exit $exitCode
+            }
+
+            Start-Sleep -Seconds (15 * $attempt)
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

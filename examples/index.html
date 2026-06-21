@@ -4,918 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Audio Recorder with Visualization</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    :root {
-      /* Modern color palette with better contrast */
-      --color-primary: #00ff88;
-      --color-primary-dark: #00cc6a;
-      --color-secondary: #0088ff;
-      --color-secondary-dark: #0066cc;
-      --color-danger: #ff4444;
-      --color-danger-dark: #cc0000;
-      --color-warning: #ffaa00;
-      --color-success: #00ff88;
-
-      /* Neutral colors */
-      --color-bg-primary: #0a0e27;
-      --color-bg-secondary: #16213e;
-      --color-bg-tertiary: #1a1a2e;
-      --color-surface: rgba(255, 255, 255, 0.05);
-      --color-surface-hover: rgba(255, 255, 255, 0.08);
-      --color-border: rgba(255, 255, 255, 0.1);
-      --color-text-primary: #ffffff;
-      --color-text-secondary: rgba(255, 255, 255, 0.7);
-      --color-text-muted: rgba(255, 255, 255, 0.5);
-
-      /* Shadows */
-      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-      --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.3);
-
-      /* Spacing */
-      --spacing-xs: 4px;
-      --spacing-sm: 8px;
-      --spacing-md: 16px;
-      --spacing-lg: 24px;
-      --spacing-xl: 32px;
-
-      /* Border radius */
-      --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --radius-xl: 16px;
-
-      /* Transitions */
-      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, 'Helvetica Neue', sans-serif;
-      background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 100%);
-      background-attachment: fixed;
-      color: var(--color-text-primary);
-      min-height: 100vh;
-      padding: var(--spacing-lg);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      animation: fadeIn var(--transition-slow) ease-out;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: var(--spacing-xl);
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.5px;
-      animation: slideDown var(--transition-slow) ease-out;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .canvas-container {
-      display: flex;
-      justify-content: center;
-      margin-bottom: var(--spacing-lg);
-      position: relative;
-      animation: scaleIn var(--transition-slow) ease-out 0.1s both;
-    }
-
-    @keyframes scaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    #visualizer {
-      border: 2px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      background: #000;
-      box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 136, 255, 0.1);
-      transition: box-shadow var(--transition-base), transform var(--transition-base);
-      max-width: 100%;
-      width: 100%;
-      height: auto;
-      /* Limit display size while keeping full HD recording quality */
-      max-height: 60vh;
-      object-fit: contain;
-      /* Ensure smooth high-quality scaling when canvas is displayed smaller than its resolution */
-      image-rendering: auto;
-      image-rendering: smooth; /* Modern browsers - uses bicubic interpolation */
-      image-rendering: high-quality; /* Firefox */
-    }
-
-    #visualizer:hover {
-      box-shadow: var(--shadow-lg), var(--shadow-glow);
-      transform: translateY(-2px);
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--spacing-md);
-      justify-content: center;
-      margin-bottom: var(--spacing-lg);
-      animation: fadeIn var(--transition-slow) ease-out 0.2s both;
-    }
-
-    button {
-      padding: 14px 28px;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition-base);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--spacing-sm);
-      position: relative;
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      letter-spacing: 0.3px;
-      min-width: 140px;
-    }
-
-    button::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      transform: translate(-50%, -50%);
-      transition: width var(--transition-slow), height var(--transition-slow);
-    }
-
-    button:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-
-    button:active {
-      transform: scale(0.97);
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none !important;
-      filter: grayscale(0.3);
-    }
-
-    button:focus-visible {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 2px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-      color: #000;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      box-shadow: 0 4px 16px rgba(0, 255, 136, 0.4);
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, var(--color-danger), var(--color-danger-dark));
-      color: #fff;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      box-shadow: 0 4px 16px rgba(255, 68, 68, 0.4);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #555, #333);
-      color: #fff;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: linear-gradient(135deg, #666, #444);
-    }
-
-    .btn-info {
-      background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-dark));
-      color: #fff;
-    }
-
-    .btn-info:hover:not(:disabled) {
-      box-shadow: 0 4px 16px rgba(0, 136, 255, 0.4);
-    }
-
-    .options {
-      background: var(--color-surface);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: var(--spacing-lg);
-      border-radius: var(--radius-lg);
-      margin-bottom: var(--spacing-lg);
-      border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-md);
-      animation: fadeIn var(--transition-slow) ease-out 0.3s both;
-    }
-
-    .options h3 {
-      margin: 0 0 var(--spacing-lg) 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--color-text-primary);
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-
-    .option-group {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--spacing-md);
-      margin-bottom: var(--spacing-md);
-    }
-
-    .option-group label {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-sm);
-      color: var(--color-text-secondary);
-      font-size: 14px;
-      font-weight: 500;
-      transition: color var(--transition-fast);
-    }
-
-    .option-group label:hover {
-      color: var(--color-text-primary);
-    }
-
-    .option-group select,
-    .option-group input[type="color"],
-    .option-group input[type="file"],
-    .option-group input[type="range"] {
-      padding: 10px 12px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: rgba(0, 0, 0, 0.3);
-      color: var(--color-text-primary);
-      min-width: 150px;
-      font-size: 14px;
-      transition: all var(--transition-fast);
-    }
-
-    .option-group select:hover,
-    .option-group input[type="file"]:hover {
-      background: rgba(0, 0, 0, 0.4);
-      border-color: var(--color-primary);
-    }
-
-    .option-group select:focus,
-    .option-group input[type="file"]:focus {
-      outline: none;
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
-    }
-
-    .option-group input[type="color"] {
-      height: 44px;
-      cursor: pointer;
-      padding: 4px;
-    }
-
-    .option-group input[type="color"]::-webkit-color-swatch-wrapper {
-      padding: 2px;
-    }
-
-    .option-group input[type="color"]::-webkit-color-swatch {
-      border: none;
-      border-radius: var(--radius-sm);
-    }
-
-    .option-group input[type="range"] {
-      padding: 0;
-      height: 6px;
-      -webkit-appearance: none;
-      appearance: none;
-      background: linear-gradient(to right, var(--color-primary) 0%, var(--color-secondary) 100%);
-      border-radius: 3px;
-      cursor: pointer;
-    }
-
-    .option-group input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      background: #fff;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      transition: transform var(--transition-fast);
-    }
-
-    .option-group input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-    }
-
-    .option-group input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      background: #fff;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      transition: transform var(--transition-fast);
-    }
-
-    .option-group input[type="range"]::-moz-range-thumb:hover {
-      transform: scale(1.2);
-    }
-
-    .option-group input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      accent-color: var(--color-primary);
-    }
-
-    .status {
-      text-align: center;
-      padding: var(--spacing-md);
-      border-radius: var(--radius-md);
-      margin-bottom: var(--spacing-lg);
-      font-weight: 500;
-      font-size: 15px;
-      transition: all var(--transition-base);
-      animation: fadeIn var(--transition-slow) ease-out 0.15s both;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--spacing-sm);
-    }
-
-    .status::before {
-      content: '';
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.6;
-        transform: scale(1.1);
-      }
-    }
-
-    .status.recording {
-      background: rgba(255, 68, 68, 0.15);
-      border: 1px solid var(--color-danger);
-      color: #ff6666;
-    }
-
-    .status.recording::before {
-      background: var(--color-danger);
-    }
-
-    .status.ready {
-      background: rgba(0, 255, 136, 0.15);
-      border: 1px solid var(--color-primary);
-      color: var(--color-primary);
-    }
-
-    .status.ready::before {
-      background: var(--color-primary);
-    }
-
-    .status.error {
-      background: rgba(255, 68, 68, 0.2);
-      border: 1px solid var(--color-danger);
-      color: #ff8888;
-    }
-
-    .status.error::before {
-      background: var(--color-danger);
-      animation: none;
-    }
-
-    .recordings {
-      margin-top: var(--spacing-xl);
-      animation: fadeIn var(--transition-slow) ease-out 0.4s both;
-    }
-
-    .recordings h3 {
-      margin-bottom: var(--spacing-lg);
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--color-text-primary);
-    }
-
-    .recording-item {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-lg);
-      background: var(--color-surface);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: var(--spacing-lg);
-      border-radius: var(--radius-lg);
-      margin-bottom: var(--spacing-md);
-      border: 1px solid var(--color-border);
-      transition: all var(--transition-base);
-      animation: slideInUp var(--transition-slow) ease-out;
-    }
-
-    @keyframes slideInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .recording-item:hover {
-      background: var(--color-surface-hover);
-      border-color: var(--color-primary);
-      box-shadow: var(--shadow-md);
-      transform: translateX(4px);
-    }
-
-    .recording-item video {
-      max-width: 240px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: all var(--transition-base);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .recording-item video:hover {
-      box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
-      transform: scale(1.05);
-    }
-
-    .recording-item a {
-      color: var(--color-primary);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color var(--transition-fast);
-      display: inline-flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-    }
-
-    .recording-item a:hover {
-      color: var(--color-primary-dark);
-      text-decoration: underline;
-    }
-
-    .recording-item p {
-      margin: var(--spacing-xs) 0;
-      color: var(--color-text-secondary);
-      font-size: 14px;
-    }
-
-    .tab-container {
-      margin-bottom: var(--spacing-lg);
-      animation: fadeIn var(--transition-slow) ease-out 0.25s both;
-    }
-
-    .tabs {
-      display: flex;
-      gap: var(--spacing-xs);
-      margin-bottom: var(--spacing-md);
-      border-bottom: 2px solid var(--color-border);
-    }
-
-    .tab {
-      padding: 12px 24px;
-      background: transparent;
-      border: none;
-      border-radius: var(--radius-md) var(--radius-md) 0 0;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 600;
-      transition: all var(--transition-fast);
-      position: relative;
-    }
-
-    .tab::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: var(--color-primary);
-      transform: scaleX(0);
-      transition: transform var(--transition-base);
-    }
-
-    .tab:hover {
-      background: var(--color-surface);
-      color: var(--color-text-primary);
-    }
-
-    .tab.active {
-      background: var(--color-surface);
-      color: var(--color-primary);
-    }
-
-    .tab.active::after {
-      transform: scaleX(1);
-    }
-
-    .tab-content {
-      display: none;
-      background: var(--color-surface);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: var(--spacing-lg);
-      border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
-      border: 1px solid var(--color-border);
-      animation: fadeIn var(--transition-base) ease-out;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      margin-top: var(--spacing-md);
-      position: relative;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-      width: 0%;
-      transition: width var(--transition-base) ease-out;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-      );
-      animation: shimmer 2s infinite;
-    }
-
-    @keyframes shimmer {
-      0% {
-        transform: translateX(-100%);
-      }
-      100% {
-        transform: translateX(100%);
-      }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      body {
-        padding: var(--spacing-md);
-      }
-
-      h1 {
-        font-size: 2rem;
-        margin-bottom: var(--spacing-lg);
-      }
-
-      .controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      button {
-        width: 100%;
-      }
-
-      .option-group {
-        grid-template-columns: 1fr;
-      }
-
-      .recording-item {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .recording-item video {
-        max-width: 100%;
-      }
-
-      .tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .tab {
-        white-space: nowrap;
-      }
-    }
-
-    /* Loading Spinner */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: var(--color-primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Tooltip */
-    [data-tooltip] {
-      position: relative;
-      cursor: help;
-    }
-
-    [data-tooltip]::before {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%) translateY(-8px);
-      padding: var(--spacing-sm) var(--spacing-md);
-      background: rgba(0, 0, 0, 0.9);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-      border-radius: var(--radius-sm);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity var(--transition-fast);
-      z-index: 1000;
-    }
-
-    [data-tooltip]:hover::before {
-      opacity: 1;
-    }
-
-    /* Focus visible for accessibility */
-    *:focus-visible {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 2px;
-    }
-
-    /* Smooth scrolling */
-    html {
-      scroll-behavior: smooth;
-    }
-
-    /* Selection styling */
-    ::selection {
-      background: var(--color-primary);
-      color: #000;
-    }
-
-    ::-moz-selection {
-      background: var(--color-primary);
-      color: #000;
-    }
-    /* Modal styles */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
-      background: var(--color-bg-secondary);
-      border-radius: var(--radius-lg);
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow: auto;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--color-border);
-    }
-
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      color: var(--color-text-primary);
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--color-text-primary);
-      font-size: 28px;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .modal-body {
-      padding: 20px;
-    }
-
-    .cropper-container {
-      position: relative;
-      width: 100%;
-      height: 400px;
-      background: #000;
-      border-radius: 4px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #cropperCanvas {
-      position: absolute;
-      max-width: 100%;
-      max-height: 100%;
-    }
-
-    .cropper-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: rgba(0, 0, 0, 0.5);
-    }
-
-    .cropper-circle {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: 2px solid var(--color-primary);
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.3);
-      pointer-events: none;
-    }
-
-    .cropper-controls {
-      margin-top: 20px;
-    }
-
-    .cropper-controls label {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .cropper-controls input[type="range"] {
-      width: 100%;
-    }
-
-    .modal-footer {
-      padding: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    /* Modal-specific button styles - use existing CSS variables */
-    .modal .btn {
-      padding: 10px 20px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      color: var(--color-text-primary);
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all var(--transition-fast);
-    }
-
-    .modal .btn:hover {
-      background: var(--color-surface-hover);
-      border-color: var(--color-primary);
-    }
-
-    .modal .btn-primary {
-      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-      color: #000;
-      border: none;
-    }
-
-    .modal .btn-primary:hover {
-      opacity: 0.9;
-      box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="preset-edge-trigger" id="presetEdgeTrigger" aria-hidden="true"></div>
+  <aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">
+    <button type="button" class="preset-icon-btn" id="savePresetBtn" data-tooltip="Save preset" aria-label="Save preset">💾</button>
+    <div class="preset-list" id="presetList" aria-label="Saved presets"></div>
+    <button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>
+  </aside>
+  <aside class="pipeline-sidebar" id="pipelineSidebar" aria-label="Pipeline sidebar">
+    <button type="button" class="preset-icon-btn" id="savePipelineBtn" data-tooltip="Save pipeline" aria-label="Save pipeline">💾</button>
+    <div class="pipeline-list" id="pipelineList" aria-label="Saved pipelines"></div>
+    <button type="button" class="preset-icon-btn preset-settings-btn" id="pipelineSettingsBtn" data-tooltip="Pipeline settings" aria-label="Pipeline settings">⚙️</button>
+  </aside>
+  <nav id="pipelineStageNav" class="pipeline-stage-nav" aria-label="Pipeline stage navigation"></nav>
+  <div class="preset-context-menu" id="presetContextMenu" role="menu" aria-hidden="true">
+    <button type="button" id="presetRenameBtn" role="menuitem">Rename</button>
+    <button type="button" id="presetDeleteBtn" role="menuitem">Delete</button>
+  </div>
+  <div class="preset-context-menu" id="pipelineContextMenu" role="menu" aria-hidden="true">
+    <button type="button" id="pipelineRenameBtn" role="menuitem">Rename</button>
+    <button type="button" id="pipelineDeleteSavedBtn" role="menuitem">Delete</button>
+  </div>
+
   <div class="container">
     <h1>Audio Recorder with Visualization</h1>
 
     <div class="canvas-container">
-      <canvas id="visualizer" width="1920" height="1080"></canvas>
+      <div class="preview-stage" id="previewStage" aria-label="Preview mounting area">
+        <canvas id="visualizer" width="1920" height="1080"></canvas>
+        <div class="preview-overlay" id="previewOverlay" aria-hidden="true">
+          <div class="alignment-grid"></div>
+          <div class="smart-guide smart-guide-v" data-guide="vertical-center"></div>
+          <div class="smart-guide smart-guide-h" data-guide="horizontal-center"></div>
+          <div class="smart-guide smart-guide-v grid-guide" data-guide="vertical-grid"></div>
+          <div class="smart-guide smart-guide-h grid-guide" data-guide="horizontal-grid"></div>
+        </div>
+      </div>
     </div>
 
     <div id="status" class="status ready">Ready - Click "Start Microphone" to begin</div>
@@ -924,6 +50,8 @@
       <div class="tabs">
         <button class="tab active" data-tab="microphone">Microphone Recording</button>
         <button class="tab" data-tab="convert">Audio to Video</button>
+        <button class="tab" data-tab="presentation" id="presentationTab">Presentation Mode</button>
+        <button class="tab" data-tab="pipeline" id="pipelineTab">Pipeline</button>
       </div>
 
       <div id="microphone" class="tab-content active">
@@ -947,7 +75,7 @@
         <div class="option-group">
           <label>
             Audio File
-            <input type="file" id="audioFile" accept="audio/*" aria-label="Select audio file to convert">
+            <input type="file" id="audioFile" accept="audio/*" multiple aria-label="Select audio files to convert">
           </label>
           <label>
             Video Quality
@@ -958,20 +86,128 @@
               <option value="2160p">4K 2160p (3840x2160)</option>
             </select>
           </label>
-          <label style="flex-direction: row; align-items: center;" data-tooltip="Render video without playing audio in real-time (muted, faster for long files)">
-            <input type="checkbox" id="offlineRender" aria-label="Enable offline rendering"> Offline Render (No Audio Playback)
+          <label>
+            Aspect Ratio
+            <select id="aspectRatio" aria-label="Select video aspect ratio">
+              <option value="16:9" selected>16:9 Landscape</option>
+              <option value="9:16">9:16 Shorts / Vertical</option>
+              <option value="1:1">1:1 Square</option>
+              <option value="4:5">4:5 Portrait</option>
+              <option value="4:3">4:3 Classic</option>
+              <option value="21:9">21:9 Ultrawide</option>
+            </select>
+          </label>
+          <div class="dimension-summary" id="videoDimensions" aria-live="polite">1920 x 1080</div>
+          <label>
+            Video Format
+            <select id="videoFormat" aria-label="Select video format">
+              <option value="webm" selected>WebM (VP9/VP8)</option>
+              <option value="mp4">MP4 (H.264)</option>
+            </select>
+          </label>
+          <label style="flex-direction: row; align-items: center;" data-tooltip="Render video without playing audio in real-time — faster for long files, works in minimized window">
+            <input type="checkbox" id="offlineRender" aria-label="Enable offline rendering"> Offline Render
           </label>
         </div>
         <div class="controls">
-          <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio file to video with visualization" aria-label="Convert audio to video">
+          <button id="previewBtn" class="btn-primary" disabled data-tooltip="Preview audio with live visualization (loop mode for adjusting settings)" aria-label="Preview audio with visualization">
+            <span>Preview</span>
+          </button>
+          <button id="stopPreviewBtn" class="btn-secondary" style="display: none;" data-tooltip="Stop preview playback" aria-label="Stop preview">
+            <span>Stop Preview</span>
+          </button>
+          <button id="convertBtn" class="btn-info" disabled data-tooltip="Convert selected audio files to separate videos with the current visualization settings" aria-label="Convert audio to video">
             <span>Convert to Video</span>
           </button>
           <button id="cancelConvertBtn" class="btn-danger" style="display: none;" data-tooltip="Cancel video conversion" aria-label="Cancel conversion">
             <span>Cancel Conversion</span>
           </button>
         </div>
+        <div class="option-group" style="margin-top: var(--spacing-md);">
+          <label style="flex-direction: row; align-items: center;" data-tooltip="When enabled, audio will loop continuously during preview so you can adjust visualization settings in real-time.">
+            <input type="checkbox" id="loopPreview" checked aria-label="Loop preview playback"> Loop Preview
+          </label>
+        </div>
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
+          Use Preview to test visualization settings with your audio file. Changes to settings will be reflected in real-time.
+        </p>
         <div class="progress-bar" style="display: none;" role="progressbar" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div id="presentation" class="tab-content">
+        <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-md); font-size: 14px;">
+          Presentation mode shows visualization in a separate transparent overlay window - perfect for streaming or presenting.
+          <span id="presentationElectronOnly" style="color: var(--color-warning);">(Requires Electron app)</span>
+        </p>
+        <div class="controls" style="margin-bottom: var(--spacing-lg);">
+          <button id="togglePresentationBtn" class="btn-primary" data-tooltip="Toggle presentation mode on/off" aria-label="Toggle presentation mode">
+            <span id="togglePresentationBtnText">Start Presentation</span>
+          </button>
+        </div>
+        <div class="option-group">
+          <label>
+            Window Mode
+            <select id="presentationWindowMode" aria-label="Select presentation window mode">
+              <option value="normal">Normal</option>
+              <option value="alwaysOnBottom">Always on Bottom</option>
+              <option value="alwaysOnTop" selected>Always on Top</option>
+            </select>
+          </label>
+          <label>
+            Window Type
+            <select id="presentationWindowType" aria-label="Select presentation window type">
+              <option value="frameless" selected>Frameless (Custom Size)</option>
+              <option value="fullscreen">Fullscreen</option>
+            </select>
+          </label>
+        </div>
+        <div class="option-group" id="presentationSizeControls">
+          <label>
+            Window Width (px)
+            <input type="number" id="presentationWidth" min="200" max="3840" value="800" aria-label="Presentation window width">
+          </label>
+          <label>
+            Window Height (px)
+            <input type="number" id="presentationHeight" min="200" max="2160" value="600" aria-label="Presentation window height">
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            Background Opacity
+            <input type="range" id="presentationBgOpacity" min="0" max="1" step="0.01" value="0" aria-label="Presentation background opacity">
+            <span id="presentationBgOpacityValue">0% (Transparent)</span>
+          </label>
+          <label>
+            Visualization Opacity
+            <input type="range" id="presentationVisualizationOpacity" min="0" max="1" step="0.01" value="1" aria-label="Presentation visualization opacity">
+            <span id="presentationVisualizationOpacityValue">100%</span>
+          </label>
+        </div>
+        <div class="option-group">
+          <label style="flex-direction: row; align-items: center;">
+            <input type="checkbox" id="presentationClickThrough" checked aria-label="Enable click-through"> Click-Through (Mouse passes through window)
+          </label>
+        </div>
+        <p style="color: var(--color-text-muted); margin-top: var(--spacing-md); font-size: 12px;">
+          <strong>Keyboard Shortcuts:</strong><br>
+          Alt+Q - Close presentation window<br>
+          Alt+F4 - Blocked (won't close presentation)
+        </p>
+      </div>
+
+      <div id="pipeline" class="tab-content">
+        <div class="pipeline-toolbar">
+          <button type="button" id="resetPipelineFieldsBtn" class="btn-secondary" style="display: none;">Reset Fields</button>
+          <button type="button" id="runPipelineBtn" class="btn-primary" disabled>RUN</button>
+          <button type="button" id="addPipelineStageBtn" class="btn-primary">+</button>
+          <button type="button" id="clearPipelineBtn" class="btn-secondary">Clear</button>
+          <button type="button" id="pipelineTimezoneBtn" class="btn-info">Timezone: Set timezone</button>
+        </div>
+        <p id="pipelineValidationStatus" class="pipeline-validation-status" aria-live="polite"></p>
+        <div class="pipeline-workspace">
+          <div id="pipelineStages" class="pipeline-stages" aria-live="polite"></div>
         </div>
       </div>
     </div>
@@ -980,157 +216,655 @@
       <h3>
         <span aria-label="Settings icon">⚙️</span> Visualization Options
       </h3>
-      <div class="option-group">
+
+      <div class="settings-columns">
+        <!-- Left Column: Visualizer, Colors, Animation -->
+        <div class="settings-column">
+
+          <!-- Visualizer Section -->
+          <div class="settings-section" data-section="visualizer">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">📊</span>
+                <span>Visualizer</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <label data-tooltip="Choose the animation style for your audio visualization. Each type reacts differently to sound frequencies.">
+                Visualizer Type
+                <select id="visualizerSelect" aria-label="Select visualizer type">
+                  <option value="bars">Bars - Spectrum Analyzer</option>
+                  <option value="waveform">Waveform - Oscilloscope</option>
+                  <option value="circular">Circular - Radial Spectrum</option>
+                  <option value="particles">Particles - Audio-Reactive</option>
+                  <option value="spectrum-gradient">Spectrum Gradient - Winamp Style</option>
+                  <option value="glow-waveform">Glow Waveform - Modern Effect</option>
+                  <option value="vu-meter">VU Meter - Professional Style</option>
+                  <option value="spectrogram">Spectrogram - Frequency Waterfall</option>
+                  <option value="spiral-waveform">Spiral Waveform - Rotating Pattern</option>
+                  <option value="radial-bars">Radial Bars - Circular Analyzer</option>
+                  <option value="frequency-rings">Frequency Rings - Concentric Pulses</option>
+                </select>
+              </label>
+              <label data-tooltip="Number of frequency bars displayed in bar-based visualizers (16-256). More bars = more detail, fewer bars = smoother look.">
+                Bar Count: <span id="barCountValue">64</span>
+                <input type="range" id="barCount" min="16" max="256" value="64" aria-label="Adjust bar count">
+              </label>
+              <label data-tooltip="Controls what portion of the audio frequency spectrum is shown (10%-100%). Lower values focus on bass frequencies.">
+                Frequency Width: <span id="frequencyWidthValue">100%</span>
+                <input type="range" id="frequencyWidth" min="10" max="100" value="100" aria-label="Adjust frequency width">
+              </label>
+              <label data-tooltip="Controls how responsive the visualization is to audio (0.1x-5.0x). 1.0x = normal sensitivity, higher = more responsive, lower = less responsive.">
+                Sensitivity: <span id="sensitivityValue">1.0x</span>
+                <input type="range" id="sensitivity" min="0.1" max="5.0" step="0.1" value="1.0" aria-label="Adjust sensitivity">
+              </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colors Section -->
+          <div class="settings-section" data-section="colors">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🎨</span>
+                <span>Colors</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <label data-tooltip="Main color used for visualization elements like bars, waveforms, and particles.">
+                Primary Color
+                <input type="color" id="primaryColor" value="#00ff88" aria-label="Select primary color">
+              </label>
+              <label data-tooltip="Accent color used for gradients, highlights, and secondary elements in the visualization.">
+                Secondary Color
+                <input type="color" id="secondaryColor" value="#0088ff" aria-label="Select secondary color">
+              </label>
+              <label style="justify-content: center;">
+                <button type="button" id="swapColorsBtn" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" data-tooltip="Quickly swap primary and secondary colors" aria-label="Swap colors">
+                  ⇄ Swap Colors
+                </button>
+              </label>
+              <label data-tooltip="Canvas background color. Use dark colors for better contrast with bright visualizations.">
+                Background Color
+                <input type="color" id="bgColor" value="#000000" aria-label="Select background color">
+              </label>
+              <label style="flex-direction: row; align-items: center;" data-tooltip="When enabled, visualizers will use your primary/secondary colors instead of their default color schemes.">
+                <input type="checkbox" id="useCustomColors" aria-label="Use custom colors"> Use Custom Colors
+              </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Animation Section (ADSR) -->
+          <div class="settings-section" data-section="animation">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">⚡</span>
+                <span>Animation</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <div class="adsr-accordion" id="adsrAccordion">
+                <div class="adsr-accordion-header" id="adsrAccordionHeader" aria-expanded="false" aria-controls="adsrAccordionContent" data-tooltip="ADSR (Attack, Decay, Sustain, Release) controls how the visualization responds to audio dynamics over time.">
+                  <span class="adsr-accordion-title">
+                    <span>ADSR Envelope</span>
+                    <span style="font-size: 11px; color: var(--color-text-muted);">(Click to expand)</span>
+                  </span>
+                  <span class="adsr-accordion-icon">▼</span>
+                </div>
+                <div class="adsr-accordion-content" id="adsrAccordionContent" role="region">
+                  <div class="adsr-controls">
+                    <div class="adsr-control">
+                      <div class="adsr-control-header">
+                        <span class="adsr-control-label">Attack</span>
+                        <span class="adsr-control-value" id="adsrAttackValue">20%</span>
+                      </div>
+                      <input type="range" id="adsrAttack" min="0" max="100" value="20" aria-label="Adjust attack time" data-tooltip="How quickly the visualization responds to sound onset. 0% = instant response, 100% = slow rise.">
+                      <div class="adsr-control-description">How fast visualization responds to sound (0 = instant)</div>
+                    </div>
+                    <div class="adsr-control">
+                      <div class="adsr-control-header">
+                        <span class="adsr-control-label">Decay</span>
+                        <span class="adsr-control-value" id="adsrDecayValue">30%</span>
+                      </div>
+                      <input type="range" id="adsrDecay" min="0" max="100" value="30" aria-label="Adjust decay time" data-tooltip="How quickly the visualization falls from its peak to the sustain level. 0% = instant drop, 100% = slow decay.">
+                      <div class="adsr-control-description">How fast it falls from peak to sustain level</div>
+                    </div>
+                    <div class="adsr-control">
+                      <div class="adsr-control-header">
+                        <span class="adsr-control-label">Sustain</span>
+                        <span class="adsr-control-value" id="adsrSustainValue">10%</span>
+                      </div>
+                      <input type="range" id="adsrSustain" min="0" max="100" value="10" aria-label="Adjust sustain level" data-tooltip="Minimum level maintained while sound is playing. 0% = no floor, 100% = stays at peak level.">
+                      <div class="adsr-control-description">Minimum level maintained during sound (0 = no floor)</div>
+                    </div>
+                    <div class="adsr-control">
+                      <div class="adsr-control-header">
+                        <span class="adsr-control-label">Release</span>
+                        <span class="adsr-control-value" id="adsrReleaseValue">50%</span>
+                      </div>
+                      <input type="range" id="adsrRelease" min="0" max="100" value="50" aria-label="Adjust release time" data-tooltip="How quickly the visualization fades when sound stops. 0% = instant fade, 100% = long trail effect.">
+                      <div class="adsr-control-description">How fast visualization fades when sound stops</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Enhancement Section -->
+          <div class="settings-section" data-section="audioEnhancement">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🎚️</span>
+                <span>Audio Enhancement</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+                <label style="flex-direction: row; align-items: center;" data-tooltip="Process microphone and converted-file audio before visualization and recording.">
+                  <input type="checkbox" id="audioEnhancementEnabled" aria-label="Enable audio enhancement"> Enable Audio Enhancement
+                </label>
+              </div>
+              <div class="option-group" id="audioEnhancementControls" style="display: none;">
+                <label data-tooltip="Select a short audio file containing only microphone noise or room tone. The app learns that noise spectrum and reduces matching bands before recording or conversion.">
+                  Noise Profile File
+                  <input type="file" id="noiseProfileFile" accept="audio/*" aria-label="Select noise profile audio file">
+                  <span id="noiseProfileFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">No profile loaded</span>
+                </label>
+                <label data-tooltip="Controls the main learned-noise cleanup amount while keeping speech bands conservative.">
+                  Clean Voice: <span id="noiseProfileReductionValue">45%</span>
+                  <input type="range" id="noiseProfileReduction" min="0" max="100" value="45" aria-label="Adjust clean voice amount">
+                </label>
+                <label data-tooltip="Keeps voice frequencies from being over-reduced when the learned noise overlaps speech.">
+                  Voice Protection: <span id="noiseProfileVoiceProtectionValue">85%</span>
+                  <input type="range" id="noiseProfileVoiceProtection" min="0" max="100" value="85" aria-label="Adjust voice protection">
+                </label>
+                <label style="justify-content: flex-end;">
+                  <button type="button" id="clearNoiseProfile" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" disabled data-tooltip="Remove the learned noise profile" aria-label="Clear noise profile">
+                    Clear Noise Profile
+                  </button>
+                </label>
+                <details class="advanced-audio-controls">
+                  <summary>Advanced</summary>
+                  <div class="option-group">
+                    <label data-tooltip="Attenuates very quiet signal levels and filters low rumble before recording.">
+                      Noise Gate: <span id="noiseReductionValue">0%</span>
+                      <input type="range" id="noiseReduction" min="0" max="100" value="0" aria-label="Adjust noise gate">
+                    </label>
+                    <label data-tooltip="Smooths loud and quiet sections with compression and make-up gain.">
+                      Smart Normalization: <span id="smartNormalizationValue">0%</span>
+                      <input type="range" id="smartNormalization" min="0" max="100" value="0" aria-label="Adjust smart normalization">
+                    </label>
+                    <label data-tooltip="Adds controlled harmonic saturation before recording.">
+                      Saturation: <span id="saturationValue">0%</span>
+                      <input type="range" id="saturation" min="0" max="100" value="0" aria-label="Adjust saturation">
+                    </label>
+                    <label data-tooltip="Choose the saturation curve character.">
+                      Saturation Type
+                      <select id="saturationMode" aria-label="Select saturation type">
+                        <option value="soft-clip" selected>Soft Clip</option>
+                        <option value="hard-clip">Hard Clip</option>
+                        <option value="tape">Tape</option>
+                        <option value="tube">Tube</option>
+                      </select>
+                    </label>
+                    <label data-tooltip="Lower frequency limit for the saturation wet path.">
+                      Saturation Min Hz: <span id="saturationMinValue">20</span>
+                      <input type="range" id="saturationMin" min="20" max="20000" value="20" step="10" aria-label="Adjust saturation minimum frequency">
+                    </label>
+                    <label data-tooltip="Upper frequency limit for the saturation wet path.">
+                      Saturation Max Hz: <span id="saturationMaxValue">20000</span>
+                      <input type="range" id="saturationMax" min="20" max="20000" value="20000" step="10" aria-label="Adjust saturation maximum frequency">
+                    </label>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Background, Transform, Effects -->
+        <div class="settings-column">
+
+          <!-- Background Section -->
+          <div class="settings-section" data-section="background">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">🖼️</span>
+                <span>Background</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <label data-tooltip="Upload an image or GIF to use as the visualization background. Supports PNG, JPG, GIF, and WebP formats.">
+                Background Image (optional)
+                <input type="file" id="bgImage" accept="image/*" aria-label="Upload background image">
+              </label>
+              <label data-tooltip="How the background image is displayed: Cover fills the canvas, Contain fits within, Stretch distorts to fill, Tile repeats, Center shows actual size.">
+                Background Size Mode
+                <select id="bgSizeMode" aria-label="Select background image size mode">
+                  <option value="cover" selected>Cover (Fill)</option>
+                  <option value="contain">Contain (Fit)</option>
+                  <option value="stretch">Stretch</option>
+                  <option value="tile">Tile</option>
+                  <option value="center">Center</option>
+                  <option value="custom">Custom Size</option>
+                </select>
+              </label>
+            </div>
+            <div class="option-group" id="customSizeControls" style="display: none;">
+              <label data-tooltip="Custom width in pixels for the background image.">
+                Custom Width (px)
+                <input type="number" id="bgCustomWidth" min="1" value="800" aria-label="Custom background width">
+              </label>
+              <label data-tooltip="Custom height in pixels for the background image.">
+                Custom Height (px)
+                <input type="number" id="bgCustomHeight" min="1" value="400" aria-label="Custom background height">
+              </label>
+            </div>
+            <!-- Center Image Controls (for Circular visualizer) -->
+            <div class="option-group" id="centerImageControls" style="display: none;">
+              <label data-tooltip="Upload an image to display in the center of the circular visualizer. Great for logos or profile pictures.">
+                Center Image (for Circular visualizer)
+                <input type="file" id="centerImage" accept="image/*" aria-label="Upload center image">
+              </label>
+              <label id="centerImageZoomLabel" data-tooltip="Adjust the size of the center image (50%-300%).">
+                Center Image Zoom
+                <input type="range" id="centerImageZoom" min="50" max="300" value="100" step="5">
+                <span id="centerImageZoomValue">100%</span>
+              </label>
+            </div>
+            <div class="option-group" id="centerImagePositionControls" style="display: none;">
+              <label data-tooltip="Move the center image left or right.">
+                Center Image X Offset
+                <input type="range" id="centerImageOffsetX" min="-100" max="100" value="0">
+                <span id="centerImageOffsetXValue">0px</span>
+              </label>
+              <label data-tooltip="Move the center image up or down.">
+                Center Image Y Offset
+                <input type="range" id="centerImageOffsetY" min="-100" max="100" value="0">
+                <span id="centerImageOffsetYValue">0px</span>
+              </label>
+              <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">
+                Tip: Hold Shift and drag on canvas to move center image. Scroll over center image to zoom.
+              </p>
+            </div>
+            </div>
+          </div>
+
+          <!-- Transform Section -->
+          <div class="settings-section" data-section="transform">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">📐</span>
+                <span>Transform</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <label data-tooltip="Move the visualization horizontally. Negative values shift left, positive shift right. Drag on canvas also works.">
+                Offset X (Horizontal Position)
+                <input type="range" id="offsetX" min="-200" max="200" value="0">
+                <span id="offsetXValue">0px</span>
+              </label>
+              <label data-tooltip="Move the visualization vertically. Negative values shift up, positive shift down. Drag on canvas also works.">
+                Offset Y (Vertical Position)
+                <input type="range" id="offsetY" min="-200" max="200" value="0">
+                <span id="offsetYValue">0px</span>
+              </label>
+              <label data-tooltip="Scale the entire visualization from 50% to 200%. Useful for making the visualization larger or smaller while keeping it centered.">
+                Visualization Scale
+                <input type="range" id="visualizationScale" min="50" max="200" value="100" step="5">
+                <span id="scaleValue">100%</span>
+              </label>
+              <label data-tooltip="Adjust the transparency of the visualization layer. 0% = invisible, 100% = fully opaque.">
+                Visualization Transparency
+                <input type="range" id="visualizationAlpha" min="0" max="1" step="0.01" value="1">
+                <span id="alphaValue">100%</span>
+              </label>
+            </div>
+            <div class="option-group">
+              <label style="flex-direction: row; align-items: center;" data-tooltip="Reflects the visualization vertically, creating a mirrored effect from top to bottom.">
+                <input type="checkbox" id="mirror" aria-label="Enable mirror mode"> Mirror Visualization (Vertical)
+              </label>
+              <label style="flex-direction: row; align-items: center;" data-tooltip="Reflects the visualization horizontally around the center, creating a symmetric left-right effect.">
+                <input type="checkbox" id="mirrorHorizontal" aria-label="Enable horizontal mirror"> Mirror Horizontal (Center Flip)
+              </label>
+            </div>
+            </div>
+          </div>
+
+          <!-- Effects Section -->
+          <div class="settings-section" data-section="effects">
+            <div class="settings-section-header">
+              <div class="settings-section-title">
+                <span class="settings-section-icon">✨</span>
+                <span>Effects</span>
+              </div>
+              <span class="settings-section-toggle">▼</span>
+            </div>
+            <div class="settings-section-content">
+              <div class="option-group">
+              <label data-tooltip="Apply a filter effect to the background layer. Effects are applied between the background and the visualization.">
+                Layer Effect
+                <select id="layerEffect" aria-label="Select layer effect">
+                  <option value="none" selected>None</option>
+                  <option value="blur">Blur</option>
+                  <option value="brightness">Brightness</option>
+                  <option value="contrast">Contrast</option>
+                  <option value="grayscale">Grayscale</option>
+                  <option value="invert">Invert</option>
+                  <option value="sepia">Sepia</option>
+                  <option value="saturate">Saturate</option>
+                  <option value="hue-rotate">Hue Rotate</option>
+                </select>
+              </label>
+              <label data-tooltip="Controls how strong the layer effect is applied. 0% = no effect, 100% = maximum intensity.">
+                Effect Intensity
+                <input type="range" id="layerEffectIntensity" min="0" max="100" value="50">
+                <span id="layerEffectIntensityValue">50%</span>
+              </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- Image Blink Effects Section -->
+      <div class="settings-section" data-section="imageBlink">
+        <div class="settings-section-header">
+          <div class="settings-section-title">
+            <span class="settings-section-icon">💡</span>
+            <span>Image Blink Effects</span>
+          </div>
+          <span class="settings-section-toggle">▼</span>
+        </div>
+        <div class="settings-section-content">
+          <div class="option-group">
+            <label style="flex-direction: row; align-items: center;" data-tooltip="Enable image blinking based on audio frequency and volume">
+              <input type="checkbox" id="imageBlinkEnabled" aria-label="Enable image blink"> Enable Image Blink
+            </label>
+          </div>
+          <div class="option-group" id="imageBlinkControls" style="display: none;">
+            <label data-tooltip="Choose the visual effect style for image blinking">
+              Blink Style
+              <select id="imageBlinkStyle" aria-label="Select blink style">
+                <option value="gradient-sweep" selected>Gradient Sweep</option>
+                <option value="negative-flash">Negative Flash</option>
+                <option value="brightness-pulse">Brightness Pulse</option>
+                <option value="color-flash">Color Flash</option>
+              </select>
+            </label>
+            <label data-tooltip="Choose which image layer(s) to apply the blink effect">
+              Blink Target
+              <select id="imageBlinkTarget" aria-label="Select blink target">
+                <option value="background" selected>Background</option>
+                <option value="foreground">Foreground</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+            <!-- Debug Audio File Section -->
+            <div style="grid-column: 1 / -1; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: rgba(0, 0, 0, 0.2); margin-top: var(--spacing-sm);">
+              <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+                <label style="flex-direction: row; align-items: center; margin: 0;" data-tooltip="Use a debug audio file to configure blink effect settings. The selected interval will determine frequency and volume thresholds.">
+                  <input type="checkbox" id="blinkDebugModeEnabled" aria-label="Enable debug mode"> Use Debug Audio File
+                </label>
+              </div>
+              <div id="blinkDebugControls" style="display: none;">
+                <div style="margin-bottom: var(--spacing-md);">
+                  <label data-tooltip="Select an audio file to analyze for blink effect configuration">
+                    Debug Audio File
+                    <input type="file" id="blinkDebugAudioFile" accept="audio/*" aria-label="Select debug audio file">
+                  </label>
+                  <div id="blinkDebugFileName" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;"></div>
+                </div>
+                <!-- Waveform Visualization Container -->
+                <div id="blinkWaveformContainer" style="display: none; margin-bottom: var(--spacing-md);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <span style="font-size: 13px; color: var(--color-text-secondary);">Select interval for blink trigger:</span>
+                    <span id="blinkIntervalDisplay" style="font-size: 12px; color: var(--color-primary);">0.00s - 0.00s</span>
+                  </div>
+                  <div style="position: relative; background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-sm); overflow: hidden; cursor: crosshair;">
+                    <canvas id="blinkWaveformCanvas" width="600" height="80" style="display: block; width: 100%; height: 80px;"></canvas>
+                    <div id="blinkSelectionOverlay" style="position: absolute; top: 0; bottom: 0; background: rgba(0, 255, 136, 0.2); border-left: 2px solid var(--color-primary); border-right: 2px solid var(--color-primary); pointer-events: none; display: none;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                    <span id="blinkWaveformStart" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+                    <span id="blinkWaveformEnd" style="font-size: 11px; color: var(--color-text-muted);">0:00</span>
+                  </div>
+                  <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
+                    <button type="button" id="blinkPlayIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                      Play Interval
+                    </button>
+                    <button type="button" id="blinkClearIntervalBtn" class="btn-secondary" style="padding: 6px 12px; min-width: auto; font-size: 12px;" disabled>
+                      Clear Selection
+                    </button>
+                  </div>
+                  <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">
+                    Click and drag on the waveform to select an interval. The blink effect will trigger based on frequencies and volume in this interval.
+                  </p>
+                </div>
+                <!-- Extracted Parameters Display -->
+                <div id="blinkExtractedParams" style="display: none; padding: var(--spacing-sm); background: rgba(0, 255, 136, 0.1); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+                  <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px;">Extracted from interval:</div>
+                  <div style="display: flex; gap: var(--spacing-md); font-size: 13px;">
+                    <span>Frequency: <strong id="blinkExtractedFreq" style="color: var(--color-primary);">-</strong></span>
+                    <span>Threshold: <strong id="blinkExtractedThreshold" style="color: var(--color-primary);">-</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Manual Configuration (shown when debug mode is disabled) -->
+            <div id="blinkManualControls" class="blink-manual-controls">
+              <div class="range-pair" data-tooltip="Frequency range in Hz to monitor for blinking trigger">
+                <div class="range-pair-header">
+                  <span>Frequency Range (Hz):</span>
+                  <span id="blinkFrequencyValue">60 - 250</span>
+                </div>
+                <div class="range-pair-controls">
+                  <label>
+                    Min
+                    <input type="range" id="blinkFrequencyMin" min="20" max="500" value="60" aria-label="Adjust blink minimum frequency">
+                  </label>
+                  <label>
+                    Max
+                    <input type="range" id="blinkFrequencyMax" min="20" max="2000" value="250" aria-label="Adjust blink maximum frequency">
+                  </label>
+                </div>
+              </div>
+              <label data-tooltip="Volume threshold (0-255) that must be exceeded to trigger blink">
+                Volume Threshold: <span id="blinkThresholdValue">200</span>
+                <input type="range" id="blinkThreshold" min="50" max="255" value="200">
+              </label>
+            </div>
+            <label data-tooltip="Intensity of the blink effect (0-100%)">
+              Blink Intensity: <span id="blinkIntensityValue">80%</span>
+              <input type="range" id="blinkIntensity" min="0" max="100" value="80">
+            </label>
+            <label data-tooltip="Duration of blink effect in milliseconds">
+              Blink Duration: <span id="blinkDurationValue">150ms</span>
+              <input type="range" id="blinkDuration" min="50" max="500" value="150" step="50">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-group" id="barShapeControls" style="display: none;">
         <label>
-          Visualizer Type
-          <select id="visualizerSelect" aria-label="Select visualizer type">
-            <option value="bars">Bars - Spectrum Analyzer</option>
-            <option value="waveform">Waveform - Oscilloscope</option>
-            <option value="circular">Circular - Radial Spectrum</option>
-            <option value="particles">Particles - Audio-Reactive</option>
-            <option value="spectrum-gradient">Spectrum Gradient - Winamp Style</option>
-            <option value="glow-waveform">Glow Waveform - Modern Effect</option>
-            <option value="vu-meter">VU Meter - Professional Style</option>
-            <option value="spectrogram">Spectrogram - Frequency Waterfall</option>
-            <option value="spiral-waveform">Spiral Waveform - Rotating Pattern</option>
-            <option value="radial-bars">Radial Bars - Circular Analyzer</option>
-            <option value="frequency-rings">Frequency Rings - Concentric Pulses</option>
+          Bar Shape
+          <select id="barShape" aria-label="Select bar shape">
+            <option value="rectangle">Rectangle</option>
+            <option value="rounded" selected>Rounded (Default)</option>
+            <option value="circle">Circle / Bubble</option>
+            <option value="triangle">Triangle</option>
+            <option value="diamond">Diamond</option>
           </select>
         </label>
+      </div>
+      <div class="option-group" id="particleShapeControls" style="display: none;">
         <label>
-          Primary Color
-          <input type="color" id="primaryColor" value="#00ff88" aria-label="Select primary color">
-        </label>
-        <label>
-          Secondary Color
-          <input type="color" id="secondaryColor" value="#0088ff" aria-label="Select secondary color">
-        </label>
-        <label style="justify-content: center;">
-          <button type="button" id="swapColorsBtn" class="btn-secondary" style="padding: 8px 16px; min-width: auto; font-size: 13px;" data-tooltip="Swap primary and secondary colors" aria-label="Swap colors">
-            ⇄ Swap Colors
-          </button>
-        </label>
-        <label>
-          Background Color
-          <input type="color" id="bgColor" value="#000000" aria-label="Select background color">
-        </label>
-        <label data-tooltip="Number of frequency bars (16-256)">
-          Bar Count: <span id="barCountValue">64</span>
-          <input type="range" id="barCount" min="16" max="256" value="64" aria-label="Adjust bar count">
-        </label>
-        <label>
-          Background Image (optional)
-          <input type="file" id="bgImage" accept="image/*" aria-label="Upload background image">
-        </label>
-        <label>
-          Background Size Mode
-          <select id="bgSizeMode" aria-label="Select background image size mode">
-            <option value="cover" selected>Cover (Fill)</option>
-            <option value="contain">Contain (Fit)</option>
-            <option value="stretch">Stretch</option>
-            <option value="tile">Tile</option>
-            <option value="center">Center</option>
-            <option value="custom">Custom Size</option>
+          Particle Shape
+          <select id="particleShape" aria-label="Select particle shape">
+            <option value="circle" selected>Circle (Default)</option>
+            <option value="square">Square</option>
+            <option value="triangle">Triangle</option>
+            <option value="diamond">Diamond</option>
+            <option value="star">Star</option>
+            <option value="heart">Heart</option>
           </select>
-        </label>
-      </div>
-      <div class="option-group" id="customSizeControls" style="display: none;">
-        <label>
-          Custom Width (px)
-          <input type="number" id="bgCustomWidth" min="1" value="800" aria-label="Custom background width">
-        </label>
-        <label>
-          Custom Height (px)
-          <input type="number" id="bgCustomHeight" min="1" value="400" aria-label="Custom background height">
-        </label>
-      </div>
-      <div class="option-group">
-        <label style="flex-direction: row; align-items: center;">
-          <input type="checkbox" id="mirror" aria-label="Enable mirror mode"> Mirror Visualization (Vertical)
-        </label>
-        <label style="flex-direction: row; align-items: center;" data-tooltip="Flip the visualization horizontally around the center">
-          <input type="checkbox" id="mirrorHorizontal" aria-label="Enable horizontal mirror"> Mirror Horizontal (Center Flip)
-        </label>
-        <label style="flex-direction: row; align-items: center;">
-          <input type="checkbox" id="useCustomColors" aria-label="Use custom colors"> Use Custom Colors (Primary/Secondary)
-        </label>
-      </div>
-      <div class="option-group" id="centerImageControls" style="display: none;">
-        <label>
-          Center Image (for Circular visualizer)
-          <input type="file" id="centerImage" accept="image/*" aria-label="Upload center image">
-        </label>
-        <label id="centerImageZoomLabel">
-          Center Image Zoom
-          <input type="range" id="centerImageZoom" min="50" max="300" value="100" step="5">
-          <span id="centerImageZoomValue">100%</span>
-        </label>
-      </div>
-      <div class="option-group" id="centerImagePositionControls" style="display: none;">
-        <label>
-          Center Image X Offset
-          <input type="range" id="centerImageOffsetX" min="-100" max="100" value="0">
-          <span id="centerImageOffsetXValue">0px</span>
-        </label>
-        <label>
-          Center Image Y Offset
-          <input type="range" id="centerImageOffsetY" min="-100" max="100" value="0">
-          <span id="centerImageOffsetYValue">0px</span>
-        </label>
-        <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">
-          Tip: Hold Shift and drag on canvas to move center image. Scroll over center image to zoom.
-        </p>
-      </div>
-      <div class="option-group">
-        <label>
-          Visualization Transparency
-          <input type="range" id="visualizationAlpha" min="0" max="1" step="0.01" value="1">
-          <span id="alphaValue">100%</span>
-        </label>
-      </div>
-      <div class="option-group">
-        <label>
-          Offset X (Horizontal Position)
-          <input type="range" id="offsetX" min="-200" max="200" value="0">
-          <span id="offsetXValue">0px</span>
-        </label>
-        <label>
-          Offset Y (Vertical Position)
-          <input type="range" id="offsetY" min="-200" max="200" value="0">
-          <span id="offsetYValue">0px</span>
-        </label>
-        <label data-tooltip="Scale the visualization size (50% - 200%)">
-          Visualization Scale
-          <input type="range" id="visualizationScale" min="50" max="200" value="100" step="5">
-          <span id="scaleValue">100%</span>
-        </label>
-      </div>
-      <div class="option-group">
-        <label>
-          Layer Effect
-          <select id="layerEffect" aria-label="Select layer effect">
-            <option value="none" selected>None</option>
-            <option value="blur">Blur</option>
-            <option value="brightness">Brightness</option>
-            <option value="contrast">Contrast</option>
-            <option value="grayscale">Grayscale</option>
-            <option value="invert">Invert</option>
-            <option value="sepia">Sepia</option>
-            <option value="saturate">Saturate</option>
-            <option value="hue-rotate">Hue Rotate</option>
-          </select>
-        </label>
-        <label>
-          Effect Intensity
-          <input type="range" id="layerEffectIntensity" min="0" max="100" value="50">
-          <span id="layerEffectIntensityValue">50%</span>
         </label>
       </div>
     </div>
 
     <div class="recordings" id="recordings">
-      <h3>Recordings</h3>
+      <div class="recordings-header">
+        <h3>Recordings</h3>
+        <button id="saveAllRecordings" class="btn-info" disabled data-tooltip="Save every rendered video" aria-label="Save all rendered videos">
+          <span>Save All</span>
+        </button>
+      </div>
       <div id="recordingsList"></div>
+    </div>
+  </div>
+
+  <!-- YouTube Auth Modal -->
+  <div id="youtubeAuthModal" class="modal" style="display: none;">
+    <div class="modal-content youtube-modal-content">
+      <div class="modal-header">
+        <h3>Google Sign In</h3>
+        <button id="closeYouTubeAuthBtn" class="close-btn" aria-label="Close Google sign in">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="option-group youtube-form-grid">
+          <label data-tooltip="OAuth 2.0 Client ID from Google Cloud Console with YouTube Data API v3 enabled">
+            OAuth Client ID
+            <input type="text" id="youtubeClientId" autocomplete="off" spellcheck="false" aria-label="Google OAuth client ID">
+          </label>
+          <label id="youtubeClientSecretField" data-tooltip="Optional client secret from a Google Desktop app OAuth client. Leave blank when using a Web application client in browser mode.">
+            Desktop Client Secret
+            <input type="password" id="youtubeClientSecret" autocomplete="off" spellcheck="false" aria-label="Google desktop OAuth client secret">
+          </label>
+        </div>
+        <div class="youtube-auth-settings">
+          <div>
+            <span class="youtube-auth-settings-title">Google account</span>
+            <span id="youtubeAuthSettingsStatus" class="youtube-auth-settings-status">Not signed in</span>
+          </div>
+          <button id="youtubeSignOutBtn" type="button" class="btn btn-secondary">Sign out</button>
+          <button id="youtubeSignInSettingsBtn" type="button" class="btn">Sign in</button>
+        </div>
+        <p id="youtubeAuthStatus" class="youtube-modal-status" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelYouTubeAuthBtn" class="btn">Cancel</button>
+        <button id="openGoogleCloudOAuthBtn" class="btn" type="button">OAuth Setup</button>
+        <button id="authorizeYouTubeBtn" class="btn btn-primary">Sign in with Google</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube Upload Modal -->
+  <div id="youtubeUploadModal" class="modal" style="display: none;">
+    <div class="modal-content youtube-modal-content">
+      <div class="modal-header">
+        <h3>Upload to YouTube</h3>
+        <button id="closeYouTubeUploadBtn" class="close-btn" aria-label="Close YouTube upload">&times;</button>
+      </div>
+      <form id="youtubeUploadForm">
+        <div class="modal-body">
+          <div class="option-group youtube-form-grid">
+            <label>
+              Title
+              <input type="text" id="youtubeTitle" maxlength="100" required aria-label="YouTube video title">
+            </label>
+            <label>
+              Privacy
+              <select id="youtubePrivacy" aria-label="YouTube video privacy">
+                <option value="private" selected>Private</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="public">Public</option>
+              </select>
+            </label>
+            <label>
+              Category
+              <select id="youtubeCategory" aria-label="YouTube video category">
+                <option value="10" selected>Music</option>
+                <option value="1">Film & Animation</option>
+                <option value="22">People & Blogs</option>
+                <option value="24">Entertainment</option>
+                <option value="28">Science & Technology</option>
+              </select>
+            </label>
+            <label>
+              Publish at
+              <input type="datetime-local" id="youtubePublishAt" aria-label="Scheduled YouTube publish date and time">
+            </label>
+            <label>
+              Timezone
+              <select id="youtubeTimezone" aria-label="YouTube scheduled publish timezone">
+                <option value="">Browser timezone</option>
+                <option value="UTC">UTC</option>
+                <option value="Europe/Moscow">Europe/Moscow</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Chicago">America/Chicago</option>
+                <option value="America/Denver">America/Denver</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+                <option value="Asia/Yekaterinburg">Asia/Yekaterinburg</option>
+                <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+              </select>
+            </label>
+            <label class="youtube-wide-field">
+              Description
+              <textarea id="youtubeDescription" rows="5" aria-label="YouTube video description"></textarea>
+            </label>
+            <label class="youtube-wide-field">
+              Tags
+              <input type="text" id="youtubeTags" aria-label="YouTube video tags">
+            </label>
+            <div class="youtube-wide-field youtube-playlist-field">
+              <span>Playlists</span>
+              <input type="hidden" id="youtubePlaylistIds" aria-label="Selected YouTube playlist IDs">
+              <div id="youtubePlaylistSelector" class="youtube-playlist-selector"></div>
+            </div>
+            <label class="youtube-wide-field">
+              Video Preview
+              <input type="file" id="youtubeThumbnail" accept="image/jpeg,image/png,image/webp" aria-label="YouTube video preview image">
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeShort" aria-label="Mark as YouTube Short"> Short (#shorts)
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeMadeForKids" aria-label="Made for kids"> Made for kids
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeSyntheticMedia" aria-label="Contains synthetic media"> Synthetic media
+            </label>
+            <label class="youtube-checkbox">
+              <input type="checkbox" id="youtubeNotifySubscribers" aria-label="Notify subscribers"> Notify subscribers
+            </label>
+          </div>
+          <div id="youtubeUploadProgress" class="progress-bar" style="display: none;" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar-fill" id="youtubeUploadProgressFill"></div>
+          </div>
+          <p id="youtubeUploadStatus" class="youtube-modal-status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelYouTubeUploadBtn" type="button" class="btn">Cancel</button>
+          <button id="submitYouTubeUploadBtn" type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1163,1458 +897,211 @@
     </div>
   </div>
 
+  <div id="pipelineDeleteModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineDeleteTitle">
+      <div class="modal-header">
+        <h3 id="pipelineDeleteTitle">Delete Stage</h3>
+        <button id="cancelPipelineDeleteXBtn" class="close-btn" type="button" aria-label="Cancel stage deletion">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="pipelineDeleteMessage">Delete this pipeline stage?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineDeleteBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineDeleteBtn" type="button" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineResetModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineResetTitle">
+      <div class="modal-header">
+        <h3 id="pipelineResetTitle">Reset Pipeline Fields</h3>
+        <button id="cancelPipelineResetXBtn" class="close-btn" type="button" aria-label="Cancel field reset">&times;</button>
+      </div>
+      <div class="modal-body pipeline-reset-options">
+        <label><input type="checkbox" id="resetPipelineNames"> Names</label>
+        <label><input type="checkbox" id="resetPipelineFiles"> Files</label>
+        <label><input type="checkbox" id="resetPipelineDescriptions"> Descriptions and tags</label>
+        <label><input type="checkbox" id="resetPipelineDates"> Publication dates</label>
+        <label><input type="checkbox" id="resetPipelinePresets"> Presets and resolution</label>
+        <label><input type="checkbox" id="resetPipelineActions"> Actions</label>
+        <label><input type="checkbox" id="resetPipelinePrivacy"> Privacy</label>
+        <label><input type="checkbox" id="resetPipelineYouTubeFlags"> YouTube checkboxes</label>
+        <label><input type="checkbox" id="resetPipelineAlbum"> Album tracks and cover</label>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineResetBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineResetHoldBtn" type="button" class="btn btn-danger pipeline-hold-btn">
+          <span class="pipeline-hold-progress"></span>
+          <span>Hold to Reset</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineTimezoneModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content" role="dialog" aria-modal="true" aria-labelledby="pipelineTimezoneTitle">
+      <div class="modal-header">
+        <h3 id="pipelineTimezoneTitle">Pipeline Settings</h3>
+        <button id="cancelPipelineTimezoneXBtn" class="close-btn" type="button" aria-label="Cancel timezone settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="pipeline-modal-field">
+          Timezone
+          <select id="pipelineTimezoneSelect" aria-label="Pipeline publication timezone">
+            <option value="UTC">UTC</option>
+            <option value="Europe/Moscow">Europe/Moscow</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Chicago">America/Chicago</option>
+            <option value="America/Denver">America/Denver</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Asia/Yekaterinburg">Asia/Yekaterinburg</option>
+            <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+          </select>
+        </label>
+        <label class="pipeline-modal-field">
+          Upload order
+          <select id="pipelineUploadOrderSelect" aria-label="Pipeline YouTube upload order policy">
+            <option value="chronological" selected>Each next stage same time or later</option>
+            <option value="manual">Allow manual order</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPipelineTimezoneBtn" type="button" class="btn">Cancel</button>
+        <button id="confirmPipelineTimezoneBtn" type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pipelineReportModal" class="modal" style="display: none;">
+    <div class="modal-content pipeline-modal-content pipeline-report-content" role="dialog" aria-modal="true" aria-labelledby="pipelineReportTitle">
+      <div class="modal-header">
+        <h3 id="pipelineReportTitle">Pipeline Report</h3>
+        <button id="closePipelineReportXBtn" class="close-btn" type="button" aria-label="Close pipeline report">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="pipelineReportSummary"></p>
+        <ol id="pipelineReportList" class="pipeline-report-list"></ol>
+      </div>
+      <div class="modal-footer">
+        <button id="closePipelineReportBtn" type="button" class="btn btn-primary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="presetSaveModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetSaveTitle">
+      <h2 id="presetSaveTitle">Save Preset</h2>
+      <label>
+        Preset Name
+        <input type="text" id="presetNameInput" autocomplete="off">
+      </label>
+      <label>
+        Preset Folder
+        <div class="folder-row">
+          <input type="text" id="presetFolderInput" readonly>
+          <button type="button" class="btn-secondary compact-btn" id="presetChooseFolderBtn">Choose</button>
+        </div>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="presetDontShowAgain">
+        <span>Don't show again</span>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="presetCancelSaveBtn">Cancel</button>
+        <button type="button" class="btn-primary compact-btn" id="presetConfirmSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="presetRenameModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetRenameTitle">
+      <h2 id="presetRenameTitle">Rename Preset</h2>
+      <label>
+        Preset Name
+        <input type="text" id="presetRenameInput" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="presetCancelRenameBtn">Cancel</button>
+        <button type="button" class="btn-primary compact-btn" id="presetConfirmRenameBtn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="presetDeleteModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetDeleteTitle">
+      <h2 id="presetDeleteTitle">Delete Preset</h2>
+      <p id="presetDeleteMessage" class="modal-message"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="presetCancelDeleteBtn">Cancel</button>
+        <button type="button" class="btn-danger compact-btn" id="presetConfirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="pipelineRenameModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="pipelineRenameTitle">
+      <h2 id="pipelineRenameTitle">Rename Pipeline</h2>
+      <label>
+        Pipeline Name
+        <input type="text" id="pipelineRenameInput" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="pipelineCancelRenameBtn">Cancel</button>
+        <button type="button" class="btn-primary compact-btn" id="pipelineConfirmRenameBtn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="presetSettingsModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="presetSettingsTitle">
+      <h2 id="presetSettingsTitle">Settings</h2>
+      <label>
+        Preset Save Path
+        <div class="folder-row">
+          <input type="text" id="presetSettingsPathInput" readonly>
+          <button type="button" class="btn-secondary compact-btn" id="presetSettingsChooseFolderBtn">Choose</button>
+        </div>
+      </label>
+      <label data-tooltip="OAuth 2.0 Client ID from Google Cloud Console with YouTube Data API v3 enabled">
+        Google OAuth Client ID
+        <input type="text" id="settingsYoutubeClientId" autocomplete="off" spellcheck="false" aria-label="Google OAuth client ID (settings)">
+      </label>
+      <label data-tooltip="Optional client secret from a Google Desktop app OAuth client. Leave blank when using a Web application client in browser mode.">
+        Google Desktop Client Secret
+        <input type="password" id="settingsYoutubeClientSecret" autocomplete="off" spellcheck="false" aria-label="Google desktop OAuth client secret (settings)">
+      </label>
+      <label data-tooltip="Default timezone for scheduling YouTube uploads. Applies to both single video uploads and the pipeline.">
+        Upload Timezone
+        <select id="settingsUploadTimezone" aria-label="Default YouTube upload timezone">
+          <option value="">Browser timezone</option>
+          <option value="UTC">UTC</option>
+          <option value="Europe/Moscow">Europe/Moscow</option>
+          <option value="America/New_York">America/New_York</option>
+          <option value="America/Chicago">America/Chicago</option>
+          <option value="America/Denver">America/Denver</option>
+          <option value="America/Los_Angeles">America/Los_Angeles</option>
+          <option value="Asia/Yekaterinburg">Asia/Yekaterinburg</option>
+          <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-primary compact-btn" id="presetSettingsCloseBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     // Import from built library (in real usage, you'd import from the npm package)
     // For development, we'll use the UMD build
   </script>
   <script src="../dist/audio-recorder-visualization.umd.js"></script>
-  <script>
-    (async function() {
-      // Wait for library to load
-      await new Promise(resolve => {
-        if (window.AudioRecorderVisualization) {
-          resolve();
-        } else {
-          // Retry loading
-          const interval = setInterval(() => {
-            if (window.AudioRecorderVisualization) {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 100);
-        }
-      });
-
-      const { AudioRecorder, AudioToVideoConverter } = window.AudioRecorderVisualization;
-
-      // Elements
-      const canvas = document.getElementById('visualizer');
-      const status = document.getElementById('status');
-      const startMicBtn = document.getElementById('startMic');
-      const stopMicBtn = document.getElementById('stopMic');
-      const startRecordBtn = document.getElementById('startRecord');
-      const stopRecordBtn = document.getElementById('stopRecord');
-      const visualizerSelect = document.getElementById('visualizerSelect');
-      const primaryColor = document.getElementById('primaryColor');
-      const secondaryColor = document.getElementById('secondaryColor');
-      const swapColorsBtn = document.getElementById('swapColorsBtn');
-      const bgColor = document.getElementById('bgColor');
-      const barCount = document.getElementById('barCount');
-      const bgImage = document.getElementById('bgImage');
-      const mirror = document.getElementById('mirror');
-      const mirrorHorizontal = document.getElementById('mirrorHorizontal');
-      const visualizationAlpha = document.getElementById('visualizationAlpha');
-      const alphaValue = document.getElementById('alphaValue');
-      const offsetX = document.getElementById('offsetX');
-      const offsetXValue = document.getElementById('offsetXValue');
-      const offsetY = document.getElementById('offsetY');
-      const offsetYValue = document.getElementById('offsetYValue');
-      const visualizationScale = document.getElementById('visualizationScale');
-      const scaleValue = document.getElementById('scaleValue');
-      const recordingsList = document.getElementById('recordingsList');
-      const audioFile = document.getElementById('audioFile');
-      const convertBtn = document.getElementById('convertBtn');
-      const cancelConvertBtn = document.getElementById('cancelConvertBtn');
-      const progressFill = document.getElementById('progressFill');
-      const videoQuality = document.getElementById('videoQuality');
-      const bgSizeMode = document.getElementById('bgSizeMode');
-      const customSizeControls = document.getElementById('customSizeControls');
-      const bgCustomWidth = document.getElementById('bgCustomWidth');
-      const bgCustomHeight = document.getElementById('bgCustomHeight');
-      const layerEffect = document.getElementById('layerEffect');
-      const layerEffectIntensity = document.getElementById('layerEffectIntensity');
-      const layerEffectIntensityValue = document.getElementById('layerEffectIntensityValue');
-      const useCustomColors = document.getElementById('useCustomColors');
-      const centerImage = document.getElementById('centerImage');
-      const centerImageControls = document.getElementById('centerImageControls');
-      const centerImagePositionControls = document.getElementById('centerImagePositionControls');
-      const centerImageZoom = document.getElementById('centerImageZoom');
-      const centerImageZoomValue = document.getElementById('centerImageZoomValue');
-      const centerImageOffsetX = document.getElementById('centerImageOffsetX');
-      const centerImageOffsetXValue = document.getElementById('centerImageOffsetXValue');
-      const centerImageOffsetY = document.getElementById('centerImageOffsetY');
-      const centerImageOffsetYValue = document.getElementById('centerImageOffsetYValue');
-
-      // Settings persistence
-      const SETTINGS_KEY = 'audio-recorder-settings';
-
-      // Default settings
-      const defaultSettings = {
-        visualizer: 'bars',
-        primaryColor: '#00ff88',
-        secondaryColor: '#0088ff',
-        backgroundColor: '#000000',
-        barCount: 64,
-        mirror: false,
-        mirrorHorizontal: false,
-        visualizationAlpha: 1,
-        offsetX: 0,
-        offsetY: 0,
-        scale: 100,
-        backgroundImage: null,
-        backgroundSizeMode: 'cover',
-        backgroundWidth: 800,
-        backgroundHeight: 400,
-        videoQuality: '1080p',
-        layerEffect: 'none',
-        layerEffectIntensity: 50,
-        useCustomColors: false,
-        centerImage: null,
-        centerImageZoom: 100,
-        centerImageOffsetX: 0,
-        centerImageOffsetY: 0,
-      };
-
-      // Load settings from localStorage
-      function loadSettings() {
-        try {
-          const saved = localStorage.getItem(SETTINGS_KEY);
-          if (saved) {
-            return { ...defaultSettings, ...JSON.parse(saved) };
-          }
-        } catch (error) {
-          console.warn('Failed to load settings:', error);
-        }
-        return defaultSettings;
-      }
-
-      // Save settings to localStorage
-      function saveSettings(settings) {
-        try {
-          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-        } catch (error) {
-          console.warn('Failed to save settings:', error);
-        }
-      }
-
-      // Track background image URL
-      let currentBackgroundImageUrl = null;
-      let currentCenterImageUrl = null;
-
-      // Get current settings from UI
-      function getCurrentSettings() {
-        return {
-          visualizer: visualizerSelect.value,
-          primaryColor: primaryColor.value,
-          secondaryColor: secondaryColor.value,
-          backgroundColor: bgColor.value,
-          barCount: parseInt(barCount.value),
-          mirror: mirror.checked,
-          mirrorHorizontal: mirrorHorizontal.checked,
-          visualizationAlpha: parseFloat(visualizationAlpha.value),
-          offsetX: parseInt(offsetX.value),
-          offsetY: parseInt(offsetY.value),
-          scale: parseInt(visualizationScale.value),
-          backgroundImage: currentBackgroundImageUrl,
-          backgroundSizeMode: bgSizeMode.value,
-          backgroundWidth: parseInt(bgCustomWidth.value),
-          backgroundHeight: parseInt(bgCustomHeight.value),
-          videoQuality: videoQuality.value,
-          layerEffect: layerEffect.value,
-          layerEffectIntensity: parseInt(layerEffectIntensity.value),
-          useCustomColors: useCustomColors.checked,
-          centerImage: currentCenterImageUrl,
-          centerImageZoom: parseInt(centerImageZoom.value),
-          centerImageOffsetX: parseInt(centerImageOffsetX.value),
-          centerImageOffsetY: parseInt(centerImageOffsetY.value),
-        };
-      }
-
-      // Apply settings to UI
-      function applySettings(settings) {
-        visualizerSelect.value = settings.visualizer;
-        primaryColor.value = settings.primaryColor;
-        secondaryColor.value = settings.secondaryColor;
-        bgColor.value = settings.backgroundColor;
-        barCount.value = settings.barCount;
-        document.getElementById('barCountValue').textContent = settings.barCount;
-        mirror.checked = settings.mirror;
-        mirrorHorizontal.checked = settings.mirrorHorizontal || false;
-        visualizationAlpha.value = settings.visualizationAlpha;
-        alphaValue.textContent = Math.round(settings.visualizationAlpha * 100) + '%';
-        offsetX.value = settings.offsetX;
-        offsetXValue.textContent = settings.offsetX + 'px';
-        offsetY.value = settings.offsetY;
-        offsetYValue.textContent = settings.offsetY + 'px';
-        visualizationScale.value = settings.scale || 100;
-        scaleValue.textContent = (settings.scale || 100) + '%';
-        bgSizeMode.value = settings.backgroundSizeMode || 'cover';
-        bgCustomWidth.value = settings.backgroundWidth || 800;
-        bgCustomHeight.value = settings.backgroundHeight || 400;
-        videoQuality.value = settings.videoQuality || '1080p';
-        layerEffect.value = settings.layerEffect || 'none';
-        layerEffectIntensity.value = settings.layerEffectIntensity || 50;
-        layerEffectIntensityValue.textContent = (settings.layerEffectIntensity || 50) + '%';
-
-        // Show/hide custom size controls based on mode
-        customSizeControls.style.display = settings.backgroundSizeMode === 'custom' ? 'grid' : 'none';
-
-        // Use custom colors setting
-        useCustomColors.checked = settings.useCustomColors || false;
-
-        // Show/hide center image controls based on visualizer
-        const isCircular = settings.visualizer === 'circular';
-        centerImageControls.style.display = isCircular ? 'grid' : 'none';
-
-        // Show center image position controls only if circular and has center image
-        const hasCenterImage = settings.centerImage || currentCenterImageUrl;
-        centerImagePositionControls.style.display = (isCircular && hasCenterImage) ? 'grid' : 'none';
-
-        // Center image zoom and offset settings
-        centerImageZoom.value = settings.centerImageZoom || 100;
-        centerImageZoomValue.textContent = (settings.centerImageZoom || 100) + '%';
-        centerImageOffsetX.value = settings.centerImageOffsetX || 0;
-        centerImageOffsetXValue.textContent = (settings.centerImageOffsetX || 0) + 'px';
-        centerImageOffsetY.value = settings.centerImageOffsetY || 0;
-        centerImageOffsetYValue.textContent = (settings.centerImageOffsetY || 0) + 'px';
-
-        // Restore background image if saved
-        if (settings.backgroundImage) {
-          currentBackgroundImageUrl = settings.backgroundImage;
-        }
-
-        // Restore center image if saved
-        if (settings.centerImage) {
-          currentCenterImageUrl = settings.centerImage;
-        }
-      }
-
-      // Load and apply saved settings on startup
-      const savedSettings = loadSettings();
-      applySettings(savedSettings);
-
-      // Tab switching
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-          tab.classList.add('active');
-          document.getElementById(tab.dataset.tab).classList.add('active');
-        });
-      });
-
-      // Initialize AudioRecorder with saved settings
-      const visualizerOptions = {
-        primaryColor: savedSettings.primaryColor,
-        secondaryColor: savedSettings.secondaryColor,
-        backgroundColor: savedSettings.backgroundColor,
-        barCount: savedSettings.barCount,
-        mirror: savedSettings.mirror,
-        mirrorHorizontal: savedSettings.mirrorHorizontal || false,
-        visualizationAlpha: savedSettings.visualizationAlpha,
-        offsetX: savedSettings.offsetX,
-        offsetY: savedSettings.offsetY,
-        scale: (savedSettings.scale || 100) / 100,
-        layerEffect: savedSettings.layerEffect || 'none',
-        layerEffectIntensity: savedSettings.layerEffectIntensity || 50,
-        backgroundSizeMode: savedSettings.backgroundSizeMode || 'cover',
-        backgroundWidth: savedSettings.backgroundWidth,
-        backgroundHeight: savedSettings.backgroundHeight,
-        custom: {
-          useColorGradient: savedSettings.useCustomColors || false,
-          useCustomColors: savedSettings.useCustomColors || false,
-        },
-      };
-
-      // Add background image if it was saved
-      if (savedSettings.backgroundImage) {
-        visualizerOptions.backgroundImage = savedSettings.backgroundImage;
-      }
-
-      // Add center image and its settings if it was saved (for circular visualizer)
-      if (savedSettings.centerImage) {
-        visualizerOptions.custom.centerImage = savedSettings.centerImage;
-        visualizerOptions.custom.centerImageZoom = (savedSettings.centerImageZoom || 100) / 100;
-        visualizerOptions.custom.centerImageOffsetX = savedSettings.centerImageOffsetX || 0;
-        visualizerOptions.custom.centerImageOffsetY = savedSettings.centerImageOffsetY || 0;
-      }
-
-      // Add custom color scheme/fillStyle if using custom colors (for spectrogram/spectrum-gradient)
-      if (savedSettings.useCustomColors) {
-        visualizerOptions.custom.colorScheme = 'custom';
-        visualizerOptions.custom.fillStyle = 'custom';
-      }
-
-      const recorder = new AudioRecorder({
-        canvas,
-        fftSize: 2048,
-        fps: 30,
-        visualizer: savedSettings.visualizer,
-        visualizerOptions,
-        debug: true,
-      });
-
-      // Wait for recorder to be fully initialized then draw initial frame
-      recorder.ready().then(() => {
-        // Draw initial preview frame to show the visualization settings
-        recorder.showDemoVisualization(100);
-      });
-
-      // Initialize converter
-      const converter = new AudioToVideoConverter({ debug: true });
-
-      // Recording counter
-      let recordingCount = 0;
-
-      // Track recording state for UI safety
-      let isRecording = false;
-      let isConverting = false;
-
-      // Update status
-      function updateStatus(message, type = 'ready') {
-        status.textContent = message;
-        status.className = 'status ' + type;
-      }
-
-      // Update button states based on current recording/conversion state
-      function updateButtonStates() {
-        const isMicActive = recorder.sourceType === 'microphone';
-        const isBusy = isRecording || isConverting;
-
-        // Microphone controls
-        startMicBtn.disabled = isMicActive || isBusy;
-        stopMicBtn.disabled = !isMicActive || isRecording;
-
-        // Recording controls
-        startRecordBtn.disabled = !isMicActive || isRecording || isConverting;
-        stopRecordBtn.disabled = !isRecording;
-
-        // Tab switching - disable the other tab during recording/conversion
-        const micTab = document.querySelector('.tab[data-tab="microphone"]');
-        const convertTab = document.querySelector('.tab[data-tab="convert"]');
-        if (micTab && convertTab) {
-          if (isRecording) {
-            convertTab.disabled = true;
-            convertTab.style.pointerEvents = 'none';
-            convertTab.style.opacity = '0.5';
-          } else if (isConverting) {
-            micTab.disabled = true;
-            micTab.style.pointerEvents = 'none';
-            micTab.style.opacity = '0.5';
-          } else {
-            micTab.disabled = false;
-            micTab.style.pointerEvents = '';
-            micTab.style.opacity = '';
-            convertTab.disabled = false;
-            convertTab.style.pointerEvents = '';
-            convertTab.style.opacity = '';
-          }
-        }
-
-        // Conversion controls
-        if (!isConverting) {
-          convertBtn.disabled = !audioFile.files.length || isRecording;
-        }
-
-        // Visualizer settings - disable during recording to prevent issues
-        if (isRecording) {
-          visualizerSelect.disabled = true;
-          primaryColor.disabled = true;
-          secondaryColor.disabled = true;
-          swapColorsBtn.disabled = true;
-          bgColor.disabled = true;
-          barCount.disabled = true;
-          bgImage.disabled = true;
-          bgSizeMode.disabled = true;
-          bgCustomWidth.disabled = true;
-          bgCustomHeight.disabled = true;
-          mirror.disabled = true;
-          mirrorHorizontal.disabled = true;
-          useCustomColors.disabled = true;
-          centerImage.disabled = true;
-          centerImageZoom.disabled = true;
-          centerImageOffsetX.disabled = true;
-          centerImageOffsetY.disabled = true;
-          visualizationAlpha.disabled = true;
-          offsetX.disabled = true;
-          offsetY.disabled = true;
-          visualizationScale.disabled = true;
-          layerEffect.disabled = true;
-          layerEffectIntensity.disabled = true;
-        } else {
-          visualizerSelect.disabled = false;
-          primaryColor.disabled = false;
-          secondaryColor.disabled = false;
-          swapColorsBtn.disabled = false;
-          bgColor.disabled = false;
-          barCount.disabled = false;
-          bgImage.disabled = false;
-          bgSizeMode.disabled = false;
-          bgCustomWidth.disabled = false;
-          bgCustomHeight.disabled = false;
-          mirror.disabled = false;
-          mirrorHorizontal.disabled = false;
-          useCustomColors.disabled = false;
-          centerImage.disabled = false;
-          centerImageZoom.disabled = false;
-          centerImageOffsetX.disabled = false;
-          centerImageOffsetY.disabled = false;
-          visualizationAlpha.disabled = false;
-          offsetX.disabled = false;
-          offsetY.disabled = false;
-          visualizationScale.disabled = false;
-          layerEffect.disabled = false;
-          layerEffectIntensity.disabled = false;
-        }
-      }
-
-      // Start microphone
-      startMicBtn.addEventListener('click', async () => {
-        try {
-          await recorder.startMicrophone();
-          updateStatus('Microphone active - visualization running', 'ready');
-          updateButtonStates();
-        } catch (error) {
-          updateStatus('Error: ' + error.message, 'error');
-          console.error(error);
-        }
-      });
-
-      // Stop microphone
-      stopMicBtn.addEventListener('click', () => {
-        recorder.stopMicrophone();
-        recorder.stopVisualization();
-        updateStatus('Microphone stopped', 'ready');
-        updateButtonStates();
-      });
-
-      // Start recording
-      startRecordBtn.addEventListener('click', () => {
-        isRecording = true;
-        recorder.startRecording();
-        updateStatus('Recording...', 'recording');
-        updateButtonStates();
-      });
-
-      // Stop recording
-      stopRecordBtn.addEventListener('click', async () => {
-        try {
-          const blob = await recorder.stopRecording();
-          isRecording = false;
-          updateStatus('Recording saved!', 'ready');
-          updateButtonStates();
-
-          // Add to recordings list
-          addRecording(blob);
-        } catch (error) {
-          isRecording = false;
-          updateStatus('Error: ' + error.message, 'error');
-          updateButtonStates();
-          console.error(error);
-        }
-      });
-
-      // Add recording to list
-      function addRecording(blob) {
-        recordingCount++;
-        const url = URL.createObjectURL(blob);
-        const item = document.createElement('div');
-        item.className = 'recording-item';
-
-        const videoEl = document.createElement('video');
-        videoEl.controls = true;
-        videoEl.src = url;
-        videoEl.width = 200;
-
-        // Enable fullscreen on double-click
-        videoEl.addEventListener('dblclick', () => {
-          if (videoEl.requestFullscreen) {
-            videoEl.requestFullscreen();
-          } else if (videoEl.webkitRequestFullscreen) {
-            videoEl.webkitRequestFullscreen();
-          } else if (videoEl.mozRequestFullScreen) {
-            videoEl.mozRequestFullScreen();
-          } else if (videoEl.msRequestFullscreen) {
-            videoEl.msRequestFullscreen();
-          }
-        });
-
-        // Add title attribute for hint
-        videoEl.title = 'Double-click for fullscreen';
-
-        const infoDiv = document.createElement('div');
-        const fileName = `recording-${recordingCount}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
-
-        // Check if running in Electron
-        const isElectron = window.electronAPI && window.electronAPI.isElectron;
-
-        if (isElectron) {
-          // Electron: Use IPC to save and show in folder
-          infoDiv.innerHTML = `
-            <p>Recording ${recordingCount}</p>
-            <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-            <button class="btn-info" data-blob-index="${recordingCount}">Save and Show in Folder</button>
-            <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
-          `;
-
-          // Store blob reference for later use
-          item.dataset.blobUrl = url;
-          item.dataset.fileName = fileName;
-
-          // Add click handler for save button
-          const saveBtn = infoDiv.querySelector('button');
-          saveBtn.addEventListener('click', async () => {
-            try {
-              saveBtn.disabled = true;
-              saveBtn.textContent = 'Saving...';
-
-              const result = await window.electronAPI.saveVideoAndShow(blob, fileName);
-
-              if (result.success) {
-                saveBtn.textContent = 'Saved!';
-                setTimeout(() => {
-                  saveBtn.textContent = 'Save and Show in Folder';
-                  saveBtn.disabled = false;
-                }, 2000);
-              } else if (result.canceled) {
-                saveBtn.textContent = 'Save and Show in Folder';
-                saveBtn.disabled = false;
-              } else {
-                saveBtn.textContent = 'Error - Try Again';
-                saveBtn.disabled = false;
-                console.error('Save error:', result.error);
-              }
-            } catch (error) {
-              console.error('Error saving video:', error);
-              saveBtn.textContent = 'Error - Try Again';
-              saveBtn.disabled = false;
-            }
-          });
-        } else {
-          // Browser: Use regular download link
-          infoDiv.innerHTML = `
-            <p>Recording ${recordingCount}</p>
-            <p>Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB</p>
-            <a href="${url}" download="${fileName}">Download</a>
-            <p style="font-size: 12px; color: #888; margin-top: 5px;">Double-click video for fullscreen</p>
-          `;
-        }
-
-        item.appendChild(videoEl);
-        item.appendChild(infoDiv);
-        recordingsList.appendChild(item);
-      }
-
-      // Visualizer change
-      visualizerSelect.addEventListener('change', async () => {
-        // Temporarily stop visualization to avoid drawing during visualizer switch
-        const wasVisualizationActive = recorder.isVisualizationActive;
-        if (wasVisualizationActive) {
-          recorder.stopVisualization();
-        }
-
-        try {
-          await recorder.setVisualizer(visualizerSelect.value, getCurrentOptions());
-        } finally {
-          // Resume visualization if it was active
-          if (wasVisualizationActive && recorder.sourceType) {
-            recorder.resumeVisualization();
-          }
-        }
-
-        saveSettings(getCurrentSettings());
-        // Show/hide center image controls based on visualizer type
-        const isCircular = visualizerSelect.value === 'circular';
-        centerImageControls.style.display = isCircular ? 'grid' : 'none';
-        // Show center image position controls only if circular and has center image
-        centerImagePositionControls.style.display = (isCircular && currentCenterImageUrl) ? 'grid' : 'none';
-        updatePreview();
-      });
-
-      // Get current options
-      function getCurrentOptions() {
-        const isCustomColors = useCustomColors.checked;
-        const customOptions = {
-          // For circular visualizer
-          useColorGradient: isCustomColors,
-          // For particles visualizer
-          useCustomColors: isCustomColors,
-        };
-
-        // Only set colorScheme when custom colors is enabled (for spectrogram)
-        // Don't set it to undefined as it would override the visualizer's default
-        if (isCustomColors) {
-          customOptions.colorScheme = 'custom';
-          // For spectrum-gradient visualizer - also set fillStyle
-          customOptions.fillStyle = 'custom';
-        }
-
-        const options = {
-          primaryColor: primaryColor.value,
-          secondaryColor: secondaryColor.value,
-          backgroundColor: bgColor.value,
-          barCount: parseInt(barCount.value),
-          mirror: mirror.checked,
-          mirrorHorizontal: mirrorHorizontal.checked,
-          visualizationAlpha: parseFloat(visualizationAlpha.value),
-          offsetX: parseInt(offsetX.value),
-          offsetY: parseInt(offsetY.value),
-          scale: parseInt(visualizationScale.value) / 100,
-          backgroundSizeMode: bgSizeMode.value,
-          layerEffect: layerEffect.value,
-          layerEffectIntensity: parseInt(layerEffectIntensity.value),
-          custom: customOptions,
-        };
-        // Include background image if one is set
-        if (currentBackgroundImageUrl) {
-          options.backgroundImage = currentBackgroundImageUrl;
-        }
-        // Include custom dimensions if in custom mode
-        if (bgSizeMode.value === 'custom') {
-          options.backgroundWidth = parseInt(bgCustomWidth.value);
-          options.backgroundHeight = parseInt(bgCustomHeight.value);
-        }
-        // Include center image if one is set (for circular visualizer)
-        if (currentCenterImageUrl) {
-          options.custom.centerImage = currentCenterImageUrl;
-          options.custom.centerImageZoom = parseInt(centerImageZoom.value) / 100;
-          options.custom.centerImageOffsetX = parseInt(centerImageOffsetX.value);
-          options.custom.centerImageOffsetY = parseInt(centerImageOffsetY.value);
-        }
-        return options;
-      }
-
-      // Helper function to show preview after settings change
-      function updatePreview() {
-        // Show demo visualization if no audio source is active
-        if (!recorder.sourceType) {
-          recorder.showDemoVisualization(500);
-        }
-      }
-
-      // Function to update slider colors based on current primary/secondary colors
-      function updateSliderColors() {
-        const primary = primaryColor.value;
-        const secondary = secondaryColor.value;
-
-        // Update CSS custom properties for sliders
-        document.documentElement.style.setProperty('--color-primary', primary);
-        document.documentElement.style.setProperty('--color-secondary', secondary);
-
-        // Update all range sliders to use the gradient
-        const rangeSliders = document.querySelectorAll('.option-group input[type="range"]');
-        rangeSliders.forEach(slider => {
-          slider.style.background = `linear-gradient(to right, ${primary} 0%, ${secondary} 100%)`;
-        });
-
-        // Update checkboxes accent color
-        const checkboxes = document.querySelectorAll('.option-group input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-          checkbox.style.accentColor = primary;
-        });
-      }
-
-      // Options change handlers
-      [primaryColor, secondaryColor, bgColor, mirror, mirrorHorizontal].forEach(el => {
-        el.addEventListener('input', () => {
-          recorder.setVisualizerOptions(getCurrentOptions());
-          saveSettings(getCurrentSettings());
-          // Update slider colors when colors change
-          if (el === primaryColor || el === secondaryColor) {
-            updateSliderColors();
-          }
-          updatePreview();
-        });
-      });
-
-      // Initialize slider colors on load
-      updateSliderColors();
-
-      // Swap colors button handler
-      swapColorsBtn.addEventListener('click', () => {
-        // Swap primary and secondary color values
-        const tempColor = primaryColor.value;
-        primaryColor.value = secondaryColor.value;
-        secondaryColor.value = tempColor;
-
-        // Update visualizer with new colors
-        recorder.setVisualizerOptions(getCurrentOptions());
-        saveSettings(getCurrentSettings());
-        updateSliderColors();
-        updatePreview();
-      });
-
-      // Bar Count change handler with demo visualization and value display
-      const barCountValue = document.getElementById('barCountValue');
-      barCount.addEventListener('input', () => {
-        const newBarCount = parseInt(barCount.value);
-        barCountValue.textContent = newBarCount;
-        recorder.setVisualizerOptions({ barCount: newBarCount });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Visualization alpha handler with display update
-      visualizationAlpha.addEventListener('input', () => {
-        const alpha = parseFloat(visualizationAlpha.value);
-        alphaValue.textContent = Math.round(alpha * 100) + '%';
-        recorder.setVisualizerOptions({ visualizationAlpha: alpha });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Offset X handler with display update
-      offsetX.addEventListener('input', () => {
-        const x = parseInt(offsetX.value);
-        offsetXValue.textContent = x + 'px';
-        recorder.setVisualizerOptions({ offsetX: x });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Offset Y handler with display update
-      offsetY.addEventListener('input', () => {
-        const y = parseInt(offsetY.value);
-        offsetYValue.textContent = y + 'px';
-        recorder.setVisualizerOptions({ offsetY: y });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Scale handler with display update
-      visualizationScale.addEventListener('input', () => {
-        const s = parseInt(visualizationScale.value);
-        scaleValue.textContent = s + '%';
-        recorder.setVisualizerOptions({ scale: s / 100 });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Layer effect handler
-      layerEffect.addEventListener('change', () => {
-        recorder.setVisualizerOptions(getCurrentOptions());
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Layer effect intensity handler with display update
-      layerEffectIntensity.addEventListener('input', () => {
-        const intensity = parseInt(layerEffectIntensity.value);
-        layerEffectIntensityValue.textContent = intensity + '%';
-        recorder.setVisualizerOptions({ layerEffectIntensity: intensity });
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Background image
-      bgImage.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          // Convert image to base64 data URL for persistence across sessions
-          const reader = new FileReader();
-          reader.onload = async (event) => {
-            const dataUrl = event.target.result;
-            currentBackgroundImageUrl = dataUrl;
-            // Wait for image to load before continuing to prevent flickering
-            await recorder.setVisualizerOptions({ backgroundImage: dataUrl });
-            // Save settings with the new background image
-            saveSettings(getCurrentSettings());
-            updatePreview();
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      // Background size mode change handler
-      bgSizeMode.addEventListener('change', () => {
-        const mode = bgSizeMode.value;
-        customSizeControls.style.display = mode === 'custom' ? 'grid' : 'none';
-        recorder.setVisualizerOptions(getCurrentOptions());
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Custom background size handlers
-      bgCustomWidth.addEventListener('input', () => {
-        if (bgSizeMode.value === 'custom') {
-          recorder.setVisualizerOptions(getCurrentOptions());
-          saveSettings(getCurrentSettings());
-          updatePreview();
-        }
-      });
-
-      bgCustomHeight.addEventListener('input', () => {
-        if (bgSizeMode.value === 'custom') {
-          recorder.setVisualizerOptions(getCurrentOptions());
-          saveSettings(getCurrentSettings());
-          updatePreview();
-        }
-      });
-
-      // Use custom colors checkbox handler
-      useCustomColors.addEventListener('change', () => {
-        recorder.setVisualizerOptions(getCurrentOptions());
-        saveSettings(getCurrentSettings());
-        updatePreview();
-      });
-
-      // Image Cropper functionality
-      const cropperModal = document.getElementById('imageCropperModal');
-      const cropperCanvas = document.getElementById('cropperCanvas');
-      const cropperCtx = cropperCanvas.getContext('2d');
-      const cropperZoom = document.getElementById('cropperZoom');
-      const cropperZoomValue = document.getElementById('cropperZoomValue');
-      const closeCropperBtn = document.getElementById('closeCropperBtn');
-      const cancelCropBtn = document.getElementById('cancelCropBtn');
-      const applyCropBtn = document.getElementById('applyCropBtn');
-
-      let cropperImage = null;
-      let cropperScale = 1;
-      let cropperOffsetX = 0;
-      let cropperOffsetY = 0;
-      let isDragging = false;
-      let dragStartX = 0;
-      let dragStartY = 0;
-      let dragStartOffsetX = 0;
-      let dragStartOffsetY = 0;
-
-      function openCropper(imageDataUrl) {
-        const img = new Image();
-        img.onload = () => {
-          cropperImage = img;
-          cropperScale = 1;
-          cropperOffsetX = 0;
-          cropperOffsetY = 0;
-          cropperZoom.value = 100;
-          cropperZoomValue.textContent = '100%';
-
-          // Set canvas size to fit container (400x400)
-          cropperCanvas.width = 400;
-          cropperCanvas.height = 400;
-
-          cropperModal.style.display = 'flex';
-          drawCropper();
-        };
-        img.src = imageDataUrl;
-      }
-
-      function closeCropper() {
-        cropperModal.style.display = 'none';
-        cropperImage = null;
-        cropperOffsetX = 0;
-        cropperOffsetY = 0;
-        isDragging = false;
-        // Reset file input
-        centerImage.value = '';
-      }
-
-      function drawCropper() {
-        if (!cropperImage) return;
-
-        cropperCtx.clearRect(0, 0, cropperCanvas.width, cropperCanvas.height);
-        cropperCtx.fillStyle = '#000';
-        cropperCtx.fillRect(0, 0, cropperCanvas.width, cropperCanvas.height);
-
-        // Calculate scaled dimensions
-        const scale = cropperScale;
-        const imgWidth = cropperImage.width * scale;
-        const imgHeight = cropperImage.height * scale;
-
-        // Center the image with offset for dragging
-        const x = (cropperCanvas.width - imgWidth) / 2 + cropperOffsetX;
-        const y = (cropperCanvas.height - imgHeight) / 2 + cropperOffsetY;
-
-        cropperCtx.drawImage(cropperImage, x, y, imgWidth, imgHeight);
-      }
-
-      // Mouse drag handlers for cropper
-      cropperCanvas.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        dragStartOffsetX = cropperOffsetX;
-        dragStartOffsetY = cropperOffsetY;
-        cropperCanvas.style.cursor = 'grabbing';
-      });
-
-      cropperCanvas.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - dragStartX;
-        const dy = e.clientY - dragStartY;
-        cropperOffsetX = dragStartOffsetX + dx;
-        cropperOffsetY = dragStartOffsetY + dy;
-        drawCropper();
-      });
-
-      cropperCanvas.addEventListener('mouseup', () => {
-        isDragging = false;
-        cropperCanvas.style.cursor = 'grab';
-      });
-
-      cropperCanvas.addEventListener('mouseleave', () => {
-        if (isDragging) {
-          isDragging = false;
-          cropperCanvas.style.cursor = 'grab';
-        }
-      });
-
-      // Set initial cursor style
-      cropperCanvas.style.cursor = 'grab';
-
-      // Touch support for mobile
-      cropperCanvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          isDragging = true;
-          dragStartX = e.touches[0].clientX;
-          dragStartY = e.touches[0].clientY;
-          dragStartOffsetX = cropperOffsetX;
-          dragStartOffsetY = cropperOffsetY;
-          e.preventDefault();
-        }
-      }, { passive: false });
-
-      cropperCanvas.addEventListener('touchmove', (e) => {
-        if (!isDragging || e.touches.length !== 1) return;
-        const dx = e.touches[0].clientX - dragStartX;
-        const dy = e.touches[0].clientY - dragStartY;
-        cropperOffsetX = dragStartOffsetX + dx;
-        cropperOffsetY = dragStartOffsetY + dy;
-        drawCropper();
-        e.preventDefault();
-      }, { passive: false });
-
-      cropperCanvas.addEventListener('touchend', () => {
-        isDragging = false;
-      });
-
-      function applyCrop() {
-        if (!cropperImage) return;
-
-        // Create a temporary canvas for the cropped result
-        // Use high resolution (512x512) to prevent pixelation when displayed in visualizer
-        const resultCanvas = document.createElement('canvas');
-        const resultCtx = resultCanvas.getContext('2d');
-        const cropSize = 512; // Higher resolution for better quality
-
-        resultCanvas.width = cropSize;
-        resultCanvas.height = cropSize;
-
-        // Enable high-quality image smoothing
-        resultCtx.imageSmoothingEnabled = true;
-        resultCtx.imageSmoothingQuality = 'high';
-
-        // Calculate the source rectangle from the cropper canvas
-        const centerX = cropperCanvas.width / 2;
-        const centerY = cropperCanvas.height / 2;
-        const cropRadius = 100; // Half of display cropSize (200px circle in cropper UI)
-
-        // Get the visible portion parameters (including drag offset)
-        const scale = cropperScale;
-        const imgWidth = cropperImage.width * scale;
-        const imgHeight = cropperImage.height * scale;
-        const imgX = (cropperCanvas.width - imgWidth) / 2 + cropperOffsetX;
-        const imgY = (cropperCanvas.height - imgHeight) / 2 + cropperOffsetY;
-
-        // Calculate source coordinates on the original image
-        const srcCenterX = (centerX - imgX) / scale;
-        const srcCenterY = (centerY - imgY) / scale;
-        const srcRadius = cropRadius / scale;
-
-        // Draw the cropped circular image
-        resultCtx.save();
-        resultCtx.beginPath();
-        resultCtx.arc(cropSize / 2, cropSize / 2, cropSize / 2, 0, Math.PI * 2);
-        resultCtx.clip();
-
-        // Draw image centered in the circle at high resolution
-        resultCtx.drawImage(
-          cropperImage,
-          srcCenterX - srcRadius,
-          srcCenterY - srcRadius,
-          srcRadius * 2,
-          srcRadius * 2,
-          0,
-          0,
-          cropSize,
-          cropSize
-        );
-        resultCtx.restore();
-
-        // Convert to data URL and save with high quality
-        const croppedDataUrl = resultCanvas.toDataURL('image/png', 1.0);
-        currentCenterImageUrl = croppedDataUrl;
-        recorder.setVisualizerOptions({ custom: { centerImage: croppedDataUrl } });
-        saveSettings(getCurrentSettings());
-
-        // Show center image position controls since we now have a center image
-        centerImagePositionControls.style.display = 'grid';
-
-        closeCropper();
-        updatePreview();
-      }
-
-      // Cropper zoom handler
-      cropperZoom.addEventListener('input', () => {
-        const zoomPercent = parseInt(cropperZoom.value);
-        cropperZoomValue.textContent = zoomPercent + '%';
-        cropperScale = zoomPercent / 100;
-        drawCropper();
-      });
-
-      // Cropper button handlers
-      closeCropperBtn.addEventListener('click', closeCropper);
-      cancelCropBtn.addEventListener('click', closeCropper);
-      applyCropBtn.addEventListener('click', applyCrop);
-
-      // Close modal on backdrop click
-      cropperModal.addEventListener('click', (e) => {
-        if (e.target === cropperModal) {
-          closeCropper();
-        }
-      });
-
-      // Center image upload handler (for circular visualizer)
-      centerImage.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = async (event) => {
-            const dataUrl = event.target.result;
-            // Open cropper modal instead of applying directly
-            openCropper(dataUrl);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      // Center image zoom handler
-      centerImageZoom.addEventListener('input', () => {
-        const zoomValue = parseInt(centerImageZoom.value);
-        centerImageZoomValue.textContent = zoomValue + '%';
-        recorder.setVisualizerOptions({
-          custom: {
-            centerImageZoom: zoomValue / 100,
-          },
-        });
-        updatePreview();
-      });
-      centerImageZoom.addEventListener('change', () => {
-        saveSettings(getCurrentSettings());
-      });
-
-      // Center image offset X handler
-      centerImageOffsetX.addEventListener('input', () => {
-        const offsetXVal = parseInt(centerImageOffsetX.value);
-        centerImageOffsetXValue.textContent = offsetXVal + 'px';
-        recorder.setVisualizerOptions({
-          custom: {
-            centerImageOffsetX: offsetXVal,
-          },
-        });
-        updatePreview();
-      });
-      centerImageOffsetX.addEventListener('change', () => {
-        saveSettings(getCurrentSettings());
-      });
-
-      // Center image offset Y handler
-      centerImageOffsetY.addEventListener('input', () => {
-        const offsetYVal = parseInt(centerImageOffsetY.value);
-        centerImageOffsetYValue.textContent = offsetYVal + 'px';
-        recorder.setVisualizerOptions({
-          custom: {
-            centerImageOffsetY: offsetYVal,
-          },
-        });
-        updatePreview();
-      });
-      centerImageOffsetY.addEventListener('change', () => {
-        saveSettings(getCurrentSettings());
-      });
-
-      // Update progress bar with accessibility
-      const progressBar = document.querySelector('.progress-bar');
-      const updateProgress = (progress) => {
-        const percentage = Math.round(progress * 100);
-        progressBar.setAttribute('aria-valuenow', percentage);
-        progressFill.style.width = percentage + '%';
-      };
-
-      // Audio file for conversion
-      audioFile.addEventListener('change', () => {
-        convertBtn.disabled = !audioFile.files.length || isRecording;
-      });
-
-      // Convert audio to video
-      convertBtn.addEventListener('click', async () => {
-        const file = audioFile.files[0];
-        if (!file) return;
-
-        isConverting = true;
-        convertBtn.disabled = true;
-        convertBtn.style.display = 'none';
-        cancelConvertBtn.style.display = 'inline-flex';
-        progressBar.style.display = 'block';
-        updateStatus('Converting audio to video...', 'recording');
-        updateButtonStates();
-
-        // Pause AudioRecorder visualization during conversion to prevent flickering
-        // (both would draw to the same canvas causing visual artifacts)
-        const wasVisualizationActive = recorder.isVisualizationActive;
-        if (wasVisualizationActive) {
-          recorder.stopVisualization();
-        }
-
-        try {
-          // Get video dimensions based on quality setting
-          const qualityMap = {
-            '720p': { width: 1280, height: 720 },
-            '1080p': { width: 1920, height: 1080 },
-            '1440p': { width: 2560, height: 1440 },
-            '2160p': { width: 3840, height: 2160 },
-          };
-          const quality = qualityMap[videoQuality.value] || qualityMap['1080p'];
-
-          const offlineRenderCheckbox = document.getElementById('offlineRender');
-          const blob = await converter.convert({
-            audioSource: file,
-            canvas,
-            visualizer: visualizerSelect.value,
-            visualizerOptions: getCurrentOptions(),
-            fps: 30,
-            videoWidth: quality.width,
-            videoHeight: quality.height,
-            onProgress: updateProgress,
-            offlineRender: offlineRenderCheckbox.checked,
-          });
-
-          updateStatus('Conversion complete!', 'ready');
-          addRecording(blob);
-        } catch (error) {
-          if (error.message.includes('cancelled')) {
-            updateStatus('Conversion cancelled', 'ready');
-          } else {
-            updateStatus('Error: ' + error.message, 'error');
-          }
-          console.error(error);
-        } finally {
-          isConverting = false;
-          convertBtn.disabled = false;
-          convertBtn.style.display = 'inline-flex';
-          cancelConvertBtn.style.display = 'none';
-          progressBar.style.display = 'none';
-          updateProgress(0);
-          updateButtonStates();
-
-          // Resume AudioRecorder visualization if it was active before conversion
-          if (wasVisualizationActive && recorder.sourceType) {
-            recorder.resumeVisualization();
-          }
-        }
-      });
-
-      // Cancel conversion
-      cancelConvertBtn.addEventListener('click', () => {
-        converter.cancel();
-        updateStatus('Cancelling conversion...', 'ready');
-      });
-
-      // Canvas drag support for adjusting visualization position
-      let canvasDragging = false;
-      let canvasDragStartX = 0;
-      let canvasDragStartY = 0;
-      let canvasDragStartOffsetX = 0;
-      let canvasDragStartOffsetY = 0;
-      let isDraggingCenterImage = false; // Track if we're dragging center image (Shift key)
-
-      // Mouse drag handlers for canvas
-      canvas.addEventListener('mousedown', (e) => {
-        canvasDragging = true;
-        canvasDragStartX = e.clientX;
-        canvasDragStartY = e.clientY;
-
-        // Check if Shift key is held and we're in circular mode with center image
-        isDraggingCenterImage = e.shiftKey && visualizerSelect.value === 'circular' && currentCenterImageUrl;
-
-        if (isDraggingCenterImage) {
-          canvasDragStartOffsetX = parseInt(centerImageOffsetX.value);
-          canvasDragStartOffsetY = parseInt(centerImageOffsetY.value);
-        } else {
-          canvasDragStartOffsetX = parseInt(offsetX.value);
-          canvasDragStartOffsetY = parseInt(offsetY.value);
-        }
-        canvas.style.cursor = 'grabbing';
-      });
-
-      canvas.addEventListener('mousemove', (e) => {
-        if (!canvasDragging) return;
-        const dx = e.clientX - canvasDragStartX;
-        const dy = e.clientY - canvasDragStartY;
-
-        if (isDraggingCenterImage) {
-          // Drag center image position
-          const newCenterOffsetX = Math.max(-100, Math.min(100, canvasDragStartOffsetX + dx));
-          const newCenterOffsetY = Math.max(-100, Math.min(100, canvasDragStartOffsetY + dy));
-
-          // Update sliders
-          centerImageOffsetX.value = newCenterOffsetX;
-          centerImageOffsetY.value = newCenterOffsetY;
-          centerImageOffsetXValue.textContent = newCenterOffsetX + 'px';
-          centerImageOffsetYValue.textContent = newCenterOffsetY + 'px';
-
-          // Update visualizer
-          recorder.setVisualizerOptions({
-            custom: {
-              centerImageOffsetX: newCenterOffsetX,
-              centerImageOffsetY: newCenterOffsetY,
-            },
-          });
-        } else {
-          // Drag visualization position
-          const newOffsetX = Math.max(-200, Math.min(200, canvasDragStartOffsetX + dx));
-          const newOffsetY = Math.max(-200, Math.min(200, canvasDragStartOffsetY + dy));
-
-          // Update sliders
-          offsetX.value = newOffsetX;
-          offsetY.value = newOffsetY;
-          offsetXValue.textContent = newOffsetX + 'px';
-          offsetYValue.textContent = newOffsetY + 'px';
-
-          // Update visualizer
-          recorder.setVisualizerOptions({ offsetX: newOffsetX, offsetY: newOffsetY });
-        }
-        updatePreview();
-      });
-
-      canvas.addEventListener('mouseup', () => {
-        if (canvasDragging) {
-          canvasDragging = false;
-          isDraggingCenterImage = false;
-          canvas.style.cursor = 'grab';
-          saveSettings(getCurrentSettings());
-        }
-      });
-
-      canvas.addEventListener('mouseleave', () => {
-        if (canvasDragging) {
-          canvasDragging = false;
-          isDraggingCenterImage = false;
-          canvas.style.cursor = 'grab';
-          saveSettings(getCurrentSettings());
-        }
-      });
-
-      // Set initial cursor for canvas
-      canvas.style.cursor = 'grab';
-
-      // Touch drag handlers for canvas (mobile support)
-      canvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          canvasDragging = true;
-          canvasDragStartX = e.touches[0].clientX;
-          canvasDragStartY = e.touches[0].clientY;
-          canvasDragStartOffsetX = parseInt(offsetX.value);
-          canvasDragStartOffsetY = parseInt(offsetY.value);
-        }
-      }, { passive: true });
-
-      canvas.addEventListener('touchmove', (e) => {
-        if (!canvasDragging) return;
-        const dx = e.touches[0].clientX - canvasDragStartX;
-        const dy = e.touches[0].clientY - canvasDragStartY;
-        const newOffsetX = Math.max(-200, Math.min(200, canvasDragStartOffsetX + dx));
-        const newOffsetY = Math.max(-200, Math.min(200, canvasDragStartOffsetY + dy));
-
-        // Update sliders
-        offsetX.value = newOffsetX;
-        offsetY.value = newOffsetY;
-        offsetXValue.textContent = newOffsetX + 'px';
-        offsetYValue.textContent = newOffsetY + 'px';
-
-        // Update visualizer
-        recorder.setVisualizerOptions({ offsetX: newOffsetX, offsetY: newOffsetY });
-        updatePreview();
-      }, { passive: true });
-
-      canvas.addEventListener('touchend', () => {
-        if (canvasDragging) {
-          canvasDragging = false;
-          saveSettings(getCurrentSettings());
-        }
-      });
-
-      // Helper function to check if mouse is over center image area (for circular visualizer)
-      function isMouseOverCenterImage(e) {
-        if (visualizerSelect.value !== 'circular' || !currentCenterImageUrl) {
-          return false;
-        }
-
-        // Get canvas bounding rect to convert page coordinates to canvas coordinates
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const canvasX = (e.clientX - rect.left) * scaleX;
-        const canvasY = (e.clientY - rect.top) * scaleY;
-
-        // Calculate center and radius of the center image area
-        // These should match the CircularVisualizer's center image positioning
-        const centerX = canvas.width / 2 + (parseInt(offsetX.value) || 0);
-        const centerY = canvas.height / 2 + (parseInt(offsetY.value) || 0);
-        const scale = (parseInt(visualizationScale.value) || 100) / 100;
-        const minDimension = Math.min(canvas.width, canvas.height) * scale;
-        const innerRadius = 0.3 * minDimension; // matches CircularVisualizer innerRadius
-        const centerRadius = innerRadius * 0.9; // matches center circle radius
-
-        // Check if mouse is within the center circle
-        const distance = Math.sqrt((canvasX - centerX) ** 2 + (canvasY - centerY) ** 2);
-        return distance <= centerRadius;
-      }
-
-      // Add scroll-to-zoom for center image when hovering over it
-      canvas.addEventListener('wheel', (e) => {
-        if (isMouseOverCenterImage(e)) {
-          e.preventDefault();
-
-          // Adjust center image zoom
-          const currentZoom = parseInt(centerImageZoom.value);
-          const step = 10; // 10% per scroll step
-          const delta = e.deltaY < 0 ? step : -step;
-          const newZoom = Math.max(50, Math.min(300, currentZoom + delta));
-
-          centerImageZoom.value = newZoom;
-          centerImageZoomValue.textContent = newZoom + '%';
-          recorder.setVisualizerOptions({
-            custom: {
-              centerImageZoom: newZoom / 100,
-            },
-          });
-          saveSettings(getCurrentSettings());
-          updatePreview();
-        }
-      }, { passive: false });
-
-      // Add visual feedback when hovering over center image
-      canvas.addEventListener('mousemove', (e) => {
-        if (!canvasDragging && isMouseOverCenterImage(e)) {
-          canvas.style.cursor = 'zoom-in';
-          canvas.title = 'Scroll to zoom center image';
-        } else if (!canvasDragging) {
-          canvas.style.cursor = 'grab';
-          canvas.title = '';
-        }
-      });
-
-      // Add mouse wheel support for all range sliders (only when focused/clicked)
-      const rangeInputs = document.querySelectorAll('input[type="range"]');
-      rangeInputs.forEach(slider => {
-        // Track whether slider is active (clicked or focused)
-        let isSliderActive = false;
-
-        slider.addEventListener('focus', () => {
-          isSliderActive = true;
-        });
-
-        slider.addEventListener('blur', () => {
-          isSliderActive = false;
-        });
-
-        slider.addEventListener('mousedown', () => {
-          isSliderActive = true;
-        });
-
-        slider.addEventListener('wheel', (e) => {
-          // Only handle wheel events when slider is focused/active
-          if (!isSliderActive) {
-            return; // Don't prevent default, let page scroll normally
-          }
-
-          e.preventDefault();
-          const step = parseFloat(slider.step) || 1;
-          const delta = e.deltaY < 0 ? step : -step;
-          const newValue = parseFloat(slider.value) + delta;
-          const min = parseFloat(slider.min);
-          const max = parseFloat(slider.max);
-
-          if (newValue >= min && newValue <= max) {
-            slider.value = newValue;
-            // Trigger input event to update the visualization
-            slider.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-        }, { passive: false });
-      });
-
-      // Keyboard shortcuts for better UX
-      document.addEventListener('keydown', (e) => {
-        // Prevent shortcuts when typing in inputs
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
-          return;
-        }
-
-        // Space: Start/Stop microphone
-        if (e.code === 'Space') {
-          e.preventDefault();
-          if (!startMicBtn.disabled) {
-            startMicBtn.click();
-          } else if (!stopMicBtn.disabled) {
-            stopMicBtn.click();
-          }
-        }
-
-        // R: Start/Stop recording
-        if (e.code === 'KeyR') {
-          e.preventDefault();
-          if (!startRecordBtn.disabled) {
-            startRecordBtn.click();
-          } else if (!stopRecordBtn.disabled) {
-            stopRecordBtn.click();
-          }
-        }
-
-        // 1-8: Switch visualizers
-        if (e.code >= 'Digit1' && e.code <= 'Digit8') {
-          e.preventDefault();
-          const visualizers = ['bars', 'waveform', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram'];
-          const index = parseInt(e.code.replace('Digit', '')) - 1;
-          if (visualizers[index]) {
-            visualizerSelect.value = visualizers[index];
-            visualizerSelect.dispatchEvent(new Event('change'));
-          }
-        }
-
-        // M: Toggle mirror mode
-        if (e.code === 'KeyM') {
-          e.preventDefault();
-          mirror.checked = !mirror.checked;
-          mirror.dispatchEvent(new Event('input'));
-        }
-
-        // Arrow keys: Adjust bar count
-        if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
-          e.preventDefault();
-          const currentValue = parseInt(barCount.value);
-          const step = 8;
-          if (e.code === 'ArrowUp' && currentValue < 256) {
-            barCount.value = Math.min(256, currentValue + step);
-          } else if (e.code === 'ArrowDown' && currentValue > 16) {
-            barCount.value = Math.max(16, currentValue - step);
-          }
-          barCount.dispatchEvent(new Event('input'));
-        }
-
-        // ? or /: Show keyboard shortcuts help
-        if (e.key === '?' || e.key === '/') {
-          e.preventDefault();
-          alert(`Keyboard Shortcuts:
-
-Space - Start/Stop Microphone
-R - Start/Stop Recording
-1-8 - Switch Visualizers:
-  1=Bars, 2=Waveform, 3=Circular, 4=Particles
-  5=Spectrum Gradient, 6=Glow Waveform, 7=VU Meter, 8=Spectrogram
-M - Toggle Mirror Mode
-↑/↓ - Adjust Bar Count
-? or / - Show this help
-
-Mouse:
-Drag on canvas - Move visualization position`);
-        }
-      });
-
-      // Show available visualizers in console
-      console.log('Available visualizers:', AudioRecorder.getAvailableVisualizers());
-      console.log('Supported formats:', AudioRecorder.getSupportedFormats());
-      console.log('Keyboard shortcuts: Press ? or / for help');
-    })();
-  </script>
+  <script src="app-core.js"></script>
+  <script src="app-features.js"></script>
+  <script src="app-interactions.js"></script>
+  <script src="youtube-upload.js"></script>
+  <script src="pipeline.js"></script>
 </body>
 </html>

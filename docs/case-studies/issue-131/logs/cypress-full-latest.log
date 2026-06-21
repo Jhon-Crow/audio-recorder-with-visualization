@@ -1,0 +1,394 @@
+
+DevTools listening on ws://127.0.0.1:40127/devtools/browser/a372eeb6-dba6-46b6-b795-cf937b498d12
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          9 found (aspect-ratio-settings.cy.js, background-size-preservation.cy.js, batc │
+  │                 h-visualization.cy.js, image-blink-controls.cy.js, large-file-handling.cy.js,  │
+  │                 pipeline-mode.cy.js, preset-management.cy.js, preview-alignment-guides.cy.js,  │
+  │                 youtube-upload-ui.cy.js)                                                       │
+  │ Searched:       cypress/e2e/**/*.cy.{js,jsx,ts,tsx}                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  aspect-ratio-settings.cy.js                                                     (1 of 9)
+
+
+  Aspect Ratio Settings
+    ✓ defaults to 16:9 and preserves the existing 1080p canvas size (983ms)
+    ✓ switches 1080p output to 9:16 shorts dimensions (705ms)
+    ✓ calculates portrait dimensions from the selected quality height (674ms)
+    ✓ restores the selected aspect ratio after reload (1367ms)
+
+
+  4 passing (4s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     3 seconds                                                                        │
+  │ Spec Ran:     aspect-ratio-settings.cy.js                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/aspect-ratio-settings.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  background-size-preservation.cy.js                                              (2 of 9)
+
+
+  Background Size Mode Preservation
+    ✓ should load with default background size mode (cover) (814ms)
+    ✓ should persist background size mode to localStorage when changed (1311ms)
+    ✓ should restore background size mode after page reload (8324ms)
+    ✓ should apply background size mode correctly with a background image (7669ms)
+    ✓ should preserve background size mode with background image after reload (3143ms)
+    ✓ should show custom size controls when custom mode is selected (1545ms)
+
+
+  6 passing (23s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      6                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  5                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     23 seconds                                                                       │
+  │ Spec Ran:     background-size-preservation.cy.js                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780839127324/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-cover.png                                                            
+  -  /tmp/gh-issue-solver-1780839127324/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-contain.png                                                          
+  -  /tmp/gh-issue-solver-1780839127324/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-stretch.png                                                          
+  -  /tmp/gh-issue-solver-1780839127324/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-center.png                                                           
+  -  /tmp/gh-issue-solver-1780839127324/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-contain-after-reload.png                                                  
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/background-size-preservation.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  batch-visualization.cy.js                                                       (3 of 9)
+
+
+  Batch Visualization Mode
+    ✓ allows selecting multiple audio files for conversion (313ms)
+    ✓ shows a disabled Save All button until recordings exist (250ms)
+    ✓ uses one Electron batch save request for Save All (325ms)
+    ✓ names every MP4 batch recording from the actual rendered blob type (251ms)
+    ✓ uses the selected output format for every file in a batch (332ms)
+
+
+  5 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        5                                                                                │
+  │ Passing:      5                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 second                                                                         │
+  │ Spec Ran:     batch-visualization.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/batch-visualization.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  image-blink-controls.cy.js                                                      (4 of 9)
+
+
+  Image Blink Controls
+    ✓ keeps frequency range sliders separated and updates their combined value (710ms)
+
+
+  1 passing (768ms)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     0 seconds                                                                        │
+  │ Spec Ran:     image-blink-controls.cy.js                                                       │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/image-blink-controls.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  large-file-handling.cy.js                                                       (5 of 9)
+
+
+  Large File Handling
+    ✓ should handle Uint8Array conversion for file transfer (700ms)
+    ✓ should not use Array.from for blob conversion (660ms)
+    ✓ should handle Blob.arrayBuffer() conversion (12892ms)
+    ✓ should demonstrate Array.from limitation for documentation (2623ms)
+
+
+  4 passing (17s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     16 seconds                                                                       │
+  │ Spec Ran:     large-file-handling.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/large-file-handling.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  pipeline-mode.cy.js                                                             (6 of 9)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (2349ms)
+    ✓ requires files before running and resets selected fields with a hold action (4183ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (3547ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (1638ms)
+    ✓ keeps relative publish dates current when the reference date changes (1209ms)
+    ✓ loads sidebar presets stored as flat setting objects (2142ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1227ms)
+    ✓ deletes a stage only after confirmation (1442ms)
+    ✓ keeps YouTube upload options separate for each stage (3768ms)
+    ✓ turns selected album files into ordered editable tracks (873ms)
+    ✓ resets added files from a stage without opening the full reset modal (836ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (760ms)
+    ✓ runs visualization-only stages through the converter (1506ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (3922ms)
+    ✓ keeps generated tooltip boxes inside the viewport (810ms)
+
+
+  15 passing (31s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        15                                                                               │
+  │ Passing:      15                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     31 seconds                                                                       │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  preset-management.cy.js                                                         (7 of 9)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (1767ms)
+    ✓ uses skip dialog mode with numbered default names (1150ms)
+    ✓ renames, deletes, and reorders presets from the sidebar (2175ms)
+    ✓ highlights the loaded preset until settings change (1720ms)
+    ✓ restores the active preset highlight after reload when settings still match (2386ms)
+    ✓ loads presets from a manually selected Electron folder (1164ms)
+    ✓ loads presets from a saved Electron folder on startup (732ms)
+
+
+  7 passing (11s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        7                                                                                │
+  │ Passing:      7                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     11 seconds                                                                       │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/preset-management.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  preview-alignment-guides.cy.js                                                  (8 of 9)
+
+
+  Preview Alignment Guides
+    ✓ shows a preview-only mounting-area outline for portrait output (703ms)
+    ✓ reveals grid and smart guides only while dragging visualization offsets (1137ms)
+
+
+  2 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 second                                                                         │
+  │ Spec Ran:     preview-alignment-guides.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/preview-alignment-guides.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  youtube-upload-ui.cy.js                                                         (9 of 9)
+
+
+  YouTube Upload UI
+    ✓ shows an upload button beside the generated recording download action (842ms)
+    ✓ offers to reopen file origins on localhost before Google sign-in (796ms)
+    ✓ explains invalid OAuth client IDs before Google sign-in (1170ms)
+    ✓ opens Google Cloud OAuth setup guidance with the current origin (840ms)
+    ✓ explains Google invalid_client responses with origin setup guidance (1370ms)
+    ✓ uses Electron native OAuth instead of the browser Google token flow (1459ms)
+    ✓ restores saved Google authorization after a restart (813ms)
+    ✓ signs out from Google authorization settings (1025ms)
+    ✓ authorizes with Google and uploads metadata with the short tag enabled (3753ms)
+    ✓ remembers upload form options from the last upload attempt (3526ms)
+    ✓ keeps the upload form open when text selection ends outside the form (1972ms)
+
+
+  11 passing (18s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        11                                                                               │
+  │ Passing:      11                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     17 seconds                                                                       │
+  │ Spec Ran:     youtube-upload-ui.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780839127324/cypress/videos/youtube-upload-ui.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  aspect-ratio-settings.cy.js              00:03        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  background-size-preservation.cy.js       00:23        6        6        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  batch-visualization.cy.js                00:01        5        5        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  image-blink-controls.cy.js               768ms        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  large-file-handling.cy.js                00:16        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  pipeline-mode.cy.js                      00:31       15       15        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preset-management.cy.js                  00:11        7        7        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preview-alignment-guides.cy.js           00:01        2        2        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  youtube-upload-ui.cy.js                  00:17       11       11        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        01:48       55       55        -        -        -  
+

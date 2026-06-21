@@ -11,5 +11,85 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const uint8Array = new Uint8Array(arrayBuffer);
     return ipcRenderer.invoke('save-video-and-show', uint8Array, fileName);
   },
+  saveAllVideosAndShow: async (recordings) => {
+    const serializedRecordings = await Promise.all(recordings.map(async (recording) => {
+      const arrayBuffer = await recording.blob.arrayBuffer();
+      return {
+        blob: new Uint8Array(arrayBuffer),
+        fileName: recording.fileName
+      };
+    }));
+    return ipcRenderer.invoke('save-all-videos-and-show', serializedRecordings);
+  },
+  authorizeYouTube: async (clientId, clientSecret) => {
+    return ipcRenderer.invoke('youtube-authorize', { clientId, clientSecret });
+  },
+  clearYouTubeAuthorization: async () => {
+    return ipcRenderer.invoke('youtube-clear-authorization');
+  },
+  choosePresetFolder: async () => {
+    return ipcRenderer.invoke('preset-choose-folder');
+  },
+  savePresetFile: async (folderPath, preset) => {
+    return ipcRenderer.invoke('preset-save-file', folderPath, preset);
+  },
+  loadPresetFiles: async (folderPath) => {
+    return ipcRenderer.invoke('preset-load-files', folderPath);
+  },
+  updatePresetFile: async (filePath, preset) => {
+    return ipcRenderer.invoke('preset-update-file', filePath, preset);
+  },
+  deletePresetFile: async (filePath) => {
+    return ipcRenderer.invoke('preset-delete-file', filePath);
+  },
   isElectron: true,
+
+  // ==================== PRESENTATION MODE APIs ====================
+
+  // Start presentation mode with given settings
+  presentationStart: async (settings) => {
+    return ipcRenderer.invoke('presentation-start', settings);
+  },
+
+  // Stop presentation mode
+  presentationStop: async () => {
+    return ipcRenderer.invoke('presentation-stop');
+  },
+
+  // Update presentation settings in real-time
+  presentationUpdate: async (settings) => {
+    return ipcRenderer.invoke('presentation-update', settings);
+  },
+
+  // Check presentation status
+  presentationStatus: async () => {
+    return ipcRenderer.invoke('presentation-status');
+  },
+
+  // Send visualization frame data to presentation window
+  presentationSendFrame: (frameData) => {
+    ipcRenderer.send('presentation-frame', frameData);
+  },
+
+  // Send visualizer options to presentation window
+  presentationSendVisualizerOptions: (options) => {
+    ipcRenderer.send('presentation-visualizer-options', options);
+  },
+
+  // Send visualizer type change to presentation window
+  presentationSendVisualizerType: (type) => {
+    ipcRenderer.send('presentation-visualizer-type', type);
+  },
+
+  // Listen for presentation closed event
+  onPresentationClosed: (callback) => {
+    ipcRenderer.on('presentation-closed', callback);
+    return () => ipcRenderer.removeListener('presentation-closed', callback);
+  },
+
+  // Listen for presentation window position changes (for saving to settings)
+  onPresentationPositionChanged: (callback) => {
+    ipcRenderer.on('presentation-position-changed', (event, position) => callback(position));
+    return () => ipcRenderer.removeListener('presentation-position-changed', callback);
+  },
 });

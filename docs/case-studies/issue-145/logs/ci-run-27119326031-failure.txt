@@ -1,0 +1,232 @@
+build	UNKNOWN STEP	﻿2026-06-08T06:10:20.5577261Z Current runner version: '2.334.0'
+build	UNKNOWN STEP	2026-06-08T06:10:20.5798282Z ##[group]Runner Image Provisioner
+build	UNKNOWN STEP	2026-06-08T06:10:20.5799184Z Hosted Compute Agent
+build	UNKNOWN STEP	2026-06-08T06:10:20.5799754Z Version: 20260520.533
+build	UNKNOWN STEP	2026-06-08T06:10:20.5800389Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+build	UNKNOWN STEP	2026-06-08T06:10:20.5801148Z Build Date: 2026-05-20T17:44:04Z
+build	UNKNOWN STEP	2026-06-08T06:10:20.5801818Z Worker ID: {f794c2e6-ca14-422c-8d3d-96c4a5486862}
+build	UNKNOWN STEP	2026-06-08T06:10:20.5802571Z Azure Region: northcentralus
+build	UNKNOWN STEP	2026-06-08T06:10:20.5803171Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:20.5804602Z ##[group]Operating System
+build	UNKNOWN STEP	2026-06-08T06:10:20.5805322Z Microsoft Windows Server 2025
+build	UNKNOWN STEP	2026-06-08T06:10:20.5806086Z 10.0.26100
+build	UNKNOWN STEP	2026-06-08T06:10:20.5806973Z Datacenter
+build	UNKNOWN STEP	2026-06-08T06:10:20.5807536Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:20.5808066Z ##[group]Runner Image
+build	UNKNOWN STEP	2026-06-08T06:10:20.5808686Z Image: windows-2025
+build	UNKNOWN STEP	2026-06-08T06:10:20.5809259Z Version: 20260525.149.1
+build	UNKNOWN STEP	2026-06-08T06:10:20.5810781Z Included Software: https://github.com/actions/runner-images/blob/win25/20260525.149/images/windows/Windows2025-Readme.md
+build	UNKNOWN STEP	2026-06-08T06:10:20.5812595Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260525.149
+build	UNKNOWN STEP	2026-06-08T06:10:20.5813641Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:20.5814945Z ##[group]GITHUB_TOKEN Permissions
+build	UNKNOWN STEP	2026-06-08T06:10:20.5816885Z Contents: read
+build	UNKNOWN STEP	2026-06-08T06:10:20.5817450Z Metadata: read
+build	UNKNOWN STEP	2026-06-08T06:10:20.5818492Z Packages: read
+build	UNKNOWN STEP	2026-06-08T06:10:20.5819027Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:20.5821223Z Secret source: None
+build	UNKNOWN STEP	2026-06-08T06:10:20.5821958Z Prepare workflow directory
+build	UNKNOWN STEP	2026-06-08T06:10:20.6962184Z Prepare all required actions
+build	UNKNOWN STEP	2026-06-08T06:10:20.7000096Z Getting action download info
+build	UNKNOWN STEP	2026-06-08T06:10:21.1030830Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	UNKNOWN STEP	2026-06-08T06:10:21.2812784Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+build	UNKNOWN STEP	2026-06-08T06:10:21.5142204Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	UNKNOWN STEP	2026-06-08T06:10:22.1787440Z Complete job name: build
+build	UNKNOWN STEP	2026-06-08T06:10:22.7769751Z ##[group]Run actions/checkout@v4
+build	UNKNOWN STEP	2026-06-08T06:10:22.7771000Z with:
+build	UNKNOWN STEP	2026-06-08T06:10:22.7772252Z   repository: Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:22.7777920Z   token: ***
+build	UNKNOWN STEP	2026-06-08T06:10:22.7778432Z   ssh-strict: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7778945Z   ssh-user: git
+build	UNKNOWN STEP	2026-06-08T06:10:22.7779469Z   persist-credentials: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7779975Z   clean: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7780400Z   sparse-checkout-cone-mode: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7780894Z   fetch-depth: 1
+build	UNKNOWN STEP	2026-06-08T06:10:22.7781299Z   fetch-tags: false
+build	UNKNOWN STEP	2026-06-08T06:10:22.7781721Z   show-progress: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7782144Z   lfs: false
+build	UNKNOWN STEP	2026-06-08T06:10:22.7782529Z   submodules: false
+build	UNKNOWN STEP	2026-06-08T06:10:22.7782958Z   set-safe-directory: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7783674Z env:
+build	UNKNOWN STEP	2026-06-08T06:10:22.7784118Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	UNKNOWN STEP	2026-06-08T06:10:22.7784680Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:22.9628250Z Syncing repository: Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:22.9631017Z ##[group]Getting Git version info
+build	UNKNOWN STEP	2026-06-08T06:10:22.9631989Z Working directory is 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	UNKNOWN STEP	2026-06-08T06:10:23.0546223Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	UNKNOWN STEP	2026-06-08T06:10:23.3989850Z git version 2.54.0.windows.1
+build	UNKNOWN STEP	2026-06-08T06:10:23.4044927Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:23.4075595Z Temporarily overriding HOME='D:\a\_temp\fe3a33d7-21c7-46e1-82be-39fb0c7169c2' before making global git config changes
+build	UNKNOWN STEP	2026-06-08T06:10:23.4078033Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-06-08T06:10:23.4080820Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:23.4673220Z Deleting the contents of 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization'
+build	UNKNOWN STEP	2026-06-08T06:10:23.4724825Z ##[group]Initializing the repository
+build	UNKNOWN STEP	2026-06-08T06:10:23.4728151Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:23.5959066Z Initialized empty Git repository in D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization/.git/
+build	UNKNOWN STEP	2026-06-08T06:10:23.6010090Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:23.6524367Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:23.6526154Z ##[group]Disabling automatic garbage collection
+build	UNKNOWN STEP	2026-06-08T06:10:23.6532788Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+build	UNKNOWN STEP	2026-06-08T06:10:23.6826559Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:23.6828286Z ##[group]Setting up auth
+build	UNKNOWN STEP	2026-06-08T06:10:23.6838775Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-06-08T06:10:23.7126550Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	UNKNOWN STEP	2026-06-08T06:10:25.0695029Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-06-08T06:10:25.1001770Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	UNKNOWN STEP	2026-06-08T06:10:25.6225078Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-06-08T06:10:25.6525587Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	UNKNOWN STEP	2026-06-08T06:10:26.1957435Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+build	UNKNOWN STEP	2026-06-08T06:10:26.2216859Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:26.2218315Z ##[group]Fetching the repository
+build	UNKNOWN STEP	2026-06-08T06:10:26.2232075Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +59b1e994e80dd3522def89dfa1b4d53d782dd16e:refs/remotes/pull/147/merge
+build	UNKNOWN STEP	2026-06-08T06:10:28.7626443Z From https://github.com/Jhon-Crow/audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:10:28.7627634Z  * [new ref]         59b1e994e80dd3522def89dfa1b4d53d782dd16e -> pull/147/merge
+build	UNKNOWN STEP	2026-06-08T06:10:28.8120394Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:28.8121432Z ##[group]Determining the checkout info
+build	UNKNOWN STEP	2026-06-08T06:10:28.8123167Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:28.8133243Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+build	UNKNOWN STEP	2026-06-08T06:10:28.8596100Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+build	UNKNOWN STEP	2026-06-08T06:10:28.8972406Z ##[group]Checking out the ref
+build	UNKNOWN STEP	2026-06-08T06:10:28.8981972Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/147/merge
+build	UNKNOWN STEP	2026-06-08T06:10:29.1925283Z Note: switching to 'refs/remotes/pull/147/merge'.
+build	UNKNOWN STEP	2026-06-08T06:10:29.1925789Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.1926045Z You are in 'detached HEAD' state. You can look around, make experimental
+build	UNKNOWN STEP	2026-06-08T06:10:29.1926541Z changes and commit them, and you can discard any commits you make in this
+build	UNKNOWN STEP	2026-06-08T06:10:29.1926995Z state without impacting any branches by switching back to a branch.
+build	UNKNOWN STEP	2026-06-08T06:10:29.1927268Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.1927455Z If you want to create a new branch to retain commits you create, you may
+build	UNKNOWN STEP	2026-06-08T06:10:29.1927935Z do so (now or later) by using -c with the switch command. Example:
+build	UNKNOWN STEP	2026-06-08T06:10:29.1928189Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.1928307Z   git switch -c <new-branch-name>
+build	UNKNOWN STEP	2026-06-08T06:10:29.1928491Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.1928592Z Or undo this operation with:
+build	UNKNOWN STEP	2026-06-08T06:10:29.2398268Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.2399194Z   git switch -
+build	UNKNOWN STEP	2026-06-08T06:10:29.2399466Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.2399827Z Turn off this advice by setting config variable advice.detachedHead to false
+build	UNKNOWN STEP	2026-06-08T06:10:29.2400344Z 
+build	UNKNOWN STEP	2026-06-08T06:10:29.2401265Z HEAD is now at 59b1e99 Merge f84b9b7652dd9abbc0ba637f69c4d320ce05fb96 into c996ac5d0882090bba83bc5ce73e293a08ad841c
+build	UNKNOWN STEP	2026-06-08T06:10:29.3180840Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:29.3188883Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+build	UNKNOWN STEP	2026-06-08T06:10:29.3452734Z 59b1e994e80dd3522def89dfa1b4d53d782dd16e
+build	UNKNOWN STEP	2026-06-08T06:10:29.6404156Z ##[group]Run actions/setup-node@v4
+build	UNKNOWN STEP	2026-06-08T06:10:29.6404533Z with:
+build	UNKNOWN STEP	2026-06-08T06:10:29.6404755Z   node-version: 20
+build	UNKNOWN STEP	2026-06-08T06:10:29.6404987Z   cache: npm
+build	UNKNOWN STEP	2026-06-08T06:10:29.6405199Z   always-auth: false
+build	UNKNOWN STEP	2026-06-08T06:10:29.6405438Z   check-latest: false
+build	UNKNOWN STEP	2026-06-08T06:10:29.6409269Z   token: ***
+build	UNKNOWN STEP	2026-06-08T06:10:29.6409459Z env:
+build	UNKNOWN STEP	2026-06-08T06:10:29.6409665Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	UNKNOWN STEP	2026-06-08T06:10:29.6409977Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:29.8738806Z Attempting to download 20...
+build	UNKNOWN STEP	2026-06-08T06:10:29.8916646Z (node:2176) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+build	UNKNOWN STEP	2026-06-08T06:10:29.8917917Z (Use `node --trace-deprecation ...` to show where the warning was created)
+build	UNKNOWN STEP	2026-06-08T06:10:30.4400909Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-win32-x64.7z
+build	UNKNOWN STEP	2026-06-08T06:10:30.9230751Z Extracting ...
+build	UNKNOWN STEP	2026-06-08T06:10:33.4493048Z Adding to the cache ...
+build	UNKNOWN STEP	2026-06-08T06:10:36.8399514Z ##[group]Environment details
+build	UNKNOWN STEP	2026-06-08T06:10:37.9329370Z node: v20.20.2
+build	UNKNOWN STEP	2026-06-08T06:10:37.9329701Z npm: 10.8.2
+build	UNKNOWN STEP	2026-06-08T06:10:37.9329876Z yarn: 1.22.22
+build	UNKNOWN STEP	2026-06-08T06:10:37.9330474Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:10:38.0082203Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\20.20.2\x64\npm.cmd config get cache"
+build	UNKNOWN STEP	2026-06-08T06:10:38.3275515Z C:\npm\cache
+build	UNKNOWN STEP	2026-06-08T06:10:38.5928141Z Cache hit for: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	UNKNOWN STEP	2026-06-08T06:10:38.6017060Z (node:2176) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build	UNKNOWN STEP	2026-06-08T06:10:39.5893899Z Received 132340717 of 132340717 (100.0%), 141.8 MBs/sec
+build	UNKNOWN STEP	2026-06-08T06:10:39.5896736Z Cache Size: ~126 MB (132340717 B)
+build	UNKNOWN STEP	2026-06-08T06:10:39.6000354Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/3bc568f0-2d88-40df-bd47-c4cab25fb7e9/cache.tzst -P -C D:/a/audio-recorder-with-visualization/audio-recorder-with-visualization --force-local --use-compress-program "zstd -d"
+build	UNKNOWN STEP	2026-06-08T06:10:51.8905975Z Cache restored successfully
+build	UNKNOWN STEP	2026-06-08T06:10:51.8978530Z Cache restored from key: node-cache-Windows-x64-npm-d01999d583437c5f2b007c4f39920d1062f3af40225923698f1a6bb6b233e715
+build	UNKNOWN STEP	2026-06-08T06:10:51.9275417Z ##[group]Run npm ci
+build	UNKNOWN STEP	2026-06-08T06:10:51.9275704Z ^[[36;1mnpm ci^[[0m
+build	UNKNOWN STEP	2026-06-08T06:10:52.0172755Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build	UNKNOWN STEP	2026-06-08T06:10:52.0173186Z env:
+build	UNKNOWN STEP	2026-06-08T06:10:52.0173422Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+build	UNKNOWN STEP	2026-06-08T06:10:52.0173733Z ##[endgroup]
+build	UNKNOWN STEP	2026-06-08T06:11:02.4702620Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+build	UNKNOWN STEP	2026-06-08T06:11:02.6061265Z npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+build	UNKNOWN STEP	2026-06-08T06:11:02.6461976Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-08T06:11:02.7800679Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+build	UNKNOWN STEP	2026-06-08T06:11:03.1284332Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.1596124Z npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+build	UNKNOWN STEP	2026-06-08T06:11:03.2375780Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2426781Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2453198Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2461300Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2486611Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2511828Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2514910Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2526832Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2544114Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.2567568Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build	UNKNOWN STEP	2026-06-08T06:11:03.3452063Z npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+build	UNKNOWN STEP	2026-06-08T06:11:03.5590183Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-08T06:11:03.5625233Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+build	UNKNOWN STEP	2026-06-08T06:11:03.8974077Z npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+build	UNKNOWN STEP	2026-06-08T06:11:04.4562440Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+build	UNKNOWN STEP	2026-06-08T06:11:04.4578001Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+build	UNKNOWN STEP	2026-06-08T06:11:09.3941763Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+build	UNKNOWN STEP	2026-06-08T06:12:23.9494076Z npm warn cleanup Failed to remove some directories [
+build	UNKNOWN STEP	2026-06-08T06:12:23.9494487Z npm warn cleanup   [
+build	UNKNOWN STEP	2026-06-08T06:12:23.9495140Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9496932Z npm warn cleanup     [Error: EBUSY: resource busy or locked, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\cypress'] {
+build	UNKNOWN STEP	2026-06-08T06:12:23.9498313Z npm warn cleanup       errno: -4082,
+build	UNKNOWN STEP	2026-06-08T06:12:23.9498842Z npm warn cleanup       code: 'EBUSY',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9499398Z npm warn cleanup       syscall: 'rmdir',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9501609Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress'
+build	UNKNOWN STEP	2026-06-08T06:12:23.9505110Z npm warn cleanup     }
+build	UNKNOWN STEP	2026-06-08T06:12:23.9505726Z npm warn cleanup   ],
+build	UNKNOWN STEP	2026-06-08T06:12:23.9506144Z npm warn cleanup   [
+build	UNKNOWN STEP	2026-06-08T06:12:23.9507223Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9509728Z npm warn cleanup     [Error: EBUSY: resource busy or locked, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\cypress'] {
+build	UNKNOWN STEP	2026-06-08T06:12:23.9511178Z npm warn cleanup       errno: -4082,
+build	UNKNOWN STEP	2026-06-08T06:12:23.9511731Z npm warn cleanup       code: 'EBUSY',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9512283Z npm warn cleanup       syscall: 'rmdir',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9513584Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\cypress'
+build	UNKNOWN STEP	2026-06-08T06:12:23.9514762Z npm warn cleanup     }
+build	UNKNOWN STEP	2026-06-08T06:12:23.9515201Z npm warn cleanup   ],
+build	UNKNOWN STEP	2026-06-08T06:12:23.9515903Z npm warn cleanup   [
+build	UNKNOWN STEP	2026-06-08T06:12:23.9517157Z npm warn cleanup     'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\@jsonjoy.com',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9519698Z npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\@jsonjoy.com\json-pack\lib\nfs'] {
+build	UNKNOWN STEP	2026-06-08T06:12:23.9521288Z npm warn cleanup       errno: -4048,
+build	UNKNOWN STEP	2026-06-08T06:12:23.9521867Z npm warn cleanup       code: 'EPERM',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9522440Z npm warn cleanup       syscall: 'rmdir',
+build	UNKNOWN STEP	2026-06-08T06:12:23.9524013Z npm warn cleanup       path: 'D:\\a\\audio-recorder-with-visualization\\audio-recorder-with-visualization\\node_modules\\@jsonjoy.com\\json-pack\\lib\\nfs'
+build	UNKNOWN STEP	2026-06-08T06:12:23.9525372Z npm warn cleanup     }
+build	UNKNOWN STEP	2026-06-08T06:12:23.9525777Z npm warn cleanup   ]
+build	UNKNOWN STEP	2026-06-08T06:12:23.9526167Z npm warn cleanup ]
+build	UNKNOWN STEP	2026-06-08T06:12:23.9534196Z npm error code 1
+build	UNKNOWN STEP	2026-06-08T06:12:23.9535738Z npm error path D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\electron
+build	UNKNOWN STEP	2026-06-08T06:12:23.9536876Z npm error command failed
+build	UNKNOWN STEP	2026-06-08T06:12:23.9537628Z npm error command C:\Windows\system32\cmd.exe /d /s /c node install.js
+build	UNKNOWN STEP	2026-06-08T06:12:23.9538682Z npm error HTTPError: Response code 504 (Gateway Time-out)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9540579Z npm error     at Request._onResponseBase (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:913:31)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9543169Z npm error     at Request._onResponse (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:948:24)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9545763Z npm error     at ClientRequest.<anonymous> (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\got\dist\source\core\index.js:962:23)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9547446Z npm error     at Object.onceWrapper (node:events:639:26)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9548297Z npm error     at ClientRequest.emit (node:events:536:35)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9550492Z npm error     at origin.emit (D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization\node_modules\@szmarczak\http-timer\dist\source\index.js:43:20)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9552348Z npm error     at HTTPParser.parserOnIncomingClient (node:_http_client:702:27)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9553548Z npm error     at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9554654Z npm error     at TLSSocket.socketOnData (node:_http_client:544:22)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9555517Z npm error     at TLSSocket.emit (node:events:524:28)
+build	UNKNOWN STEP	2026-06-08T06:12:23.9556667Z npm error A complete log of this run can be found in: C:\npm\cache\_logs\2026-06-08T06_10_56_337Z-debug-0.log
+build	UNKNOWN STEP	2026-06-08T06:12:24.9639606Z ##[error]Process completed with exit code 1.
+build	UNKNOWN STEP	2026-06-08T06:12:25.0023317Z Post job cleanup.
+build	UNKNOWN STEP	2026-06-08T06:12:25.2725192Z [command]"C:\Program Files\Git\bin\git.exe" version
+build	UNKNOWN STEP	2026-06-08T06:12:25.3130279Z git version 2.54.0.windows.1
+build	UNKNOWN STEP	2026-06-08T06:12:25.3200994Z Temporarily overriding HOME='D:\a\_temp\71b476df-4e5e-46f0-8cc2-b8cd2cb5ea96' before making global git config changes
+build	UNKNOWN STEP	2026-06-08T06:12:25.3202048Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-06-08T06:12:25.3212072Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\audio-recorder-with-visualization\audio-recorder-with-visualization
+build	UNKNOWN STEP	2026-06-08T06:12:25.3524947Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-06-08T06:12:25.3867900Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build	UNKNOWN STEP	2026-06-08T06:12:26.0690519Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-06-08T06:12:26.0983130Z http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-06-08T06:12:26.1034436Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-06-08T06:12:26.1374260Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build	UNKNOWN STEP	2026-06-08T06:12:26.7699919Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-06-08T06:12:26.8123679Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build	UNKNOWN STEP	2026-06-08T06:12:27.4577837Z Cleaning up orphan processes
+build	UNKNOWN STEP	2026-06-08T06:12:27.5413652Z Terminate orphan process: pid (5568) (node)
+build	UNKNOWN STEP	2026-06-08T06:12:27.5424951Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

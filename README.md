@@ -7,6 +7,8 @@ A TypeScript library for audio visualization and recording. Capture audio from m
 - **Real-time audio visualization** from microphone input
 - **Video recording** with audio + visualization (WebM/MP4)
 - **Audio file to video conversion** with visualization
+- **YouTube upload helper** for publishing generated videos through the YouTube Data API
+- **Optional audio enhancement** for profile-based noise reduction, smart normalization, and saturation
 - **Multiple visualization types**:
   - Waveform (oscilloscope)
   - Bars (spectrum analyzer)
@@ -16,6 +18,11 @@ A TypeScript library for audio visualization and recording. Capture audio from m
   - Glow Waveform (waveform with glow effects and smooth curves)
   - VU Meter (classic audio equipment style meters)
   - Spectrogram (waterfall frequency display)
+  - Double Spiral (dual spirals rotating in opposite directions)
+  - Pulse (concentric rings pulsing from center)
+  - Waterfall Bars (bars cascading down showing frequency history)
+  - Grid (grid of reactive squares)
+  - Lissajous (classic Lissajous curve pattern)
 - **Custom images/GIFs** as backgrounds or overlays
 - **Extensible visualizer system** - create your own visualizers
 - **Maximum performance** - optimized rendering with requestAnimationFrame and typed arrays
@@ -43,7 +50,7 @@ import { AudioRecorder } from 'audio-recorder-with-visualization';
 // Create recorder
 const recorder = new AudioRecorder({
   canvas: '#visualizer', // Canvas element or selector
-  visualizer: 'bars',    // 'waveform', 'bars', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram'
+  visualizer: 'bars',    // 'waveform', 'bars', 'circular', 'particles', 'spectrum-gradient', 'glow-waveform', 'vu-meter', 'spectrogram', 'double-spiral', 'pulse', 'waterfall-bars', 'grid', 'lissajous'
   fftSize: 2048,
   fps: 30,
 });
@@ -112,9 +119,49 @@ interface AudioRecorderConfig {
   format?: 'webm' | 'mp4';              // Recording format, default: 'webm'
   visualizer?: Visualizer | string;     // Visualizer instance or name
   visualizerOptions?: VisualizerOptions;// Visualizer options
+  audioEnhancement?: AudioEnhancementOptions; // Optional audio processing, default: disabled
   debug?: boolean;                      // Enable debug logging
 }
 ```
+
+#### Audio Enhancement Options
+
+All audio enhancement controls are disabled by default. Enable them in the constructor or update them at runtime:
+
+```typescript
+interface AudioEnhancementOptions {
+  enabled?: boolean;
+  noiseReduction?: number;              // 0-100, attenuates quiet background noise
+  noiseProfile?: AudioNoiseProfile | null; // Learned noise-only spectrum, default: null
+  noiseProfileReduction?: number;       // 0-100, applies learned profile reduction
+  noiseProfileVoiceProtection?: number; // 0-100, protects speech bands from over-reduction
+  smartNormalization?: number;           // 0-100, smooths loud/quiet sections
+  saturation?: number;                   // 0-100, adds harmonic saturation
+  saturationFrequencyRange?: { min: number; max: number }; // Hz, default 20-20000
+  saturationMode?: 'soft-clip' | 'hard-clip' | 'tape' | 'tube';
+}
+
+const noiseProfileBuffer = await audioContext.decodeAudioData(await noiseOnlyFile.arrayBuffer());
+const noiseProfile = AudioAnalyzer.createNoiseProfileFromAudioBuffer(noiseProfileBuffer);
+
+recorder.setAudioEnhancement({
+  enabled: true,
+  noiseReduction: 10,
+  noiseProfile,
+  noiseProfileReduction: 45,
+  noiseProfileVoiceProtection: 85,
+  smartNormalization: 25,
+  saturation: 0,
+  saturationFrequencyRange: { min: 120, max: 8000 },
+  saturationMode: 'tube',
+});
+```
+
+For profile-based reduction, use a short file that contains only the microphone hiss,
+fan, hum, or room tone you want to reduce. The profile is most effective for
+steady noise. `noiseProfileVoiceProtection` keeps the speech range conservative
+when the learned profile overlaps voice, so higher cleanup settings are less
+likely to make speech sound hollow or muffled.
 
 #### Methods
 
@@ -134,6 +181,8 @@ recorder.cancelRecording(): void
 // Visualization
 recorder.setVisualizer(visualizer: Visualizer | string, options?: VisualizerOptions): void
 recorder.setVisualizerOptions(options: Partial<VisualizerOptions>): void
+recorder.setAudioEnhancement(options: AudioEnhancementOptions): void
+recorder.getAudioEnhancement(): ResolvedAudioEnhancementOptions
 recorder.stopVisualization(): void
 recorder.resumeVisualization(): void  // Resume after stopVisualization (e.g., during conversion)
 
@@ -174,6 +223,7 @@ const blob = await converter.convert({
   canvas: HTMLCanvasElement | string,
   visualizer?: Visualizer | string,
   visualizerOptions?: VisualizerOptions,
+  audioEnhancement?: AudioEnhancementOptions,
   fps?: number,
   videoWidth?: number,
   videoHeight?: number,
@@ -182,6 +232,37 @@ const blob = await converter.convert({
   format?: 'webm' | 'mp4',
   onProgress?: (progress: number) => void,
 });
+```
+
+### YouTubeUploader
+
+Browser-friendly helper for uploading a generated video `Blob` with the YouTube Data API resumable upload protocol. Use Google Identity Services to obtain an access token with `YOUTUBE_UPLOAD_SCOPE`, then pass that token to the uploader.
+
+Browser Google sign-in must run from an authorized web origin. For local browser testing, serve the example from `http://localhost:8080` instead of opening `examples/index.html` with a `file://` URL, then add exactly `http://localhost:8080` to the Web application OAuth Client ID's Authorized JavaScript origins. The packaged Electron app uses a Desktop app OAuth Client ID and opens Google sign-in in the default browser with a loopback callback, so it does not use the browser JavaScript origin flow.
+
+```typescript
+import { YouTubeUploader, YOUTUBE_UPLOAD_SCOPE } from 'audio-recorder-with-visualization';
+
+const uploader = new YouTubeUploader();
+const result = await uploader.upload({
+  video: videoBlob,
+  thumbnail: thumbnailBlob, // optional JPEG, PNG, or WebP preview image
+  accessToken,
+  metadata: {
+    title: 'Audio visualizer',
+    description: 'Rendered with audio-recorder-with-visualization',
+    tags: ['audio', 'visualizer'],
+    privacyStatus: 'private',
+    publishAt: '2026-07-01T12:30:00.000Z', // optional scheduled release time; upload stays private until then
+    short: true, // appends #shorts to the description
+  },
+  onProgress: ({ percent }) => {
+    console.log(`Uploaded ${Math.round(percent * 100)}%`);
+  },
+});
+
+console.log(result.url);
+console.log(YOUTUBE_UPLOAD_SCOPE);
 ```
 
 ### Visualizer Options
@@ -261,6 +342,83 @@ Waterfall display showing frequency data over time.
     colorScheme: 'rainbow' | 'heat' | 'cool' | 'grayscale',  // Color scheme (default: 'rainbow')
     orientation: 'vertical' | 'horizontal',      // Scroll direction (default: 'vertical')
     frequencyRange: 'full' | 'bass' | 'mid' | 'high',  // Frequency range to display (default: 'full')
+  }
+}
+```
+
+#### Double Spiral (`double-spiral`)
+Dual spirals rotating in opposite directions, reacting to audio frequency data.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    rotationSpeed: 0.02,      // Rotation speed in radians per frame (default: 0.02)
+    spiralTightness: 0.5,     // How tight the spiral is, 0.1-2 (default: 0.5)
+    maxRadius: 0.4,           // Max radius as fraction of min dimension (default: 0.4)
+    glowEffect: true,         // Enable glow effect (default: true)
+  }
+}
+```
+
+#### Pulse (`pulse`)
+Concentric rings that pulse from center based on bass intensity.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    pulseThreshold: 0.3,      // Minimum bass intensity to trigger pulse (default: 0.3)
+    maxRings: 5,              // Maximum number of rings (default: 5)
+    ringSpeed: 5,             // Ring expansion speed (default: 5)
+    ringSpacing: 80,          // Space between rings in pixels (default: 80)
+    fillRings: false,         // Fill rings instead of just stroke (default: false)
+  }
+}
+```
+
+#### Waterfall Bars (`waterfall-bars`)
+Bars that cascade down like a waterfall, showing frequency history over time.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    scrollSpeed: 1,           // Pixels to scroll per frame (default: 1)
+    historyLength: 50,        // Number of history frames to keep (default: 50)
+    fadeEffect: true,         // Fade older bars (default: true)
+  }
+}
+```
+
+#### Grid (`grid`)
+Grid of squares that react to different frequency bands.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    gridCols: 16,             // Number of columns (default: 16)
+    gridRows: 12,             // Number of rows (default: 12)
+    cellGap: 4,               // Gap between cells in pixels (default: 4)
+    reactToFrequency: true,   // React to frequency or random (default: true)
+    glowEffect: true,         // Enable glow effect (default: true)
+  }
+}
+```
+
+#### Lissajous (`lissajous`)
+Classic Lissajous curve pattern based on audio waveform.
+
+**Custom Options:**
+```typescript
+{
+  custom: {
+    size: 0.4,                // Size as fraction of min dimension (default: 0.4)
+    trailLength: 100,         // Number of points in trail (default: 100)
+    phaseOffset: Math.PI / 2, // Phase offset between X and Y (default: Math.PI / 2)
+    frequencyRatio: 1,        // Frequency ratio X:Y, e.g., 1, 2, 3:2 (default: 1)
+    showTrail: true,          // Show trail effect (default: true)
   }
 }
 ```

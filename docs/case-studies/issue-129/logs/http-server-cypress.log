@@ -1,0 +1,56 @@
+Starting up http-server, serving .
+
+http-server version: 14.1.1
+
+http-server settings: 
+CORS: disabled
+Cache: -1 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://127.0.0.1:8080
+  http://172.17.0.2:8080
+Hit CTRL-C to stop the server
+
+[2026-06-07T02:15:28.549Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+(node:138978) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2026-06-07T02:15:28.630Z]  "GET /examples/styles.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.640Z]  "GET /dist/audio-recorder-visualization.umd.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.640Z]  "GET /examples/app-core.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.641Z]  "GET /examples/app-features.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.641Z]  "GET /examples/app-interactions.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.641Z]  "GET /examples/youtube-upload.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:28.962Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.000Z]  "GET /examples/styles.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.002Z]  "GET /dist/audio-recorder-visualization.umd.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.004Z]  "GET /examples/app-core.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.005Z]  "GET /examples/app-features.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.006Z]  "GET /examples/app-interactions.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.007Z]  "GET /examples/youtube-upload.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.234Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.266Z]  "GET /examples/styles.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.268Z]  "GET /dist/audio-recorder-visualization.umd.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.269Z]  "GET /examples/app-core.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.270Z]  "GET /examples/app-features.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.271Z]  "GET /examples/app-interactions.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.272Z]  "GET /examples/youtube-upload.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.571Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.599Z]  "GET /examples/styles.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.601Z]  "GET /dist/audio-recorder-visualization.umd.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.602Z]  "GET /examples/app-core.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.603Z]  "GET /examples/app-features.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.604Z]  "GET /examples/app-interactions.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.605Z]  "GET /examples/youtube-upload.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.831Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.855Z]  "GET /examples/styles.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.856Z]  "GET /dist/audio-recorder-visualization.umd.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.858Z]  "GET /examples/app-core.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.860Z]  "GET /examples/app-features.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.860Z]  "GET /examples/app-interactions.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-06-07T02:15:29.861Z]  "GET /examples/youtube-upload.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"

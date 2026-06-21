@@ -9,6 +9,8 @@ export class GlowWaveformVisualizer extends BaseVisualizer {
   readonly id = 'glow-waveform';
   readonly name = 'Glow Waveform';
 
+  private previousAmplitudes: number[] = [];
+
   constructor(options: VisualizerOptions = {}) {
     super({
       lineWidth: 3,
@@ -53,6 +55,21 @@ export class GlowWaveformVisualizer extends BaseVisualizer {
 
     const sliceWidth = width / timeDomainData.length;
 
+    // Initialize previous amplitudes if needed
+    if (this.previousAmplitudes.length !== timeDomainData.length) {
+      this.previousAmplitudes = new Array(timeDomainData.length).fill(0);
+    }
+
+    // Pre-calculate smoothed amplitudes (so main and mirrored waveforms use the same values)
+    for (let i = 0; i < timeDomainData.length; i++) {
+      const v = timeDomainData[i] / 128.0 - 1.0;
+      const sensitivity = this.options.sensitivity ?? 1.0;
+      const sensitiveV = Math.max(-1, Math.min(1, v * sensitivity));
+
+      // Apply ADSR envelope smoothing to the amplitude
+      this.previousAmplitudes[i] = this.applyADSRSmoothing(this.previousAmplitudes[i], sensitiveV);
+    }
+
     // Helper function to draw waveform
     const drawWave = (mirror: boolean, withFill: boolean) => {
       ctx.beginPath();
@@ -60,12 +77,12 @@ export class GlowWaveformVisualizer extends BaseVisualizer {
       let x = 0;
       const points: { x: number; y: number }[] = [];
 
-      // Generate points
+      // Generate points using pre-calculated smoothed amplitudes
       for (let i = 0; i < timeDomainData.length; i++) {
-        const v = timeDomainData[i] / 128.0 - 1.0;
+        const smoothedV = this.previousAmplitudes[i];
         const y = mirror
-          ? height / 2 - (v * height * amplitudeScale) / 2
-          : height / 2 + (v * height * amplitudeScale) / 2;
+          ? height / 2 - (smoothedV * height * amplitudeScale) / 2
+          : height / 2 + (smoothedV * height * amplitudeScale) / 2;
 
         points.push({ x, y });
         x += sliceWidth;

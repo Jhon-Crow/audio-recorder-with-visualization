@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentation Mode</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      /* Enable hardware acceleration for smoother rendering */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* User can't select anything in presentation window */
+      user-select: none;
+      -webkit-user-select: none;
+      /* Disable all mouse interactions by default (click-through) */
+      pointer-events: none;
+    }
+
+    /* Enable pointer events when Alt key is held for window dragging */
+    body.alt-key-active {
+      pointer-events: auto;
+    }
+
+    #visualizer {
+      /* Canvas takes full window */
+      width: 100%;
+      height: 100%;
+      /* Smooth scaling */
+      image-rendering: optimizeQuality;
+      /* Hardware acceleration */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      /* Object fit to maintain aspect ratio while filling container */
+      object-fit: contain;
+    }
+
+    /* Background layer with configurable opacity */
+    #background-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background layer for optional solid background -->
+  <div id="background-layer"></div>
+
+  <!-- Visualization canvas -->
+  <canvas id="visualizer"></canvas>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('visualizer');
+      const backgroundLayer = document.getElementById('background-layer');
+      const ctx = canvas.getContext('2d');
+
+      // Presentation settings
+      let settings = {
+        backgroundOpacity: 0,
+        visualizationOpacity: 1,
+      };
+
+      // Image element for receiving frames from main window
+      const frameImage = new Image();
+      let pendingImageData = null;
+      let isImageLoading = false;
+
+      // Resize canvas to window
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // Update background opacity
+      function updateBackgroundOpacity(opacity) {
+        backgroundLayer.style.opacity = opacity;
+      }
+
+      // Update visualization (canvas) opacity
+      function updateVisualizationOpacity(opacity) {
+        canvas.style.opacity = opacity;
+      }
+
+      // Draw the received frame image to canvas
+      function drawFrame(imageData, sourceWidth, sourceHeight) {
+        // Queue the frame if we're still loading the previous one
+        if (isImageLoading) {
+          pendingImageData = { imageData, sourceWidth, sourceHeight };
+          return;
+        }
+
+        isImageLoading = true;
+        frameImage.onload = function() {
+          // Clear canvas with transparent background
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Calculate scaling to fit while maintaining aspect ratio
+          const sourceAspect = sourceWidth / sourceHeight;
+          const canvasAspect = canvas.width / canvas.height;
+
+          let drawWidth, drawHeight, drawX, drawY;
+
+          if (sourceAspect > canvasAspect) {
+            // Source is wider - fit to width
+            drawWidth = canvas.width;
+            drawHeight = canvas.width / sourceAspect;
+            drawX = 0;
+            drawY = (canvas.height - drawHeight) / 2;
+          } else {
+            // Source is taller - fit to height
+            drawHeight = canvas.height;
+            drawWidth = canvas.height * sourceAspect;
+            drawX = (canvas.width - drawWidth) / 2;
+            drawY = 0;
+          }
+
+          // Draw the received frame
+          ctx.drawImage(frameImage, drawX, drawY, drawWidth, drawHeight);
+
+          isImageLoading = false;
+
+          // Process pending frame if any
+          if (pendingImageData) {
+            const pending = pendingImageData;
+            pendingImageData = null;
+            drawFrame(pending.imageData, pending.sourceWidth, pending.sourceHeight);
+          }
+        };
+
+        frameImage.onerror = function() {
+          console.error('Failed to load frame image');
+          isImageLoading = false;
+
+          // Process pending frame if any
+          if (pendingImageData) {
+            const pending = pendingImageData;
+            pendingImageData = null;
+            drawFrame(pending.imageData, pending.sourceWidth, pending.sourceHeight);
+          }
+        };
+
+        frameImage.src = imageData;
+      }
+
+      // Handle settings updates from main process
+      if (window.presentationAPI) {
+        window.presentationAPI.onSettings((newSettings) => {
+          settings = { ...settings, ...newSettings };
+
+          // Update background opacity
+          if (newSettings.backgroundOpacity !== undefined) {
+            updateBackgroundOpacity(newSettings.backgroundOpacity);
+          }
+
+          // Update visualization opacity
+          if (newSettings.visualizationOpacity !== undefined) {
+            updateVisualizationOpacity(newSettings.visualizationOpacity);
+          }
+        });
+
+        // Handle frame data from main window
+        window.presentationAPI.onFrame((frameData) => {
+          // Render the received canvas image
+          if (frameData && frameData.imageData) {
+            drawFrame(frameData.imageData, frameData.width, frameData.height);
+          }
+        });
+
+        // Visualizer options/type changes are handled by main window now
+        // The presentation window just displays what it receives
+        window.presentationAPI.onVisualizerOptions(() => {
+          // No action needed - main window handles visualization
+        });
+
+        window.presentationAPI.onVisualizerType(() => {
+          // No action needed - main window handles visualization
+        });
+      }
+
+      // Window dragging support with Alt+MMB
+      let isDraggingWindow = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let isAltKeyHeld = false;
+
+      // Track Alt key state to enable/disable pointer events
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Alt' && !isAltKeyHeld) {
+          isAltKeyHeld = true;
+          document.body.classList.add('alt-key-active');
+          // Disable click-through when Alt is pressed
+          if (window.presentationAPI && window.presentationAPI.setClickThrough) {
+            window.presentationAPI.setClickThrough(false);
+          }
+        }
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt') {
+          isAltKeyHeld = false;
+          document.body.classList.remove('alt-key-active');
+          // Re-enable click-through when Alt is released
+          if (window.presentationAPI && window.presentationAPI.setClickThrough) {
+            window.presentationAPI.setClickThrough(true);
+          }
+          // Stop dragging if Alt is released
+          if (isDraggingWindow) {
+            isDraggingWindow = false;
+          }
+        }
+      });
+
+      // Handle focus loss - reset Alt key state
+      window.addEventListener('blur', () => {
+        if (isAltKeyHeld) {
+          isAltKeyHeld = false;
+          document.body.classList.remove('alt-key-active');
+          // Re-enable click-through on focus loss
+          if (window.presentationAPI && window.presentationAPI.setClickThrough) {
+            window.presentationAPI.setClickThrough(true);
+          }
+          if (isDraggingWindow) {
+            isDraggingWindow = false;
+          }
+        }
+      });
+
+      // Handle middle mouse button (MMB) dragging when Alt is held
+      document.addEventListener('mousedown', (e) => {
+        // Check if middle mouse button (button === 1) and Alt key is held
+        if (e.button === 1 && e.altKey) {
+          isDraggingWindow = true;
+          dragStartX = e.screenX;
+          dragStartY = e.screenY;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (isDraggingWindow) {
+          const deltaX = e.screenX - dragStartX;
+          const deltaY = e.screenY - dragStartY;
+
+          // Send window position delta to main process
+          if (window.presentationAPI && window.presentationAPI.moveWindow) {
+            window.presentationAPI.moveWindow(deltaX, deltaY);
+          }
+
+          dragStartX = e.screenX;
+          dragStartY = e.screenY;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+
+      document.addEventListener('mouseup', (e) => {
+        if (e.button === 1 && isDraggingWindow) {
+          isDraggingWindow = false;
+          // Report final position to persist it
+          if (window.presentationAPI && window.presentationAPI.reportPosition) {
+            window.presentationAPI.reportPosition();
+          }
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+
+      // Keyboard event handler for Alt+Q (backup in case main process doesn't catch it)
+      // Note: This is mostly handled by the main process, but we add a fallback here
+      document.addEventListener('keydown', (e) => {
+        // Block Alt+F4 completely (handled by main process, but we prevent default here too)
+        if (e.key === 'F4' && e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+
+        // Alt+Tab - let it pass through (handled by OS, we don't block it)
+        // Nothing to do here as the window is click-through
+      });
+
+      // Prevent context menu
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+
+      console.log('Presentation window initialized (canvas mirroring mode)');
+    })();
+  </script>
+</body>
+</html>

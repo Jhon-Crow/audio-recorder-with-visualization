@@ -1,0 +1,17 @@
+* 4ce583a (HEAD -> issue-109-299b1e5a9a9f, origin/issue-109-299b1e5a9a9f) Remove initial placeholder file
+* 835dcdb Fix preset rename context menu action
+* 9a69b30 Initial commit with task details
+*   bb107c2 Merge pull request #106 from konard/issue-105-fa7c67075e3f
+|\
+| * e9f3df8 (origin/issue-105-fa7c67075e3f) Enhance preset sidebar interactions
+| * 1d05028 Revert "Initial commit with task details"
+| *   58f7bdb Merge upstream main and resolve preset conflicts
+| |\
+| * | 1d1e21d Add visualization preset management
+| * | cfc9361 Initial commit with task details
+* | |   ac50ca2 Merge pull request #103 from konard/issue-101-3efb01d67058
+|\ \ \
+| |_|/
+|/| |
+| * | 701953d (origin/issue-101-3efb01d67058) feat: make noise profiles voice-safe
+| * | eb3dc02 feat: add profile-based noise reduction

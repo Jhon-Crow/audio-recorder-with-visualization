@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shape Settings Test - Audio Recorder with Visualization</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #16213e 50%, #1a1a2e 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #00ff88, #0088ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: #000;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      max-width: 100%;
+      width: 100%;
+      height: auto;
+    }
+
+    .controls {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .controls h3 {
+      margin-bottom: 15px;
+      font-size: 1.25rem;
+    }
+
+    .control-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    select, button {
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:hover, button:hover {
+      background: rgba(0, 0, 0, 0.4);
+      border-color: #00ff88;
+    }
+
+    button {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #000;
+      font-weight: 600;
+      border: none;
+    }
+
+    button:hover {
+      box-shadow: 0 4px 16px rgba(0, 255, 136, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .info {
+      background: rgba(0, 136, 255, 0.15);
+      border: 1px solid rgba(0, 136, 255, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .info h4 {
+      margin-bottom: 10px;
+      color: #0088ff;
+    }
+
+    .info ul {
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bar & Particle Shape Settings Test</h1>
+
+    <div class="info">
+      <h4>What's New:</h4>
+      <ul>
+        <li><strong>Bar Shapes:</strong> Rectangle, Rounded (default), Circle, Triangle, Diamond</li>
+        <li><strong>Particle Shapes:</strong> Circle (default), Square, Triangle, Diamond, Star, Heart</li>
+      </ul>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="visualizer" width="1920" height="1080"></canvas>
+    </div>
+
+    <div class="controls">
+      <h3>Visualizer Controls</h3>
+      <div class="control-group">
+        <label>
+          Visualizer Type
+          <select id="visualizerSelect">
+            <option value="bars">Bars</option>
+            <option value="particles">Particles</option>
+          </select>
+        </label>
+        <label id="barShapeLabel">
+          Bar Shape
+          <select id="barShape">
+            <option value="rectangle">Rectangle</option>
+            <option value="rounded" selected>Rounded (Default)</option>
+            <option value="circle">Circle</option>
+            <option value="triangle">Triangle</option>
+            <option value="diamond">Diamond</option>
+          </select>
+        </label>
+        <label id="particleShapeLabel" style="display: none;">
+          Particle Shape
+          <select id="particleShape">
+            <option value="circle" selected>Circle (Default)</option>
+            <option value="square">Square</option>
+            <option value="triangle">Triangle</option>
+            <option value="diamond">Diamond</option>
+            <option value="star">Star</option>
+            <option value="heart">Heart</option>
+          </select>
+        </label>
+      </div>
+      <div class="button-group">
+        <button id="startBtn">Start Microphone</button>
+        <button id="stopBtn" disabled>Stop Microphone</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../dist/audio-recorder-visualization.umd.js"></script>
+  <script>
+    (async function() {
+      // Wait for library to load
+      await new Promise(resolve => {
+        if (window.AudioRecorderVisualization) {
+          resolve();
+        } else {
+          const interval = setInterval(() => {
+            if (window.AudioRecorderVisualization) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        }
+      });
+
+      const { AudioRecorder } = window.AudioRecorderVisualization;
+
+      // Elements
+      const canvas = document.getElementById('visualizer');
+      const visualizerSelect = document.getElementById('visualizerSelect');
+      const barShape = document.getElementById('barShape');
+      const particleShape = document.getElementById('particleShape');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const barShapeLabel = document.getElementById('barShapeLabel');
+      const particleShapeLabel = document.getElementById('particleShapeLabel');
+
+      let recorder = null;
+
+      // Initialize recorder
+      async function initRecorder(visualizerType, shapeValue) {
+        if (recorder) {
+          recorder.destroy();
+        }
+
+        const options = {
+          primaryColor: '#00ff88',
+          secondaryColor: '#0088ff',
+          backgroundColor: '#000000',
+          barCount: 64,
+        };
+
+        // Add shape configuration based on visualizer type
+        if (visualizerType === 'bars') {
+          options.custom = { barShape: shapeValue };
+        } else if (visualizerType === 'particles') {
+          options.custom = { particleShape: shapeValue };
+        }
+
+        recorder = new AudioRecorder({
+          canvas: canvas,
+          visualizer: visualizerType,
+          visualizerOptions: options,
+          fftSize: 2048,
+        });
+
+        await recorder.init();
+      }
+
+      // Toggle shape controls based on visualizer type
+      function updateShapeControls() {
+        const visualizerType = visualizerSelect.value;
+        if (visualizerType === 'bars') {
+          barShapeLabel.style.display = 'flex';
+          particleShapeLabel.style.display = 'none';
+        } else if (visualizerType === 'particles') {
+          barShapeLabel.style.display = 'none';
+          particleShapeLabel.style.display = 'flex';
+        } else {
+          barShapeLabel.style.display = 'none';
+          particleShapeLabel.style.display = 'none';
+        }
+      }
+
+      // Start microphone
+      startBtn.addEventListener('click', async () => {
+        try {
+          const visualizerType = visualizerSelect.value;
+          const shapeValue = visualizerType === 'bars' ? barShape.value : particleShape.value;
+
+          await initRecorder(visualizerType, shapeValue);
+          await recorder.startMicrophone();
+
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          visualizerSelect.disabled = true;
+          barShape.disabled = true;
+          particleShape.disabled = true;
+        } catch (error) {
+          alert('Error starting microphone: ' + error.message);
+        }
+      });
+
+      // Stop microphone
+      stopBtn.addEventListener('click', () => {
+        if (recorder) {
+          recorder.stopMicrophone();
+          recorder.destroy();
+          recorder = null;
+        }
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        visualizerSelect.disabled = false;
+        barShape.disabled = false;
+        particleShape.disabled = false;
+      });
+
+      // Update controls when visualizer type changes
+      visualizerSelect.addEventListener('change', updateShapeControls);
+
+      // Initialize controls
+      updateShapeControls();
+    })();
+  </script>
+</body>
+</html>

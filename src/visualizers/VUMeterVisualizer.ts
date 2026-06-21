@@ -57,25 +57,31 @@ export class VUMeterVisualizer extends BaseVisualizer {
     const horizontalLayout = this.options.custom?.horizontalLayout as boolean;
     const peakHoldFrames = this.options.custom?.peakHoldTime as number;
 
+    // Get frequency data slice based on frequencyWidth setting
+    // Ensure we have at least 2 bins for L/R channel split
+    const frequencyDataSlice = this.getFrequencyDataSlice(frequencyData, 2);
+
     // Calculate audio levels from frequency data (split into L/R channels)
-    const midpoint = Math.floor(frequencyData.length / 2);
+    // Ensure midpoint is at least 1 to prevent division by zero
+    const midpoint = Math.max(1, Math.floor(frequencyDataSlice.length / 2));
+    const rightLength = Math.max(1, frequencyDataSlice.length - midpoint);
+
     let leftSum = 0;
     let rightSum = 0;
 
     for (let i = 0; i < midpoint; i++) {
-      leftSum += frequencyData[i];
+      leftSum += this.applySensitivity(frequencyDataSlice[i]);
     }
-    for (let i = midpoint; i < frequencyData.length; i++) {
-      rightSum += frequencyData[i];
+    for (let i = midpoint; i < frequencyDataSlice.length; i++) {
+      rightSum += this.applySensitivity(frequencyDataSlice[i]);
     }
 
     const targetLeftLevel = leftSum / (midpoint * 255);
-    const targetRightLevel = rightSum / ((frequencyData.length - midpoint) * 255);
+    const targetRightLevel = rightSum / (rightLength * 255);
 
-    // Smooth level changes
-    const smoothing = this.options.smoothing!;
-    this.leftLevel = this.leftLevel * smoothing + targetLeftLevel * (1 - smoothing);
-    this.rightLevel = this.rightLevel * smoothing + targetRightLevel * (1 - smoothing);
+    // Apply ADSR envelope smoothing to level changes
+    this.leftLevel = this.applyADSRSmoothing(this.leftLevel, targetLeftLevel);
+    this.rightLevel = this.applyADSRSmoothing(this.rightLevel, targetRightLevel);
 
     // Update peaks
     if (this.leftLevel > this.leftPeak) {

@@ -4,9 +4,45 @@
  */
 
 // Mock AudioContext
+class MockAudioNode {
+  connect = jest.fn();
+  disconnect = jest.fn();
+}
+
+class MockAudioParam {
+  constructor(public value: number) {}
+}
+
+class MockGainNode extends MockAudioNode {
+  gain = new MockAudioParam(1);
+}
+
+class MockWaveShaperNode extends MockAudioNode {
+  curve: Float32Array | null = null;
+  oversample: OverSampleType = 'none';
+}
+
+class MockDynamicsCompressorNode extends MockAudioNode {
+  threshold = new MockAudioParam(-24);
+  knee = new MockAudioParam(30);
+  ratio = new MockAudioParam(12);
+  reduction = 0;
+  attack = new MockAudioParam(0.003);
+  release = new MockAudioParam(0.25);
+}
+
+class MockBiquadFilterNode extends MockAudioNode {
+  type: BiquadFilterType = 'lowpass';
+  frequency = new MockAudioParam(350);
+  detune = new MockAudioParam(0);
+  Q = new MockAudioParam(1);
+  gain = new MockAudioParam(0);
+}
+
 class MockAudioContext {
   private _state: AudioContextState = 'running';
   readonly sampleRate = 44100;
+  readonly destination = new MockAudioNode() as unknown as AudioDestinationNode;
 
   get state(): AudioContextState {
     return this._state;
@@ -24,34 +60,43 @@ class MockAudioContext {
     return new MockAnalyserNode() as unknown as AnalyserNode;
   }
 
+  createGain(): GainNode {
+    return new MockGainNode() as unknown as GainNode;
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new MockWaveShaperNode() as unknown as WaveShaperNode;
+  }
+
+  createDynamicsCompressor(): DynamicsCompressorNode {
+    return new MockDynamicsCompressorNode() as unknown as DynamicsCompressorNode;
+  }
+
+  createBiquadFilter(): BiquadFilterNode {
+    return new MockBiquadFilterNode() as unknown as BiquadFilterNode;
+  }
+
   createMediaStreamSource(_stream: MediaStream): MediaStreamAudioSourceNode {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    } as unknown as MediaStreamAudioSourceNode;
+    return new MockAudioNode() as unknown as MediaStreamAudioSourceNode;
   }
 
   createMediaElementSource(_element: HTMLMediaElement): MediaElementAudioSourceNode {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    } as unknown as MediaElementAudioSourceNode;
+    return new MockAudioNode() as unknown as MediaElementAudioSourceNode;
   }
 
   createMediaStreamDestination(): MediaStreamAudioDestinationNode {
     return {
       stream: new MediaStream(),
+      connect: jest.fn(),
+      disconnect: jest.fn(),
     } as unknown as MediaStreamAudioDestinationNode;
   }
 }
 
-class MockAnalyserNode {
+class MockAnalyserNode extends MockAudioNode {
   fftSize = 2048;
   smoothingTimeConstant = 0.8;
   frequencyBinCount = 1024;
-
-  connect(): void {}
-  disconnect(): void {}
 
   getByteTimeDomainData(array: Uint8Array): void {
     // Fill with silence (128)
@@ -186,6 +231,30 @@ class MockCanvasRenderingContext2D {
       addColorStop: jest.fn(),
     } as unknown as CanvasGradient;
   }
+
+  createPattern(_image: CanvasImageSource, _repetition: string | null): CanvasPattern | null {
+    return {
+      setTransform: jest.fn(),
+    } as unknown as CanvasPattern;
+  }
+
+  // Additional context properties and methods needed for tests
+  filter = 'none';
+  globalCompositeOperation: GlobalCompositeOperation = 'source-over';
+  textAlign: CanvasTextAlign = 'start';
+  font = '10px sans-serif';
+  setLineDash(_segments: number[]): void {}
+  lineDashOffset = 0;
+  getImageData(_sx: number, _sy: number, sw: number, sh: number): ImageData {
+    return new ImageData(sw || 1, sh || 1);
+  }
+  putImageData(): void {}
+  fillText(): void {}
+  measureText(): TextMetrics {
+    return { width: 0 } as TextMetrics;
+  }
+  clip(): void {}
+  resetTransform(): void {}
 }
 
 // Override getContext on HTMLCanvasElement prototype
@@ -205,14 +274,70 @@ global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   return setTimeout(() => callback(performance.now()), 16) as unknown as number;
 };
 
+// Mock HTMLMediaElement methods that jsdom doesn't implement
+Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
+  value: jest.fn(),
+  writable: true,
+  configurable: true,
+});
+
+Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+  value: jest.fn().mockResolvedValue(undefined),
+  writable: true,
+  configurable: true,
+});
+
 global.cancelAnimationFrame = (id: number): void => {
   clearTimeout(id);
 };
+
+// Mock ImageData
+class MockImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  colorSpace: PredefinedColorSpace = 'srgb';
+
+  constructor(sw: number, sh: number);
+  constructor(data: Uint8ClampedArray, sw: number, sh?: number);
+  constructor(dataOrWidth: Uint8ClampedArray | number, swOrHeight: number, sh?: number) {
+    if (dataOrWidth instanceof Uint8ClampedArray) {
+      this.data = dataOrWidth;
+      this.width = swOrHeight;
+      this.height = sh ?? Math.floor(dataOrWidth.length / (swOrHeight * 4));
+    } else {
+      this.width = dataOrWidth;
+      this.height = swOrHeight;
+      this.data = new Uint8ClampedArray(this.width * this.height * 4);
+    }
+  }
+}
 
 // Set up globals
 (global as Record<string, unknown>).AudioContext = MockAudioContext;
 (global as Record<string, unknown>).MediaRecorder = MockMediaRecorder;
 (global as Record<string, unknown>).MediaStream = MockMediaStream;
+(global as Record<string, unknown>).ImageData = MockImageData;
+
+// Mock URL.createObjectURL and URL.revokeObjectURL
+// Use Object.defineProperty to ensure the mock is properly applied
+if (!global.URL) {
+  (global as Record<string, unknown>).URL = class URL {
+    constructor(url: string) {
+      return new (globalThis.URL || window.URL)(url);
+    }
+  } as unknown as typeof URL;
+}
+Object.defineProperty(global.URL, 'createObjectURL', {
+  value: jest.fn().mockReturnValue('blob:mock-url'),
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(global.URL, 'revokeObjectURL', {
+  value: jest.fn(),
+  writable: true,
+  configurable: true,
+});
 
 // Mock navigator.mediaDevices
 Object.defineProperty(global.navigator, 'mediaDevices', {

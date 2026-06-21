@@ -1,6 +1,11 @@
 import { VisualizationData, VisualizerOptions } from '../types';
 import { BaseVisualizer } from './BaseVisualizer';
 
+/**
+ * Particle shape types
+ */
+export type ParticleShape = 'circle' | 'square' | 'triangle' | 'diamond' | 'star' | 'heart';
+
 interface Particle {
   x: number;
   y: number;
@@ -32,6 +37,7 @@ export class ParticleVisualizer extends BaseVisualizer {
         particleSpeedFactor: 2,
         spawnRate: 5, // Particles per frame based on audio level
         useCustomColors: false, // Use primary/secondary colors instead of rainbow
+        particleShape: 'circle' as ParticleShape, // Default particle shape
         ...options.custom,
       },
     });
@@ -60,35 +66,45 @@ export class ParticleVisualizer extends BaseVisualizer {
     // Apply layer effects to background
     this.applyLayerEffect(ctx, data);
 
+    // Get frequency data slice based on frequencyWidth setting
+    // Ensure we have at least 10 bins for bass/mid/high split
+    const frequencyDataSlice = this.getFrequencyDataSlice(frequencyData, 10);
+
     // Calculate audio intensity
     let bassIntensity = 0;
     let midIntensity = 0;
     let highIntensity = 0;
 
-    const bassEnd = Math.floor(frequencyData.length * 0.1);
-    const midEnd = Math.floor(frequencyData.length * 0.5);
+    // Ensure all band sizes are at least 1 to prevent division by zero
+    const bassEnd = Math.max(1, Math.floor(frequencyDataSlice.length * 0.1));
+    const midEnd = Math.max(bassEnd + 1, Math.floor(frequencyDataSlice.length * 0.5));
+    const bassCount = bassEnd;
+    const midCount = Math.max(1, midEnd - bassEnd);
+    const highCount = Math.max(1, frequencyDataSlice.length - midEnd);
 
     for (let i = 0; i < bassEnd; i++) {
-      bassIntensity += frequencyData[i];
+      bassIntensity += frequencyDataSlice[i];
     }
-    bassIntensity /= bassEnd * 255;
+    bassIntensity /= bassCount * 255;
 
     for (let i = bassEnd; i < midEnd; i++) {
-      midIntensity += frequencyData[i];
+      midIntensity += frequencyDataSlice[i];
     }
-    midIntensity /= (midEnd - bassEnd) * 255;
+    midIntensity /= midCount * 255;
 
-    for (let i = midEnd; i < frequencyData.length; i++) {
-      highIntensity += frequencyData[i];
+    for (let i = midEnd; i < frequencyDataSlice.length; i++) {
+      highIntensity += frequencyDataSlice[i];
     }
-    highIntensity /= (frequencyData.length - midEnd) * 255;
+    highIntensity /= highCount * 255;
 
     const overallIntensity = (bassIntensity + midIntensity + highIntensity) / 3;
 
     // Calculate waveform deviation
+    const sensitivity = this.options.sensitivity ?? 1.0;
     let waveformDeviation = 0;
     for (let i = 0; i < timeDomainData.length; i++) {
-      waveformDeviation += Math.abs(timeDomainData[i] - 128);
+      const deviation = Math.abs(timeDomainData[i] - 128);
+      waveformDeviation += Math.min(128, deviation * sensitivity);
     }
     waveformDeviation /= timeDomainData.length * 128;
 
@@ -162,20 +178,194 @@ export class ParticleVisualizer extends BaseVisualizer {
       const alpha = p.life * visualizationAlpha;
       const radius = p.radius * (0.5 + p.life * 0.5);
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      // Get particle shape from custom options
+      const particleShape = (this.options.custom?.particleShape as ParticleShape) || 'circle';
+
+      // Draw particle with selected shape
       ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${alpha})`;
-      ctx.fill();
+      this.drawParticleShape(ctx, p.x, p.y, radius, particleShape);
 
       // Add glow effect
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, radius * 2, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${alpha * 0.2})`;
-      ctx.fill();
+      this.drawParticleShape(ctx, p.x, p.y, radius * 2, particleShape);
     }
 
     // Draw foreground
     this.drawForeground(ctx, data);
+  }
+
+  /**
+   * Draw particle with specified shape
+   */
+  private drawParticleShape(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number,
+    shape: ParticleShape
+  ): void {
+    switch (shape) {
+      case 'circle':
+        this.drawCircleParticle(ctx, x, y, radius);
+        break;
+      case 'square':
+        this.drawSquareParticle(ctx, x, y, radius);
+        break;
+      case 'triangle':
+        this.drawTriangleParticle(ctx, x, y, radius);
+        break;
+      case 'diamond':
+        this.drawDiamondParticle(ctx, x, y, radius);
+        break;
+      case 'star':
+        this.drawStarParticle(ctx, x, y, radius);
+        break;
+      case 'heart':
+        this.drawHeartParticle(ctx, x, y, radius);
+        break;
+      default:
+        this.drawCircleParticle(ctx, x, y, radius);
+    }
+  }
+
+  /**
+   * Draw a circle particle
+   */
+  private drawCircleParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Draw a square particle
+   */
+  private drawSquareParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    const size = radius * 2;
+    ctx.fillRect(x - radius, y - radius, size, size);
+  }
+
+  /**
+   * Draw a triangle particle
+   */
+  private drawTriangleParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    const height = radius * 1.732; // sqrt(3) for equilateral triangle
+    ctx.beginPath();
+    ctx.moveTo(x, y - height * 0.667); // Top point
+    ctx.lineTo(x + radius, y + height * 0.333); // Bottom right
+    ctx.lineTo(x - radius, y + height * 0.333); // Bottom left
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Draw a diamond particle
+   */
+  private drawDiamondParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    ctx.beginPath();
+    ctx.moveTo(x, y - radius); // Top point
+    ctx.lineTo(x + radius, y); // Right point
+    ctx.lineTo(x, y + radius); // Bottom point
+    ctx.lineTo(x - radius, y); // Left point
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Draw a star particle (5-pointed)
+   */
+  private drawStarParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    const spikes = 5;
+    const outerRadius = radius;
+    const innerRadius = radius * 0.5;
+    let rot = (Math.PI / 2) * 3;
+    const step = Math.PI / spikes;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y - outerRadius);
+
+    for (let i = 0; i < spikes; i++) {
+      ctx.lineTo(
+        x + Math.cos(rot) * outerRadius,
+        y + Math.sin(rot) * outerRadius
+      );
+      rot += step;
+
+      ctx.lineTo(
+        x + Math.cos(rot) * innerRadius,
+        y + Math.sin(rot) * innerRadius
+      );
+      rot += step;
+    }
+
+    ctx.lineTo(x, y - outerRadius);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Draw a heart particle
+   */
+  private drawHeartParticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number
+  ): void {
+    ctx.beginPath();
+    ctx.moveTo(x, y + radius * 0.3);
+
+    // Left side of heart
+    ctx.bezierCurveTo(
+      x, y - radius * 0.3,
+      x - radius, y - radius * 0.3,
+      x - radius, y + radius * 0.15
+    );
+    ctx.bezierCurveTo(
+      x - radius, y + radius * 0.6,
+      x, y + radius * 0.8,
+      x, y + radius
+    );
+
+    // Right side of heart
+    ctx.bezierCurveTo(
+      x, y + radius * 0.8,
+      x + radius, y + radius * 0.6,
+      x + radius, y + radius * 0.15
+    );
+    ctx.bezierCurveTo(
+      x + radius, y - radius * 0.3,
+      x, y - radius * 0.3,
+      x, y + radius * 0.3
+    );
+
+    ctx.closePath();
+    ctx.fill();
   }
 
   /**

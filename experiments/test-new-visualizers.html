@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Visualizers Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #00ff88;
+    }
+    .controls {
+      margin: 20px 0;
+      padding: 20px;
+      background: #2a2a2a;
+      border-radius: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    button {
+      padding: 10px 20px;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #00cc6a;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    select {
+      padding: 10px;
+      background: #3a3a3a;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #visualizer {
+      width: 100%;
+      height: 500px;
+      background: #000;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .info {
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    .description {
+      margin-top: 10px;
+      padding: 10px;
+      background: #1a1a1a;
+      border-left: 3px solid #00ff88;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>New Visualizers Test - Audio Recorder with Visualization</h1>
+
+    <div class="controls">
+      <button id="startMic">Start Microphone</button>
+      <button id="stopMic" disabled>Stop Microphone</button>
+      <select id="visualizerSelect">
+        <option value="double-spiral">Double Spiral</option>
+        <option value="pulse">Pulse</option>
+        <option value="waterfall-bars">Waterfall Bars</option>
+        <option value="grid">Grid</option>
+        <option value="lissajous">Lissajous</option>
+        <option value="bars">Bars (Classic)</option>
+        <option value="circular">Circular (Classic)</option>
+      </select>
+    </div>
+
+    <canvas id="visualizer" width="1200" height="500"></canvas>
+
+    <div class="info">
+      <h2>Current Visualizer: <span id="currentVisualizer">Double Spiral</span></h2>
+      <div class="description" id="description">
+        <strong>Double Spiral:</strong> Dual spirals rotating in opposite directions, reacting to audio frequency data. Features customizable rotation speed, spiral tightness, and glow effects.
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { AudioRecorder } from '../dist/audio-recorder-visualization.esm.js';
+
+    const visualizerDescriptions = {
+      'double-spiral': 'Dual spirals rotating in opposite directions, reacting to audio frequency data. Features customizable rotation speed, spiral tightness, and glow effects.',
+      'pulse': 'Concentric rings that pulse from center based on bass intensity. Triggers new pulses on bass hits with customizable threshold and ring behavior.',
+      'waterfall-bars': 'Bars that cascade down like a waterfall, showing frequency history over time. Creates a scrolling spectral display with fade effects.',
+      'grid': 'Grid of squares that react to different frequency bands. Each cell responds to its corresponding frequency range with customizable layout.',
+      'lissajous': 'Classic Lissajous curve pattern based on audio waveform. Creates beautiful mathematical patterns with customizable phase offset and frequency ratios.',
+      'bars': 'Classic bar spectrum analyzer.',
+      'circular': 'Classic circular radial spectrum.'
+    };
+
+    let recorder = null;
+
+    // Initialize with first visualizer
+    recorder = new AudioRecorder({
+      canvas: '#visualizer',
+      visualizer: 'double-spiral',
+      visualizerOptions: {
+        primaryColor: '#00ff88',
+        secondaryColor: '#0088ff',
+        backgroundColor: '#000000',
+        custom: {
+          rotationSpeed: 0.02,
+          spiralTightness: 0.5,
+          maxRadius: 0.4,
+          glowEffect: true,
+        }
+      },
+      fftSize: 2048,
+      smoothingTimeConstant: 0.8,
+      fps: 60,
+    });
+
+    // Start microphone button
+    document.getElementById('startMic').addEventListener('click', async () => {
+      try {
+        await recorder.startMicrophone();
+        document.getElementById('startMic').disabled = true;
+        document.getElementById('stopMic').disabled = false;
+      } catch (error) {
+        alert('Error starting microphone: ' + error.message);
+      }
+    });
+
+    // Stop microphone button
+    document.getElementById('stopMic').addEventListener('click', () => {
+      recorder.stopMicrophone();
+      document.getElementById('startMic').disabled = false;
+      document.getElementById('stopMic').disabled = true;
+    });
+
+    // Visualizer selector
+    document.getElementById('visualizerSelect').addEventListener('change', (e) => {
+      const visualizer = e.target.value;
+
+      // Set visualizer-specific options
+      let options = {
+        primaryColor: '#00ff88',
+        secondaryColor: '#0088ff',
+        backgroundColor: '#000000',
+      };
+
+      switch (visualizer) {
+        case 'double-spiral':
+          options.custom = {
+            rotationSpeed: 0.02,
+            spiralTightness: 0.5,
+            maxRadius: 0.4,
+            glowEffect: true,
+          };
+          options.barCount = 64;
+          break;
+        case 'pulse':
+          options.custom = {
+            pulseThreshold: 0.3,
+            maxRings: 5,
+            ringSpeed: 5,
+            ringSpacing: 80,
+            fillRings: false,
+          };
+          options.lineWidth = 3;
+          break;
+        case 'waterfall-bars':
+          options.custom = {
+            scrollSpeed: 1,
+            historyLength: 50,
+            fadeEffect: true,
+          };
+          options.barCount = 64;
+          options.barGap = 0.1;
+          break;
+        case 'grid':
+          options.custom = {
+            gridCols: 16,
+            gridRows: 12,
+            cellGap: 4,
+            reactToFrequency: true,
+            glowEffect: true,
+          };
+          break;
+        case 'lissajous':
+          options.custom = {
+            size: 0.4,
+            trailLength: 100,
+            phaseOffset: Math.PI / 2,
+            frequencyRatio: 1,
+            showTrail: true,
+          };
+          options.lineWidth = 2;
+          break;
+        case 'bars':
+          options.barCount = 64;
+          options.barGap = 0.2;
+          break;
+        case 'circular':
+          options.barCount = 128;
+          break;
+      }
+
+      recorder.setVisualizer(visualizer, options);
+
+      // Update UI
+      const visualizerName = e.target.options[e.target.selectedIndex].text;
+      document.getElementById('currentVisualizer').textContent = visualizerName;
+      document.getElementById('description').innerHTML =
+        `<strong>${visualizerName}:</strong> ${visualizerDescriptions[visualizer]}`;
+    });
+
+    console.log('Available visualizers:', AudioRecorder.getAvailableVisualizers());
+  </script>
+</body>
+</html>

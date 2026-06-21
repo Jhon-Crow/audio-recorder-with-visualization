@@ -1,0 +1,263 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run
+
+
+DevTools listening on ws://127.0.0.1:43613/devtools/browser/47654a3c-839d-4855-99c1-dd1414217992
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          6 found (aspect-ratio-settings.cy.js, background-size-preservation.cy.js, imag │
+  │                 e-blink-controls.cy.js, large-file-handling.cy.js, preset-management.cy.js, pr │
+  │                 eview-alignment-guides.cy.js)                                                  │
+  │ Searched:       cypress/e2e/**/*.cy.{js,jsx,ts,tsx}                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  aspect-ratio-settings.cy.js                                                     (1 of 6)
+
+
+  Aspect Ratio Settings
+    ✓ defaults to 16:9 and preserves the existing 1080p canvas size (865ms)
+    ✓ switches 1080p output to 9:16 shorts dimensions (719ms)
+    ✓ calculates portrait dimensions from the selected quality height (686ms)
+    ✓ restores the selected aspect ratio after reload (1282ms)
+
+
+  4 passing (4s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     3 seconds                                                                        │
+  │ Spec Ran:     aspect-ratio-settings.cy.js                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/aspect-ratio-settings.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  background-size-preservation.cy.js                                              (2 of 6)
+
+
+  Background Size Mode Preservation
+    ✓ should load with default background size mode (cover) (668ms)
+    ✓ should persist background size mode to localStorage when changed (1394ms)
+    ✓ should restore background size mode after page reload (8535ms)
+    ✓ should apply background size mode correctly with a background image (8742ms)
+    ✓ should preserve background size mode with background image after reload (3504ms)
+    ✓ should show custom size controls when custom mode is selected (1477ms)
+
+
+  6 passing (25s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      6                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  5                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     24 seconds                                                                       │
+  │ Spec Ran:     background-size-preservation.cy.js                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-cover.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-contain.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-stretch.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-mode-center.png
+  -  /tmp/gh-issue-solver-1780603269419/cypress/screenshots/background-size-preservat    (1280x2252)
+     ion.cy.js/background-contain-after-reload.png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/background-size-preservation.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  image-blink-controls.cy.js                                                      (3 of 6)
+
+
+  Image Blink Controls
+    ✓ keeps frequency range sliders separated and updates their combined value (754ms)
+
+
+  1 passing (814ms)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     0 seconds                                                                        │
+  │ Spec Ran:     image-blink-controls.cy.js                                                       │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/image-blink-controls.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  large-file-handling.cy.js                                                       (4 of 6)
+
+
+  Large File Handling
+    ✓ should handle Uint8Array conversion for file transfer (689ms)
+    ✓ should not use Array.from for blob conversion (641ms)
+    ✓ should handle Blob.arrayBuffer() conversion (13739ms)
+    ✓ should demonstrate Array.from limitation for documentation (2898ms)
+
+
+  4 passing (18s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     18 seconds                                                                       │
+  │ Spec Ran:     large-file-handling.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/large-file-handling.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preset-management.cy.js                                                         (5 of 6)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (1846ms)
+    ✓ uses skip dialog mode with numbered default names (1231ms)
+    ✓ renames, deletes, and reorders presets from the sidebar (2152ms)
+    ✓ highlights the loaded preset until settings change (1587ms)
+
+
+  4 passing (7s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     6 seconds                                                                        │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preset-management.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preview-alignment-guides.cy.js                                                  (6 of 6)
+
+
+  Preview Alignment Guides
+    ✓ shows a preview-only mounting-area outline for portrait output (723ms)
+    ✓ reveals grid and smart guides only while dragging visualization offsets (1202ms)
+
+
+  2 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     2 seconds                                                                        │
+  │ Spec Ran:     preview-alignment-guides.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1780603269419/cypress/videos/preview-alignment-guides.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  aspect-ratio-settings.cy.js              00:03        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  background-size-preservation.cy.js       00:24        6        6        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  image-blink-controls.cy.js               820ms        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  large-file-handling.cy.js                00:18        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preset-management.cy.js                  00:06        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preview-alignment-guides.cy.js           00:02        2        2        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:56       21       21        -        -        -

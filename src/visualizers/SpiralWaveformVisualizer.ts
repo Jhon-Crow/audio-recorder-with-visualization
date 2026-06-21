@@ -76,9 +76,11 @@ export class SpiralWaveformVisualizer extends BaseVisualizer {
 
     for (let i = 0; i < dataLength; i++) {
       const value = (timeDomainData[i] - 128) / 128;
+      const sensitivity = this.options.sensitivity ?? 1.0;
+      const sensitiveValue = Math.max(-1, Math.min(1, value * sensitivity));
       const angle = (i / dataLength) * Math.PI * 2;
       const spiralRadius = (i / dataLength) * maxRadius * (1 + spiralTightness);
-      const radius = spiralRadius + value * 30;
+      const radius = spiralRadius + sensitiveValue * 30;
 
       const x = Math.cos(angle) * radius;
       const y = Math.sin(angle) * radius;
@@ -100,9 +102,11 @@ export class SpiralWaveformVisualizer extends BaseVisualizer {
 
       for (let i = 0; i < dataLength; i++) {
         const value = (timeDomainData[i] - 128) / 128;
+        const sensitivity = this.options.sensitivity ?? 1.0;
+        const sensitiveValue = Math.max(-1, Math.min(1, value * sensitivity));
         const angle = (i / dataLength) * Math.PI * 2;
         const spiralRadius = (i / dataLength) * maxRadius * (1 + spiralTightness);
-        const radius = spiralRadius + value * 30;
+        const radius = spiralRadius + sensitiveValue * 30;
 
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;

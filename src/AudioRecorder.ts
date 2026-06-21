@@ -4,7 +4,9 @@ import { VideoRecorder } from './core/VideoRecorder';
 import {
   AudioRecorderConfig,
   AudioRecorderEvents,
+  AudioEnhancementOptions,
   AudioSourceType,
+  ResolvedAudioEnhancementOptions,
   RecordingState,
   Visualizer,
   VisualizationData,
@@ -22,6 +24,11 @@ import {
   SpiralWaveformVisualizer,
   RadialBarsVisualizer,
   FrequencyRingsVisualizer,
+  DoubleSpiralVisualizer,
+  PulseVisualizer,
+  WaterfallBarsVisualizer,
+  GridVisualizer,
+  LissajousVisualizer,
 } from './visualizers';
 
 /**
@@ -39,6 +46,11 @@ const BUILT_IN_VISUALIZERS: Record<string, new (options?: VisualizerOptions) => 
   'spiral-waveform': SpiralWaveformVisualizer,
   'radial-bars': RadialBarsVisualizer,
   'frequency-rings': FrequencyRingsVisualizer,
+  'double-spiral': DoubleSpiralVisualizer,
+  pulse: PulseVisualizer,
+  'waterfall-bars': WaterfallBarsVisualizer,
+  grid: GridVisualizer,
+  lissajous: LissajousVisualizer,
 };
 
 /**
@@ -60,6 +72,10 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private debug: boolean;
   private _readyPromise: Promise<void>;
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
+  private audioTimerNode: ScriptProcessorNode | null = null;
+  private debugVisualActive = false;
+  private debugVisualAnimationId: number | null = null;
+  private debugVisualStartTime = 0;
 
   constructor(config: AudioRecorderConfig) {
     super();
@@ -104,6 +120,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
     this.analyzer = new AudioAnalyzer({
       fftSize: config.fftSize ?? 2048,
       smoothingTimeConstant: config.smoothingTimeConstant ?? 0.8,
+      audioEnhancement: config.audioEnhancement,
       debug: this.debug,
     });
 
@@ -219,21 +236,58 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
-   * Start timer-based fallback for visualization when tab is hidden or window is minimized
-   * Note: setInterval is used instead of requestAnimationFrame because rAF pauses when tab/window is not visible
-   * We use a shorter interval (16ms) than the target frame rate because browsers may throttle timers
-   * when the page is hidden, so we want to ensure frames are drawn as frequently as possible
+   * Start background-safe visualization fallback using Web Audio API as timer.
+   *
+   * Web Audio API (ScriptProcessorNode) is NOT throttled when the window is
+   * minimized or the tab is hidden — unlike requestAnimationFrame (~1fps when
+   * minimized) and setInterval (~1fps throttle in minimized windows).
+   *
+   * We create a silent ScriptProcessorNode connected to the existing AudioContext.
+   * Its onaudioprocess fires at the audio sample rate regardless of window state.
+   * We use that callback to draw visualization frames at the configured fps.
+   *
+   * A setInterval fallback is also started for environments where AudioContext
+   * is not available or not running.
    */
   private startTimerFallback(): void {
-    if (this.timerIntervalId !== null) {
+    if (this.timerIntervalId !== null || this.audioTimerNode !== null) {
       return;
     }
 
-    // Use a shorter polling interval (16ms ~ 60fps) to ensure frames are drawn
-    // even when the browser throttles the timer. The actual frame rate is still
-    // controlled by lastFrameTime check.
-    const pollingInterval = Math.min(16, this.frameInterval);
+    // Try Web Audio API-based timer first (not throttled when minimized)
+    try {
+      const audioCtx = this.analyzer.getAudioContext();
+      if (audioCtx.state === 'running') {
+        // bufferSize 4096 gives ~93ms callback interval at 44100Hz, which is enough
+        // for driving frame rate checks (actual fps is controlled by lastFrameTime)
+        const bufferSize = 4096;
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        const scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
 
+        scriptNode.onaudioprocess = () => {
+          const timestamp = performance.now();
+          if (timestamp - this.lastFrameTime >= this.frameInterval) {
+            this.lastFrameTime = timestamp;
+            this.drawFrame(timestamp);
+          }
+        };
+
+        // Connect to destination through a silent gain (no audible output)
+        const silentGain = audioCtx.createGain();
+        silentGain.gain.value = 0;
+        scriptNode.connect(silentGain);
+        silentGain.connect(audioCtx.destination);
+
+        this.audioTimerNode = scriptNode;
+        this.log('Started Web Audio API-based visualization timer (background-safe)');
+        return;
+      }
+    } catch {
+      // Fall through to setInterval
+    }
+
+    // Fallback: setInterval (may throttle to ~1fps in minimized windows)
+    const pollingInterval = Math.min(16, this.frameInterval);
     this.timerIntervalId = setInterval(() => {
       const timestamp = performance.now();
       if (timestamp - this.lastFrameTime >= this.frameInterval) {
@@ -242,13 +296,19 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       }
     }, pollingInterval);
 
-    this.log('Started timer fallback visualization with polling interval:', pollingInterval);
+    this.log('Started setInterval fallback visualization (may throttle when minimized)');
   }
 
   /**
-   * Stop timer-based fallback
+   * Stop background-safe timer fallback
    */
   private stopTimerFallback(): void {
+    if (this.audioTimerNode !== null) {
+      this.audioTimerNode.onaudioprocess = null;
+      this.audioTimerNode.disconnect();
+      this.audioTimerNode = null;
+      this.log('Stopped Web Audio API visualization timer');
+    }
     if (this.timerIntervalId !== null) {
       clearInterval(this.timerIntervalId);
       this.timerIntervalId = null;
@@ -485,7 +545,11 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       throw new Error('Recording already in progress');
     }
 
-    this.videoRecorder.start(this.canvas, this.micStream ?? undefined, {
+    const audioStream = this.analyzer.isAudioEnhancementActive
+      ? this.analyzer.getProcessedStream() ?? this.micStream
+      : this.micStream;
+
+    this.videoRecorder.start(this.canvas, audioStream ?? undefined, {
       fps: 1000 / this.frameInterval,
       ...options,
     });
@@ -594,7 +658,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    * Check if visualization is active
    */
   get isVisualizationActive(): boolean {
-    return this.animationFrameId !== null || this.timerIntervalId !== null;
+    return this.animationFrameId !== null || this.timerIntervalId !== null || this.audioTimerNode !== null;
   }
 
   /**
@@ -602,6 +666,43 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    */
   getCanvas(): HTMLCanvasElement {
     return this.canvas;
+  }
+
+  /**
+   * Get current frequency data (spectrum) for external use (e.g., presentation mode)
+   * Returns empty data if no audio source is active
+   */
+  getFrequencyData(): Uint8Array | null {
+    return this.analyzer.getFrequencyData();
+  }
+
+  /**
+   * Get current time domain data (waveform) for external use (e.g., presentation mode)
+   * Returns empty data if no audio source is active
+   */
+  getTimeDomainData(): Uint8Array | null {
+    return this.analyzer.getTimeDomainData();
+  }
+
+  /**
+   * Update audio enhancement settings used for visualization and recording
+   */
+  setAudioEnhancement(options: AudioEnhancementOptions): void {
+    this.analyzer.setAudioEnhancement(options);
+  }
+
+  /**
+   * Get current resolved audio enhancement settings
+   */
+  getAudioEnhancement(): ResolvedAudioEnhancementOptions {
+    return this.analyzer.getAudioEnhancement();
+  }
+
+  /**
+   * Get processed audio stream from the current audio graph
+   */
+  getProcessedAudioStream(): MediaStream | null {
+    return this.analyzer.getProcessedStream();
   }
 
   /**
@@ -619,6 +720,123 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
+   * Show debug visual boundaries with blink effect
+   * Displays a blinking boundary around the canvas to indicate active parameter changes
+   */
+  showDebugVisual(): void {
+    if (this.debugVisualActive) {
+      return;
+    }
+
+    this.debugVisualActive = true;
+    this.debugVisualStartTime = performance.now();
+    this.log('Debug visual activated');
+
+    // Start the animation loop for the debug visual
+    const animateDebugVisual = (timestamp: number): void => {
+      if (!this.debugVisualActive) {
+        return;
+      }
+
+      // Draw the debug visual boundaries
+      this.drawDebugBoundaries(timestamp);
+
+      // Continue animation
+      this.debugVisualAnimationId = requestAnimationFrame(animateDebugVisual);
+    };
+
+    this.debugVisualAnimationId = requestAnimationFrame(animateDebugVisual);
+  }
+
+  /**
+   * Hide debug visual boundaries
+   */
+  hideDebugVisual(): void {
+    if (!this.debugVisualActive) {
+      return;
+    }
+
+    this.debugVisualActive = false;
+
+    if (this.debugVisualAnimationId !== null) {
+      cancelAnimationFrame(this.debugVisualAnimationId);
+      this.debugVisualAnimationId = null;
+    }
+
+    this.log('Debug visual deactivated');
+  }
+
+  /**
+   * Draw debug boundaries with blink effect
+   */
+  private drawDebugBoundaries(timestamp: number): void {
+    const ctx = this.ctx;
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    // Calculate blink effect using sine wave for smooth pulsing
+    // Period: 800ms for complete blink cycle
+    const blinkPeriod = 800;
+    const phase = ((timestamp - this.debugVisualStartTime) % blinkPeriod) / blinkPeriod;
+    const opacity = 0.3 + 0.5 * Math.abs(Math.sin(phase * Math.PI * 2));
+
+    // Save current context state
+    ctx.save();
+
+    // Draw outer boundary (main canvas boundary)
+    ctx.strokeStyle = `rgba(255, 100, 100, ${opacity})`;
+    ctx.lineWidth = 8;
+    ctx.setLineDash([20, 10]);
+    ctx.lineDashOffset = -(timestamp / 20);
+    ctx.strokeRect(4, 4, width - 8, height - 8);
+
+    // Draw inner boundary (visualization area indicator)
+    ctx.strokeStyle = `rgba(100, 200, 255, ${opacity * 0.7})`;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([15, 8]);
+    ctx.lineDashOffset = timestamp / 15;
+    ctx.strokeRect(20, 20, width - 40, height - 40);
+
+    // Draw corner markers for better visibility
+    const markerSize = 30;
+    const markerColor = `rgba(255, 200, 50, ${opacity})`;
+    ctx.strokeStyle = markerColor;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+
+    // Top-left corner
+    ctx.beginPath();
+    ctx.moveTo(10, 10 + markerSize);
+    ctx.lineTo(10, 10);
+    ctx.lineTo(10 + markerSize, 10);
+    ctx.stroke();
+
+    // Top-right corner
+    ctx.beginPath();
+    ctx.moveTo(width - 10 - markerSize, 10);
+    ctx.lineTo(width - 10, 10);
+    ctx.lineTo(width - 10, 10 + markerSize);
+    ctx.stroke();
+
+    // Bottom-left corner
+    ctx.beginPath();
+    ctx.moveTo(10, height - 10 - markerSize);
+    ctx.lineTo(10, height - 10);
+    ctx.lineTo(10 + markerSize, height - 10);
+    ctx.stroke();
+
+    // Bottom-right corner
+    ctx.beginPath();
+    ctx.moveTo(width - 10 - markerSize, height - 10);
+    ctx.lineTo(width - 10, height - 10);
+    ctx.lineTo(width - 10, height - 10 - markerSize);
+    ctx.stroke();
+
+    // Restore context state
+    ctx.restore();
+  }
+
+  /**
    * Clean up all resources
    */
   destroy(): void {
@@ -628,6 +846,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
     window.removeEventListener('blur', this.handleWindowBlur);
     window.removeEventListener('focus', this.handleWindowFocus);
 
+    this.hideDebugVisual();
     this.stopVisualization();
     this.stopMicrophone();
     this.cancelRecording();

@@ -68,17 +68,20 @@ export class SpectrogramVisualizer extends BaseVisualizer {
     const orientation = this.options.custom?.orientation as string;
     const frequencyRange = this.options.custom?.frequencyRange as string;
 
+    // Get frequency data slice based on frequencyWidth setting
+    const frequencyDataSlice = this.getFrequencyDataSlice(frequencyData);
+
     // Get frequency range to display
     let startIdx = 0;
-    let endIdx = frequencyData.length;
+    let endIdx = frequencyDataSlice.length;
 
     if (frequencyRange === 'bass') {
-      endIdx = Math.floor(frequencyData.length * 0.1);
+      endIdx = Math.floor(frequencyDataSlice.length * 0.1);
     } else if (frequencyRange === 'mid') {
-      startIdx = Math.floor(frequencyData.length * 0.1);
-      endIdx = Math.floor(frequencyData.length * 0.5);
+      startIdx = Math.floor(frequencyDataSlice.length * 0.1);
+      endIdx = Math.floor(frequencyDataSlice.length * 0.5);
     } else if (frequencyRange === 'high') {
-      startIdx = Math.floor(frequencyData.length * 0.5);
+      startIdx = Math.floor(frequencyDataSlice.length * 0.5);
     }
 
     const rangeLength = endIdx - startIdx;
@@ -96,11 +99,12 @@ export class SpectrogramVisualizer extends BaseVisualizer {
         // Draw new column on the right
         for (let i = 0; i < rangeLength; i++) {
           const freqIndex = startIdx + Math.floor((i / rangeLength) * (endIdx - startIdx));
-          const value = frequencyData[freqIndex];
+          const value = frequencyDataSlice[freqIndex];
+          const sensitiveValue = this.applySensitivity(value);
           const y = (i / rangeLength) * height;
           const barHeight = Math.max(1, height / rangeLength);
 
-          this.historyCtx.fillStyle = this.getColor(value, colorScheme);
+          this.historyCtx.fillStyle = this.getColor(sensitiveValue, colorScheme);
           this.historyCtx.fillRect(width - scrollWidth, y, scrollWidth, barHeight);
         }
       } else {
@@ -114,11 +118,12 @@ export class SpectrogramVisualizer extends BaseVisualizer {
         // Draw new row at the bottom
         for (let i = 0; i < rangeLength; i++) {
           const freqIndex = startIdx + Math.floor((i / rangeLength) * (endIdx - startIdx));
-          const value = frequencyData[freqIndex];
+          const value = frequencyDataSlice[freqIndex];
+          const sensitiveValue = this.applySensitivity(value);
           const x = (i / rangeLength) * width;
           const barWidth = Math.max(1, width / rangeLength);
 
-          this.historyCtx.fillStyle = this.getColor(value, colorScheme);
+          this.historyCtx.fillStyle = this.getColor(sensitiveValue, colorScheme);
           this.historyCtx.fillRect(x, height - scrollHeight, barWidth, scrollHeight);
         }
       }

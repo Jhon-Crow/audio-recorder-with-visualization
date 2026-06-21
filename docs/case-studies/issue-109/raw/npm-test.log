@@ -1,0 +1,665 @@
+
+> audio-recorder-with-visualization@1.0.0 test
+> jest
+
+PASS tests/BaseVisualizer.test.ts (5.303 s)
+PASS tests/Visualizers.test.ts (5.744 s)
+PASS tests/AudioAnalyzer.test.ts (5.834 s)
+PASS tests/EventEmitter.test.ts
+PASS tests/AudioRecorder.test.ts (6.133 s)
+  ● Console
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual activated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual deactivated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual activated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual deactivated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual activated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual deactivated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual activated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Debug visual deactivated
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started timer fallback visualization with polling interval: 16
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped timer fallback visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started timer fallback visualization with polling interval: 16
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page visible, switching to requestAnimationFrame
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped timer fallback visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started timer fallback visualization with polling interval: 16
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped timer fallback visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Started timer fallback visualization with polling interval: 16
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped timer fallback visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+    console.log
+      [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+    console.log
+      [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+PASS tests/VideoRecorder.test.ts
+PASS tests/MoreVisualizers.test.ts (6.305 s)
+PASS tests/AudioToVideoConverter.test.ts (16.699 s)
+
+Test Suites: 8 passed, 8 total
+Tests:       324 passed, 324 total
+Snapshots:   0 total
+Time:        23.127 s
+Ran all test suites.

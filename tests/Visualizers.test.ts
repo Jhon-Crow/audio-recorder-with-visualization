@@ -1,4 +1,5 @@
 import { WaveformVisualizer } from '../src/visualizers/WaveformVisualizer';
+import { GlowWaveformVisualizer } from '../src/visualizers/GlowWaveformVisualizer';
 import { BarVisualizer } from '../src/visualizers/BarVisualizer';
 import { CircularVisualizer } from '../src/visualizers/CircularVisualizer';
 import { ParticleVisualizer } from '../src/visualizers/ParticleVisualizer';
@@ -62,6 +63,68 @@ describe('Visualizers', () => {
       mirroredVisualizer.init(canvas);
       expect(() => mirroredVisualizer.draw(ctx, mockData)).not.toThrow();
       mirroredVisualizer.destroy();
+    });
+
+    test('should handle ADSR smoothing between frames', () => {
+      visualizer.draw(ctx, mockData);
+
+      // Second frame with different data should use smoothed values
+      mockData.timeDomainData = new Uint8Array(2048).fill(255);
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should apply ADSR envelope parameters', () => {
+      const adsrVisualizer = new WaveformVisualizer({
+        adsrAttack: 50,
+        adsrDecay: 50,
+        adsrSustain: 30,
+        adsrRelease: 70,
+      });
+      adsrVisualizer.init(canvas);
+      expect(() => adsrVisualizer.draw(ctx, mockData)).not.toThrow();
+      adsrVisualizer.destroy();
+    });
+  });
+
+  describe('GlowWaveformVisualizer', () => {
+    let visualizer: GlowWaveformVisualizer;
+
+    beforeEach(() => {
+      visualizer = new GlowWaveformVisualizer();
+      visualizer.init(canvas);
+    });
+
+    afterEach(() => {
+      visualizer.destroy();
+    });
+
+    test('should have correct id and name', () => {
+      expect(visualizer.id).toBe('glow-waveform');
+      expect(visualizer.name).toBe('Glow Waveform');
+    });
+
+    test('should draw without errors', () => {
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should handle ADSR smoothing between frames', () => {
+      visualizer.draw(ctx, mockData);
+
+      // Second frame with different data should use smoothed values
+      mockData.timeDomainData = new Uint8Array(2048).fill(255);
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should apply ADSR envelope parameters', () => {
+      const adsrVisualizer = new GlowWaveformVisualizer({
+        adsrAttack: 50,
+        adsrDecay: 50,
+        adsrSustain: 30,
+        adsrRelease: 70,
+      });
+      adsrVisualizer.init(canvas);
+      expect(() => adsrVisualizer.draw(ctx, mockData)).not.toThrow();
+      adsrVisualizer.destroy();
     });
   });
 
@@ -135,6 +198,86 @@ describe('Visualizers', () => {
       expect(() => customVisualizer.draw(ctx, mockData)).not.toThrow();
       customVisualizer.destroy();
     });
+
+    test('should load center image from string', async () => {
+      const validPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+      const customVisualizer = new CircularVisualizer({
+        custom: {
+          centerImage: validPng,
+        },
+      });
+      await customVisualizer.init(canvas);
+      expect(() => customVisualizer.draw(ctx, mockData)).not.toThrow();
+      customVisualizer.destroy();
+    });
+
+    test('should load center image from HTMLImageElement', async () => {
+      const img = new Image();
+      img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+      const customVisualizer = new CircularVisualizer({
+        custom: {
+          centerImage: img,
+        },
+      });
+      await customVisualizer.init(canvas);
+      expect(() => customVisualizer.draw(ctx, mockData)).not.toThrow();
+      customVisualizer.destroy();
+    });
+
+    test('should handle center image load error', async () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const customVisualizer = new CircularVisualizer({
+        custom: {
+          centerImage: 'invalid-image.png',
+        },
+      });
+      // Wait for init to complete (image load will fail)
+      await customVisualizer.init(canvas);
+      // Allow time for image error callback
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(() => customVisualizer.draw(ctx, mockData)).not.toThrow();
+      customVisualizer.destroy();
+      consoleSpy.mockRestore();
+    });
+
+    test('should update center image via setOptions', async () => {
+      const validPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+      await visualizer.setOptions({
+        custom: {
+          centerImage: validPng,
+        },
+      });
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should clear center image via setOptions', async () => {
+      const validPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+      await visualizer.setOptions({
+        custom: {
+          centerImage: validPng,
+        },
+      });
+      // Now clear it
+      await visualizer.setOptions({
+        custom: {
+          centerImage: null,
+        },
+      });
+      expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+    });
+
+    test('should draw with rotation over multiple frames', () => {
+      // Draw multiple frames to test rotation
+      for (let i = 0; i < 10; i++) {
+        mockData.timestamp = performance.now() + i * 16;
+        expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+      }
+    });
+
+    test('should handle zero dimensions gracefully', () => {
+      const zeroWidthData = { ...mockData, width: 0 };
+      expect(() => visualizer.draw(ctx, zeroWidthData)).not.toThrow();
+    });
   });
 
   describe('ParticleVisualizer', () => {
@@ -179,6 +322,53 @@ describe('Visualizers', () => {
       customVisualizer.init(canvas);
       expect(() => customVisualizer.draw(ctx, mockData)).not.toThrow();
       customVisualizer.destroy();
+    });
+
+    test('should handle particle lifecycle', () => {
+      // Draw many frames to allow particles to spawn, move, and expire
+      for (let i = 0; i < 100; i++) {
+        mockData.timestamp = performance.now() + i * 16;
+        mockData.frequencyData = new Uint8Array(1024).fill(Math.random() > 0.5 ? 200 : 50);
+        expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+      }
+    });
+
+    test('should limit max particles', () => {
+      const smallMaxVisualizer = new ParticleVisualizer({
+        custom: {
+          maxParticles: 5,
+          spawnRate: 10,
+        },
+      });
+      smallMaxVisualizer.init(canvas);
+      // Draw many frames with high frequency to try to spawn many particles
+      for (let i = 0; i < 50; i++) {
+        mockData.frequencyData = new Uint8Array(1024).fill(255);
+        expect(() => smallMaxVisualizer.draw(ctx, mockData)).not.toThrow();
+      }
+      smallMaxVisualizer.destroy();
+    });
+
+    test('should handle particles reaching canvas edges', () => {
+      // Draw frames with particles that will move toward edges
+      for (let i = 0; i < 30; i++) {
+        mockData.timestamp = performance.now() + i * 50; // Larger time steps for faster movement
+        mockData.frequencyData = new Uint8Array(1024).fill(200);
+        expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+      }
+    });
+
+    test('should handle zero dimensions gracefully', () => {
+      const zeroWidthData = { ...mockData, width: 0 };
+      expect(() => visualizer.draw(ctx, zeroWidthData)).not.toThrow();
+    });
+
+    test('should handle low frequency data', () => {
+      // Low frequency values should spawn fewer particles
+      for (let i = 0; i < 10; i++) {
+        mockData.frequencyData = new Uint8Array(1024).fill(10);
+        expect(() => visualizer.draw(ctx, mockData)).not.toThrow();
+      }
     });
   });
 
