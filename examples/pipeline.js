@@ -1667,7 +1667,12 @@
     const parts = getRelativeOffsetParts(stage);
     const sign = parts.direction === 'before' ? '-' : '+';
     const d = parts.days + parts.months * 30;
-    return `${sign}${d}d/${parts.hours}h/${parts.minutes}m`;
+    const segments = [];
+    if (d !== 0) segments.push(`${d}d`);
+    if (parts.hours !== 0) segments.push(`${parts.hours}h`);
+    if (parts.minutes !== 0) segments.push(`${parts.minutes}m`);
+    if (segments.length === 0) segments.push('0m');
+    return `${sign}${segments.join(' ')}`;
   }
 
   function getStageDisplayDate(stage, computedDate) {
