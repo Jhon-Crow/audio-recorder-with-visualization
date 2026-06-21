@@ -1722,7 +1722,10 @@
     }
     setActiveStage(stageId);
     const behavior = window.Cypress ? 'auto' : 'smooth';
-    stageElement.scrollIntoView({ behavior, block: 'start' });
+    const stickyPreview = document.querySelector('.canvas-container');
+    const stickyOffset = stickyPreview ? stickyPreview.getBoundingClientRect().bottom : 0;
+    const elementTop = stageElement.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: elementTop - stickyOffset, behavior });
   }
 
   function renderStageNav() {
