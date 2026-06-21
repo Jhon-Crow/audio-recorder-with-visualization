@@ -1109,4 +1109,60 @@ describe('Pipeline Mode', () => {
       expect(parseFloat(tooltipStyle.maxWidth)).to.be.lessThan(360);
     });
   });
+
+  it('renames, deletes, and reorders saved pipelines from the sidebar', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
+        { id: 'pipe-a', name: 'Alpha', timezone: '', uploadOrder: 'chronological', stages: [] },
+        { id: 'pipe-b', name: 'Beta', timezone: '', uploadOrder: 'chronological', stages: [] },
+        { id: 'pipe-c', name: 'Gamma', timezone: '', uploadOrder: 'chronological', stages: [] },
+      ]));
+    });
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true);
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#pipelineList .pipeline-load-btn').should('have.length', 3);
+
+    cy.get('#pipelineList .pipeline-load-btn').eq(1).rightclick();
+    cy.get('#pipelineContextMenu').should('be.visible');
+    cy.get('#pipelineRenameBtn').click();
+    cy.get('#pipelineRenameModal').should('be.visible');
+    cy.get('#pipelineRenameInput').should('have.value', 'Beta').clear().type('Renamed');
+    cy.get('#pipelineConfirmRenameBtn').click();
+    cy.get('#pipelineRenameModal').should('not.be.visible');
+    cy.get('#pipelineList .pipeline-load-btn').eq(1).should('contain', 'Renamed');
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines[1].name).to.equal('Renamed');
+    });
+
+    cy.get('#pipelineList .pipeline-load-btn').eq(2).rightclick();
+    cy.get('#pipelineContextMenu').should('be.visible');
+    cy.get('#pipelineDeleteSavedBtn').click();
+    cy.get('#pipelineList .pipeline-load-btn').should('have.length', 2);
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines.map(p => p.name)).to.deep.equal(['Alpha', 'Renamed']);
+    });
+
+    cy.get('#pipelineList .pipeline-load-btn').eq(1).trigger('dragstart', {
+      dataTransfer: new DataTransfer(),
+    });
+    cy.get('#pipelineList .pipeline-load-btn').eq(0).trigger('dragover', {
+      dataTransfer: new DataTransfer(),
+    });
+    cy.get('#pipelineList .pipeline-load-btn').eq(0).trigger('drop', {
+      dataTransfer: new DataTransfer(),
+    });
+
+    cy.get('#pipelineList .pipeline-load-btn').eq(0).should('contain', 'Renamed');
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
+    });
+  });
 });

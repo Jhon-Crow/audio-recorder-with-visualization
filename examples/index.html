@@ -23,6 +23,10 @@
     <button type="button" id="presetRenameBtn" role="menuitem">Rename</button>
     <button type="button" id="presetDeleteBtn" role="menuitem">Delete</button>
   </div>
+  <div class="preset-context-menu" id="pipelineContextMenu" role="menu" aria-hidden="true">
+    <button type="button" id="pipelineRenameBtn" role="menuitem">Rename</button>
+    <button type="button" id="pipelineDeleteSavedBtn" role="menuitem">Delete</button>
+  </div>
 
   <div class="container">
     <h1>Audio Recorder with Visualization</h1>
@@ -1005,6 +1009,20 @@
       <div class="modal-actions">
         <button type="button" class="btn-secondary compact-btn" id="presetCancelRenameBtn">Cancel</button>
         <button type="button" class="btn-primary compact-btn" id="presetConfirmRenameBtn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="pipelineRenameModal" aria-hidden="true">
+    <div class="preset-modal" role="dialog" aria-modal="true" aria-labelledby="pipelineRenameTitle">
+      <h2 id="pipelineRenameTitle">Rename Pipeline</h2>
+      <label>
+        Pipeline Name
+        <input type="text" id="pipelineRenameInput" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary compact-btn" id="pipelineCancelRenameBtn">Cancel</button>
+        <button type="button" class="btn-primary compact-btn" id="pipelineConfirmRenameBtn">Rename</button>
       </div>
     </div>
   </div>
