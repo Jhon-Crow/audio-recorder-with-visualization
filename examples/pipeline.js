@@ -36,6 +36,14 @@
   const pipelineList = document.getElementById('pipelineList');
   const pipelineSettingsBtn = document.getElementById('pipelineSettingsBtn');
 
+  const pipelineContextMenu = document.getElementById('pipelineContextMenu');
+  const pipelineRenameBtn = document.getElementById('pipelineRenameBtn');
+  const pipelineDeleteSavedBtn = document.getElementById('pipelineDeleteSavedBtn');
+  const pipelineRenameModal = document.getElementById('pipelineRenameModal');
+  const pipelineRenameInput = document.getElementById('pipelineRenameInput');
+  const pipelineCancelRenameBtn = document.getElementById('pipelineCancelRenameBtn');
+  const pipelineConfirmRenameBtn = document.getElementById('pipelineConfirmRenameBtn');
+
   const deleteModal = document.getElementById('pipelineDeleteModal');
   const deleteMessage = document.getElementById('pipelineDeleteMessage');
   const cancelDeleteBtn = document.getElementById('cancelPipelineDeleteBtn');
@@ -74,7 +82,9 @@
   const requiredElements = [
     addStageBtn, clearPipelineBtn, runPipelineBtn, resetPipelineFieldsBtn, pipelineTimezoneBtn,
     validationStatus, stagesContainer, pipelineTab, pipelineSidebar, savePipelineBtn, pipelineList,
-    pipelineSettingsBtn, deleteModal, deleteMessage, cancelDeleteBtn, cancelDeleteXBtn,
+    pipelineSettingsBtn, pipelineContextMenu, pipelineRenameBtn, pipelineDeleteSavedBtn,
+    pipelineRenameModal, pipelineRenameInput, pipelineCancelRenameBtn, pipelineConfirmRenameBtn,
+    deleteModal, deleteMessage, cancelDeleteBtn, cancelDeleteXBtn,
     confirmDeleteBtn, resetModal, cancelResetBtn, cancelResetXBtn, confirmResetHoldBtn,
     timezoneModal, timezoneSelect, uploadOrderSelect, cancelTimezoneBtn, cancelTimezoneXBtn, confirmTimezoneBtn,
     reportModal, reportSummary, reportList, closeReportBtn, closeReportXBtn,
@@ -117,6 +127,9 @@
   let activeStageId = '';
   let stageObserver = null;
   const pipelinePreviewCache = new Map();
+  let activePipelineMenuId = null;
+  let pipelineRenameTargetId = null;
+  let draggedPipelineId = null;
 
   function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -3126,12 +3139,87 @@
     renderPipelineList();
   }
 
+  function hidePipelineContextMenu() {
+    pipelineContextMenu.classList.remove('active');
+    pipelineContextMenu.setAttribute('aria-hidden', 'true');
+    activePipelineMenuId = null;
+  }
+
+  function showPipelineContextMenu(pipelineId, x, y) {
+    activePipelineMenuId = pipelineId;
+    pipelineContextMenu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
+    pipelineContextMenu.style.top = `${Math.min(y, window.innerHeight - 88)}px`;
+    pipelineContextMenu.classList.add('active');
+    pipelineContextMenu.setAttribute('aria-hidden', 'false');
+  }
+
+  function openPipelineRenameDialog(pipelineId) {
+    const pipeline = savedPipelines.find(item => item.id === pipelineId);
+    if (!pipeline) return;
+    pipelineRenameTargetId = pipelineId;
+    pipelineRenameInput.value = pipeline.name || '';
+    pipelineRenameModal.classList.add('active');
+    pipelineRenameModal.setAttribute('aria-hidden', 'false');
+    pipelineRenameInput.focus();
+    pipelineRenameInput.select();
+  }
+
+  function closePipelineRenameDialog() {
+    pipelineRenameTargetId = null;
+    pipelineRenameModal.classList.remove('active');
+    pipelineRenameModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function confirmPipelineRename() {
+    const pipelineId = pipelineRenameTargetId;
+    const trimmedName = pipelineRenameInput.value.trim();
+    if (!pipelineId) return;
+    if (!trimmedName) {
+      pipelineRenameInput.focus();
+      return;
+    }
+    savedPipelines = savedPipelines.map(item => (
+      item.id === pipelineId ? { ...item, name: trimmedName } : item
+    ));
+    saveSavedPipelines();
+    renderPipelineList();
+    closePipelineRenameDialog();
+  }
+
+  function deleteSavedPipeline(pipelineId) {
+    const pipeline = savedPipelines.find(item => item.id === pipelineId);
+    if (!pipeline) return;
+    if (!window.confirm(`Delete pipeline "${pipeline.name}"?`)) return;
+    savedPipelines = savedPipelines.filter(item => item.id !== pipelineId);
+    if (activePipelineId === pipelineId) {
+      activePipelineId = '';
+      localStorage.removeItem(ACTIVE_PIPELINE_KEY);
+    }
+    saveSavedPipelines();
+    renderPipelineList();
+  }
+
+  function movePipelineBefore(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const sourceIndex = savedPipelines.findIndex(item => item.id === sourceId);
+    const targetIndex = savedPipelines.findIndex(item => item.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    const next = savedPipelines.filter(item => item.id !== sourceId);
+    const insertAt = next.findIndex(item => item.id === targetId);
+    next.splice(insertAt, 0, savedPipelines[sourceIndex]);
+    savedPipelines = next;
+    saveSavedPipelines();
+    renderPipelineList();
+  }
+
   function renderPipelineList() {
     pipelineList.innerHTML = '';
     savedPipelines.forEach((pipeline, index) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'preset-icon-btn pipeline-load-btn';
+      button.dataset.pipelineId = pipeline.id;
+      button.draggable = true;
       if (pipeline.id === activePipelineId) {
         button.classList.add('is-active');
         button.setAttribute('aria-current', 'true');
@@ -3139,6 +3227,36 @@
       button.textContent = pipeline.name || String(index + 1);
       button.setAttribute('aria-label', `Load pipeline ${pipeline.name || index + 1}`);
       button.addEventListener('click', () => loadPipeline(pipeline.id));
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        showPipelineContextMenu(pipeline.id, event.clientX, event.clientY);
+      });
+      button.addEventListener('dragstart', event => {
+        draggedPipelineId = pipeline.id;
+        button.classList.add('is-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', pipeline.id);
+      });
+      button.addEventListener('dragend', () => {
+        draggedPipelineId = null;
+        button.classList.remove('is-dragging');
+        pipelineList.querySelectorAll('.is-drop-target').forEach(item => item.classList.remove('is-drop-target'));
+      });
+      button.addEventListener('dragover', event => {
+        if (draggedPipelineId && draggedPipelineId !== pipeline.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          button.classList.add('is-drop-target');
+        }
+      });
+      button.addEventListener('dragleave', () => {
+        button.classList.remove('is-drop-target');
+      });
+      button.addEventListener('drop', event => {
+        event.preventDefault();
+        button.classList.remove('is-drop-target');
+        movePipelineBefore(event.dataTransfer.getData('text/plain') || draggedPipelineId, pipeline.id);
+      });
       pipelineList.appendChild(button);
     });
   }
@@ -3350,6 +3468,48 @@
   closeReportXBtn.addEventListener('click', hidePipelineReport);
 
   savePipelineBtn.addEventListener('click', saveCurrentPipeline);
+
+  pipelineRenameBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    const pipelineId = activePipelineMenuId;
+    hidePipelineContextMenu();
+    openPipelineRenameDialog(pipelineId);
+  });
+  pipelineDeleteSavedBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    const pipelineId = activePipelineMenuId;
+    hidePipelineContextMenu();
+    deleteSavedPipeline(pipelineId);
+  });
+  pipelineCancelRenameBtn.addEventListener('click', closePipelineRenameDialog);
+  pipelineConfirmRenameBtn.addEventListener('click', confirmPipelineRename);
+  pipelineRenameInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      confirmPipelineRename();
+    } else if (event.key === 'Escape') {
+      closePipelineRenameDialog();
+    }
+  });
+  pipelineRenameModal.addEventListener('click', event => {
+    if (event.target === pipelineRenameModal) {
+      closePipelineRenameDialog();
+    }
+  });
+
+  document.addEventListener('click', event => {
+    if (!pipelineContextMenu.contains(event.target)) {
+      hidePipelineContextMenu();
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      hidePipelineContextMenu();
+      if (pipelineRenameModal.classList.contains('active')) {
+        closePipelineRenameDialog();
+      }
+    }
+  });
+
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => window.setTimeout(syncPipelineSidebar, 0));
   });
