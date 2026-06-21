@@ -564,6 +564,105 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeNotifySubscribers').should('be.checked');
   });
 
+  it('shows a timezone selector in the upload modal', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTimezone').should('exist').and('be.visible');
+    cy.get('#youtubeTimezone option[value=""]').should('contain.text', 'Browser timezone');
+    cy.get('#youtubeTimezone option[value="UTC"]').should('exist');
+    cy.get('#youtubeTimezone option[value="Europe/Moscow"]').should('exist');
+  });
+
+  it('uses the selected timezone when computing the scheduled publish time', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      // Europe/Moscow is UTC+3, so 15:30 local = 12:30 UTC
+      expect(body.status.publishAt).to.equal('2026-07-01T12:30:00.000Z');
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: 'https://upload.example/tz-session' },
+        body: '',
+      });
+    }).as('startTimezoneUpload');
+
+    cy.intercept('PUT', 'https://upload.example/tz-session', {
+      statusCode: 201,
+      body: { id: 'video-tz' },
+    }).as('finishTimezoneUpload');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient(config) {
+                return {
+                  requestAccessToken() {
+                    config.callback({
+                      access_token: 'test-token',
+                      expires_in: 3600,
+                      scope: combinedYouTubeScope,
+                    });
+                  },
+                };
+              },
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+    cy.get('#youtubeClientId').type('123-test-client-id.apps.googleusercontent.com');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTimezone').select('Europe/Moscow');
+    cy.get('#youtubePublishAt').type('2026-07-01T15:30');
+    cy.get('#submitYouTubeUploadBtn').click();
+
+    cy.wait('@startTimezoneUpload');
+    cy.wait('@finishTimezoneUpload');
+  });
+
+  it('restores the saved timezone in the upload modal', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-pipeline-timezone', 'America/New_York');
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTimezone').should('have.value', 'America/New_York');
+  });
+
   it('keeps the upload form open when text selection ends outside the form', () => {
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
