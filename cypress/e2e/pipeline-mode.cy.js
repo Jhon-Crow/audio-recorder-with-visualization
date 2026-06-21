@@ -254,8 +254,13 @@ describe('Pipeline Mode', () => {
       cy.get(`#pipelineStageNav .pipeline-stage-nav-btn[data-stage-id="${stageId}"]`)
         .should('have.class', 'is-active')
         .and('have.attr', 'aria-current', 'step');
-      cy.get(`.pipeline-stage[data-stage-id="${stageId}"]`).then(($target) => {
-        expect($target[0].getBoundingClientRect().top).to.be.lessThan(120);
+      cy.get('.canvas-container').then(($canvas) => {
+        const stickyBottom = $canvas[0].getBoundingClientRect().bottom;
+        cy.get(`.pipeline-stage[data-stage-id="${stageId}"]`).then(($target) => {
+          const stageTop = $target[0].getBoundingClientRect().top;
+          expect(stageTop).to.be.at.least(stickyBottom - 2);
+          expect(stageTop).to.be.lessThan(stickyBottom + 48);
+        });
       });
     });
 
