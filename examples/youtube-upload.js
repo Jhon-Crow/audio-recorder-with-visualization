@@ -19,6 +19,7 @@
   }
 
   const CLIENT_ID_KEY = 'audio-recorder-youtube-client-id';
+  const CLIENT_SECRET_KEY = 'audio-recorder-youtube-client-secret';
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
@@ -92,6 +93,7 @@
   let playlistRefreshPromise = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+  clientSecretInput.value = localStorage.getItem(CLIENT_SECRET_KEY) || '';
   restoreStoredTokenState();
 
   if (settingsClientIdInput) {
@@ -103,8 +105,10 @@
   }
 
   if (settingsClientSecretInput) {
+    settingsClientSecretInput.value = localStorage.getItem(CLIENT_SECRET_KEY) || '';
     settingsClientSecretInput.addEventListener('input', () => {
       clientSecretInput.value = settingsClientSecretInput.value;
+      localStorage.setItem(CLIENT_SECRET_KEY, settingsClientSecretInput.value.trim());
     });
   }
 
@@ -1097,6 +1101,9 @@
   if (presetSettingsBtn && settingsClientIdInput) {
     presetSettingsBtn.addEventListener('click', () => {
       settingsClientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+      if (settingsClientSecretInput) {
+        settingsClientSecretInput.value = localStorage.getItem(CLIENT_SECRET_KEY) || '';
+      }
       if (settingsTimezoneSelect) {
         const savedTz = localStorage.getItem(TIMEZONE_KEY) || '';
         settingsTimezoneSelect.value = savedTz;

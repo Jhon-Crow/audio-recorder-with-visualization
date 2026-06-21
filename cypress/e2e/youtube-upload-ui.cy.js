@@ -731,6 +731,40 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeClientId').should('have.value', '123-settings-test.apps.googleusercontent.com');
   });
 
+  it('persists the Desktop Client Secret from Settings across page reloads', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+
+    cy.get('#presetSettingsBtn').click();
+    cy.get('#settingsYoutubeClientSecret').type('test-secret-value');
+    cy.get('#presetSettingsCloseBtn').click();
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('audio-recorder-youtube-client-secret')).to.equal('test-secret-value');
+    });
+
+    cy.reload();
+    cy.waitForVisualization();
+
+    cy.get('#presetSettingsBtn').click();
+    cy.get('#settingsYoutubeClientSecret').should('have.value', 'test-secret-value');
+  });
+
+  it('shows Desktop Client Secret from Settings in the auth modal', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-client-secret', 'stored-secret');
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeAuthModal').should('be.visible');
+    cy.get('#youtubeClientSecret').should('have.value', 'stored-secret');
+  });
+
   it('saves the Settings timezone and pre-selects it in the upload modal', () => {
     const futureExpiry = Date.now() + 3600 * 1000;
 
