@@ -1663,7 +1663,14 @@
     return tasks;
   }
 
-  function getStageDisplayDate(stage) {
+  function formatRelativeOffsetCompact(stage) {
+    const parts = getRelativeOffsetParts(stage);
+    const sign = parts.direction === 'before' ? '-' : '+';
+    const d = parts.days + parts.months * 30;
+    return `${sign}${d}d/${parts.hours}h/${parts.minutes}m`;
+  }
+
+  function getStageDisplayDate(stage, computedDate) {
     if (!actionIncludesUpload(stage.action)) {
       return '';
     }
@@ -1676,9 +1683,16 @@
     if (stage.scheduleMode === 'absolute' && stage.publishAtLocal) {
       return stage.publishAtLocal.replace('T', ' ');
     }
-    const offset = Number(stage.relativeOffsetMinutes || 0);
-    const sign = offset > 0 ? '+' : '';
-    return `${sign}${offset} min`;
+    const relativeLabel = `(${formatRelativeOffsetCompact(stage)})`;
+    if (computedDate && Number.isFinite(computedDate.getTime())) {
+      const year = computedDate.getFullYear();
+      const month = String(computedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(computedDate.getDate()).padStart(2, '0');
+      const hours = String(computedDate.getHours()).padStart(2, '0');
+      const minutes = String(computedDate.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes} ${relativeLabel}`;
+    }
+    return relativeLabel;
   }
 
   function setActiveStage(stageId) {
@@ -1752,9 +1766,10 @@
     }
 
     stageNav.hidden = false;
+    const stageBaseDates = computeStageBaseDates();
     stages.forEach((stage, index) => {
       const button = document.createElement('button');
-      const dateText = getStageDisplayDate(stage);
+      const dateText = getStageDisplayDate(stage, stageBaseDates[index]);
       button.type = 'button';
       button.className = 'pipeline-stage-nav-btn';
       button.dataset.stageId = stage.id;
