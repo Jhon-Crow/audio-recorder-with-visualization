@@ -1592,7 +1592,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     closeModal(presetDeleteModal);
   }
 
-  function confirmPresetDelete() {
+  async function confirmPresetDelete() {
     const presetId = presetDeleteTargetId;
     if (!presetId) return;
 
@@ -1607,6 +1607,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       saveActivePresetId(null);
     }
     savePresets(presets);
+
+    if (preset.sourcePath && window.electronAPI && window.electronAPI.deletePresetFile) {
+      await window.electronAPI.deletePresetFile(preset.sourcePath);
+    }
+
     renderPresets();
     openPresetSidebar();
     updateStatus(`Preset "${preset.name}" deleted`, 'ready');

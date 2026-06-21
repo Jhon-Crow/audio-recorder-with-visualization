@@ -36,6 +36,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadPresetFiles: async (folderPath) => {
     return ipcRenderer.invoke('preset-load-files', folderPath);
   },
+  deletePresetFile: async (filePath) => {
+    return ipcRenderer.invoke('preset-delete-file', filePath);
+  },
   isElectron: true,
 
   // ==================== PRESENTATION MODE APIs ====================

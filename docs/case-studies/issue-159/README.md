@@ -51,9 +51,25 @@ While the modal is outside the sidebar (so closing the sidebar doesn't steal foc
 
 ### Root Cause 3: `window.confirm` in Electron
 
-`deletePreset()` used `window.confirm()` for the confirmation dialog. In Electron 33 with `contextIsolation: true`, `window.confirm` is not guaranteed to work and may silently return `false`, making preset deletion impossible in the packaged app. Even in the browser, it blocks the JS thread and produces a jarring native OS dialog.
+`deletePreset()` used `window.confirm()` for the confirmation dialog. In Electron 33 with `contextIsolation: true`, `window.confirm` is not guaranteed to work and may silently return `false`, making deletion confirmation impossible in the packaged app. Even in the browser, it blocks the JS thread and produces a jarring native OS dialog.
 
 **Fix:** Replaced `window.confirm` with a custom HTML confirmation modal (`#presetDeleteModal`) consistent with the rest of the UI.
+
+### Root Cause 4: Deleted presets reappear after Electron restart
+
+When the user configures a preset folder via the Electron file dialog, presets are saved as individual `.json` files on disk in addition to localStorage. On every restart, `loadPresetsFromFolder` reads all `.json` files from the folder and re-adds any that aren't already in localStorage via `mergePresets`.
+
+`confirmPresetDelete` correctly removed the preset from localStorage and the in-memory array, but **never deleted the `.json` file from disk**. On next startup, `loadPresetsFromFolder` found the file again and re-inserted the preset — making deletion appear to have no lasting effect.
+
+```
+Restart sequence exposing the bug:
+1. User deletes preset → removed from localStorage, file still on disk
+2. App restarts → loadPresetsFromFolder reads all .json files
+3. mergePresets() adds back the "deleted" preset (ID not in localStorage)
+4. Preset reappears as if deletion never happened
+```
+
+**Fix:** After removing from localStorage, call `window.electronAPI.deletePresetFile(preset.sourcePath)` to delete the on-disk `.json` file if one exists. A new `preset-delete-file` IPC handler is added to `electron/main.js` and exposed via `electron/preload.js`. The guard `if (preset.sourcePath && window.electronAPI && window.electronAPI.deletePresetFile)` ensures this is a no-op in browser/non-Electron mode.
 
 ---
 
@@ -75,6 +91,13 @@ While the modal is outside the sidebar (so closing the sidebar doesn't steal foc
 - Updated `scheduleClosePresetSidebar()` to also check `presetRenameModal`, `presetSaveModal`, and `presetDeleteModal` active state
 - Wrapped `presetRenameInput.focus()`/`select()` in `requestAnimationFrame()`
 - Wrapped `presetNameInput.focus()`/`select()` in `requestAnimationFrame()`
+- Made `confirmPresetDelete` async; added call to `electronAPI.deletePresetFile(preset.sourcePath)` after localStorage removal
+
+### `electron/main.js`
+- Added `preset-delete-file` IPC handler that deletes the preset `.json` file from disk
+
+### `electron/preload.js`
+- Exposed `deletePresetFile(filePath)` on `window.electronAPI`
 
 ### `cypress/e2e/preset-management.cy.js`
 - Updated existing rename/delete/reorder test: replaced `cy.stub(win, 'confirm')` with the new custom modal flow
