@@ -22,6 +22,7 @@
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
   const UNSUPPORTED_ORIGIN_MESSAGE = 'Google sign-in requires a localhost or HTTPS URL. Open the app with npm run serve or Electron, then use the localhost page.';
@@ -40,6 +41,10 @@
   const signInSettingsBtn = document.getElementById('youtubeSignInSettingsBtn');
   const authStatus = document.getElementById('youtubeAuthStatus');
 
+  const settingsClientIdInput = document.getElementById('settingsYoutubeClientId');
+  const settingsClientSecretInput = document.getElementById('settingsYoutubeClientSecret');
+  const settingsTimezoneSelect = document.getElementById('settingsUploadTimezone');
+
   const uploadModal = document.getElementById('youtubeUploadModal');
   const closeUploadBtn = document.getElementById('closeYouTubeUploadBtn');
   const uploadForm = document.getElementById('youtubeUploadForm');
@@ -52,6 +57,7 @@
   const categorySelect = document.getElementById('youtubeCategory');
   const privacySelect = document.getElementById('youtubePrivacy');
   const publishAtInput = document.getElementById('youtubePublishAt');
+  const timezoneSelect = document.getElementById('youtubeTimezone');
   const shortCheckbox = document.getElementById('youtubeShort');
   const madeForKidsCheckbox = document.getElementById('youtubeMadeForKids');
   const syntheticMediaCheckbox = document.getElementById('youtubeSyntheticMedia');
@@ -66,7 +72,7 @@
     authModal, closeAuthBtn, cancelAuthBtn, openGoogleCloudOAuthBtn, authorizeBtn,
     clientIdInput, clientSecretField, clientSecretInput, authSettingsStatus, signOutBtn, signInSettingsBtn, authStatus,
     uploadModal, closeUploadBtn, uploadForm, titleInput, descriptionInput, tagsInput, playlistIdsInput, playlistSelector, thumbnailInput,
-    categorySelect, privacySelect, publishAtInput, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
+    categorySelect, privacySelect, publishAtInput, timezoneSelect, shortCheckbox, madeForKidsCheckbox, syntheticMediaCheckbox,
     notifySubscribersCheckbox, progressBar, progressFill, uploadStatus, cancelUploadBtn,
     submitUploadBtn,
   ];
@@ -87,6 +93,36 @@
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   restoreStoredTokenState();
+
+  if (settingsClientIdInput) {
+    settingsClientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+    settingsClientIdInput.addEventListener('input', () => {
+      clientIdInput.value = settingsClientIdInput.value;
+      localStorage.setItem(CLIENT_ID_KEY, settingsClientIdInput.value.trim());
+    });
+  }
+
+  if (settingsClientSecretInput) {
+    settingsClientSecretInput.addEventListener('input', () => {
+      clientSecretInput.value = settingsClientSecretInput.value;
+    });
+  }
+
+  if (settingsTimezoneSelect) {
+    const savedTimezone = localStorage.getItem(TIMEZONE_KEY) || '';
+    if (savedTimezone && !Array.from(settingsTimezoneSelect.options).some(opt => opt.value === savedTimezone)) {
+      const opt = document.createElement('option');
+      opt.value = savedTimezone;
+      opt.textContent = savedTimezone;
+      settingsTimezoneSelect.insertBefore(opt, settingsTimezoneSelect.firstChild);
+    }
+    settingsTimezoneSelect.value = savedTimezone;
+    settingsTimezoneSelect.addEventListener('change', () => {
+      const tz = settingsTimezoneSelect.value;
+      localStorage.setItem(TIMEZONE_KEY, tz);
+      timezoneSelect.value = tz;
+    });
+  }
 
   function showModal(modal) {
     modal.style.display = 'flex';
@@ -574,6 +610,11 @@
     };
 
     localStorage.setItem(getUploadFormStateKey(), JSON.stringify(state));
+
+    const timezone = timezoneSelect.value;
+    if (timezone) {
+      localStorage.setItem(TIMEZONE_KEY, timezone);
+    }
   }
 
   function resetProgress() {
@@ -592,12 +633,53 @@
     return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
   }
 
+  function getSelectedTimezone() {
+    return timezoneSelect.value || '';
+  }
+
+  function parsePublishAtInTimezone(value, timezone) {
+    if (!value) return null;
+    if (!timezone) return new Date(value);
+    // Interpret the datetime-local string as wall-clock time in the given timezone.
+    // Strategy: start with the UTC time assuming 0 offset, then iteratively correct
+    // using the actual offset at that UTC time in the target timezone.
+    const [datePart, timePart] = value.split('T');
+    if (!datePart || !timePart) return new Date(value);
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+    const getOffsetMs = (utcDate) => {
+      const parts = {};
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(utcDate).forEach(({ type, value: v }) => { parts[type] = v; });
+      const localMs = Date.UTC(
+        Number(parts.year),
+        Number(parts.month) - 1,
+        Number(parts.day),
+        Number(parts.hour === '24' ? 0 : parts.hour),
+        Number(parts.minute),
+      );
+      return utcDate.getTime() - localMs;
+    };
+    const naiveUtc = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    const offsetMs = getOffsetMs(naiveUtc);
+    return new Date(naiveUtc.getTime() + offsetMs);
+  }
+
   function getScheduledPublishAt() {
     if (!publishAtInput.value) {
       return undefined;
     }
 
-    return new Date(publishAtInput.value).toISOString();
+    const timezone = getSelectedTimezone();
+    const date = parsePublishAtInTimezone(publishAtInput.value, timezone);
+    return date ? date.toISOString() : undefined;
   }
 
   function updateScheduleState() {
@@ -617,7 +699,13 @@
   }
 
   function openAuthModal() {
+    if (settingsClientIdInput && settingsClientIdInput.value.trim()) {
+      clientIdInput.value = settingsClientIdInput.value;
+    }
     updateAuthModeFields();
+    if (settingsClientSecretInput && settingsClientSecretInput.value && !clientSecretInput.value) {
+      clientSecretInput.value = settingsClientSecretInput.value;
+    }
     updateAuthSettingsStatus();
     authorizeBtn.textContent = 'Sign in with Google';
     showModal(authModal);
@@ -678,6 +766,14 @@
     privacySelect.value = savedState.privacyStatus;
     privacySelect.disabled = false;
     publishAtInput.value = '';
+    const savedTimezone = localStorage.getItem(TIMEZONE_KEY) || '';
+    if (savedTimezone && !Array.from(timezoneSelect.options).some(opt => opt.value === savedTimezone)) {
+      const opt = document.createElement('option');
+      opt.value = savedTimezone;
+      opt.textContent = savedTimezone;
+      timezoneSelect.insertBefore(opt, timezoneSelect.firstChild);
+    }
+    timezoneSelect.value = savedTimezone;
     setMinimumPublishAt();
     shortCheckbox.checked = savedState.short;
     madeForKidsCheckbox.checked = savedState.madeForKids;
@@ -989,4 +1085,22 @@
       closeAuthModal();
     }
   });
+
+  clientIdInput.addEventListener('input', () => {
+    if (settingsClientIdInput) {
+      settingsClientIdInput.value = clientIdInput.value;
+    }
+    localStorage.setItem(CLIENT_ID_KEY, clientIdInput.value.trim());
+  });
+
+  const presetSettingsBtn = document.getElementById('presetSettingsBtn');
+  if (presetSettingsBtn && settingsClientIdInput) {
+    presetSettingsBtn.addEventListener('click', () => {
+      settingsClientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
+      if (settingsTimezoneSelect) {
+        const savedTz = localStorage.getItem(TIMEZONE_KEY) || '';
+        settingsTimezoneSelect.value = savedTz;
+      }
+    });
+  }
 })();
