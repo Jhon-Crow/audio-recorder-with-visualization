@@ -1,0 +1,8 @@
+eedf615 (HEAD -> issue-141-8924f786e492, origin/issue-141-8924f786e492) Revert "Initial commit with task details"
+00c0085 Fix pipeline preview tooltip frame
+0bc806f Initial commit with task details
+73c45f7 Merge pull request #138 from konard/issue-131-06cd8d2fd62d
+42e389a (origin/issue-131-06cd8d2fd62d) Fix pipeline presets and playlist previews
+5c3c233 Preserve issue 131 verification logs
+8821768 Address pipeline follow-up feedback
+1c4fd2d Add pipeline scheduling screenshot

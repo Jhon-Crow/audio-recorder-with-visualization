@@ -26,12 +26,98 @@ describe('Pipeline Mode', () => {
         backgroundSizeMode: 'cover',
       },
     },
+    {
+      id: 'preset-cypress-offset-circular',
+      name: 'Cypress Offset Circular',
+      settings: {
+        visualizer: 'circular',
+        primaryColor: '#ffffff',
+        secondaryColor: '#ffffff',
+        backgroundColor: '#000000',
+        offsetX: 480,
+        offsetY: -180,
+        visualizationScale: 120,
+      },
+    },
   ];
 
   const combinedYouTubeScope = [
     'https://www.googleapis.com/auth/youtube.upload',
     'https://www.googleapis.com/auth/youtube.force-ssl',
   ].join(' ');
+
+  function expectPreviewContainsBrightCenter(previewImage) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        const canvas = win.document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        const center = ctx.getImageData(Math.floor(image.width / 2), Math.floor(image.height * 0.42), 1, 1).data;
+
+        expect(center[0] + center[1] + center[2], 'background image center brightness').to.be.greaterThan(120);
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
+
+  function expectPreviewBrightSpotNear(previewImage, expectedXRatio, expectedYRatio) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        const canvas = win.document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        const data = ctx.getImageData(0, 0, image.width, image.height).data;
+        let totalBrightness = 0;
+        let weightedX = 0;
+        let weightedY = 0;
+
+        for (let y = 0; y < image.height; y += 1) {
+          for (let x = 0; x < image.width; x += 1) {
+            const index = (y * image.width + x) * 4;
+            const brightness = Math.max(0, data[index] + data[index + 1] + data[index + 2] - 72);
+            if (brightness > 0) {
+              totalBrightness += brightness;
+              weightedX += x * brightness;
+              weightedY += y * brightness;
+            }
+          }
+        }
+
+        expect(totalBrightness, 'decoded preview brightness').to.be.greaterThan(1000);
+        const centerXRatio = weightedX / totalBrightness / image.width;
+        const centerYRatio = weightedY / totalBrightness / image.height;
+        expect(centerXRatio, 'preview visual x center').to.be.closeTo(expectedXRatio, 0.08);
+        expect(centerYRatio, 'preview visual y center').to.be.closeTo(expectedYRatio, 0.08);
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
+
+  function expectPreviewImageDimensions(previewImage, expectedWidth, expectedHeight) {
+    const dataUrl = previewImage.match(/url\("([^"]+)"\)/)[1];
+    return cy.window().then((win) => new Cypress.Promise((resolve, reject) => {
+      const image = new win.Image();
+      image.onload = () => {
+        expect(image.width, 'decoded preview width').to.equal(expectedWidth);
+        expect(image.height, 'decoded preview height').to.equal(expectedHeight);
+        resolve();
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    }));
+  }
 
   function seedSavedVisualizationPresets(win) {
     win.localStorage.setItem('audio-recorder-presets', JSON.stringify(savedVisualizationPresets));
@@ -131,6 +217,14 @@ describe('Pipeline Mode', () => {
       expect(rect.height).to.be.lessThan(260);
       expect(rect.bottom).to.be.closeTo(Cypress.config('viewportHeight') - bottomOffset, 4);
     });
+    cy.get('#pipelineStageNav').then(($nav) => {
+      cy.get('#pipelineSidebar').then(($sidebar) => {
+        const navRect = $nav[0].getBoundingClientRect();
+        const sidebarRect = $sidebar[0].getBoundingClientRect();
+        expect(navRect.right).to.be.lessThan(sidebarRect.left + 1);
+        expect(sidebarRect.left - navRect.right).to.be.lessThan(72);
+      });
+    });
     cy.get('.pipeline-workspace').then(($workspace) => {
       expect($workspace.css('display')).to.eq('block');
     });
@@ -149,6 +243,10 @@ describe('Pipeline Mode', () => {
       .and('contain.text', 'Visualization + update')
       .invoke('text')
       .should('match', /\d{4}-\d{2}-\d{2}/);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1).find('.pipeline-stage-nav-meta').then(($meta) => {
+      const meta = $meta[0];
+      expect(meta.scrollWidth).to.be.at.most(meta.clientWidth + 1);
+    });
 
     cy.get('.pipeline-stage').eq(2).then(($stage) => {
       const stageId = $stage.attr('data-stage-id');
@@ -250,8 +348,12 @@ describe('Pipeline Mode', () => {
       cy.contains('label', 'Preset').find('select').then(($select) => {
         const labels = [...$select[0].options].map((option) => option.textContent);
         const values = [...$select[0].options].map((option) => option.value);
-        expect(labels).to.deep.equal(['Cypress Bars', 'Cypress Waveform']);
-        expect(values).to.deep.equal(['preset:preset-cypress-bars', 'preset:preset-cypress-waveform']);
+        expect(labels).to.deep.equal(['Cypress Bars', 'Cypress Waveform', 'Cypress Offset Circular']);
+        expect(values).to.deep.equal([
+          'preset:preset-cypress-bars',
+          'preset:preset-cypress-waveform',
+          'preset:preset-cypress-offset-circular',
+        ]);
       });
       cy.get('.pipeline-publish-at').should('be.disabled');
       cy.get('.pipeline-relative-days').should('not.be.disabled').and('have.value', '2');
@@ -430,7 +532,8 @@ describe('Pipeline Mode', () => {
         expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1080 / 1920');
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
         verticalPreviewImage = previewImage;
-      });
+      })
+      .then(() => expectPreviewContainsBrightCenter(verticalPreviewImage));
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-handle.pipeline-preview-trigger').first()
       .should('have.attr', 'data-tooltip')
@@ -443,6 +546,33 @@ describe('Pipeline Mode', () => {
         expect(style.getPropertyValue('--pipeline-preview-aspect')).to.equal('1920 / 1080');
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
         expect(previewImage).to.not.equal(verticalPreviewImage);
+      })
+      .then(($trigger) => {
+        expectPreviewContainsBrightCenter($trigger[0].style.getPropertyValue('--pipeline-preview-image'));
+      });
+  });
+
+  it('applies preset visualization offsets to generated tooltip previews', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'custom',
+          name: 'Offset tooltip preview',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-offset-circular',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .then(($trigger) => {
+        const previewImage = $trigger[0].style.getPropertyValue('--pipeline-preview-image');
+        expectPreviewBrightSpotNear(previewImage, 0.63, 0.39);
+        expectPreviewImageDimensions(previewImage, 360, 203);
       });
   });
 
@@ -653,6 +783,147 @@ describe('Pipeline Mode', () => {
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-album-track').should('have.length', 4);
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
+  });
+
+  it('schedules regular release posts from ordered files and cycle slots', () => {
+    const publishAtValues = [];
+    const uploadTitles = [];
+    let uploadIndex = 0;
+
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      publishAtValues.push(body.status.publishAt);
+      uploadTitles.push(body.snippet.title);
+      uploadIndex += 1;
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: `https://upload.example/regular-post-${uploadIndex}` },
+        body: '',
+      });
+    }).as('startRegularPostUpload');
+
+    cy.intercept('PUT', /^https:\/\/upload\.example\/regular-post-\d+$/, (req) => {
+      req.reply({
+        statusCode: 201,
+        body: { id: `regular-post-${uploadIndex}` },
+      });
+    }).as('finishRegularPostUpload');
+
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'release',
+          name: 'Regular shorts',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-01T08:00',
+          publishImmediately: false,
+          releaseType: 'regular-posts',
+          regularCycleDays: 10,
+          regularPostSlots: [
+            { id: 'slot-day-3', day: 3, time: '09:30' },
+            { id: 'slot-day-7', day: 7, time: '18:00' },
+          ],
+          privacyStatus: 'private',
+        },
+      ]);
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Release type').find('select')
+        .should('contain.text', 'Regular posts')
+        .and('have.value', 'regular-posts');
+
+      cy.get('.pipeline-stage-file-input').selectFile([
+        {
+          contents: Cypress.Buffer.from('regular-one'),
+          fileName: '01 regular one.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-two'),
+          fileName: '02 regular two.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-three'),
+          fileName: '03 regular three.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-four'),
+          fileName: '04 regular four.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('regular-five'),
+          fileName: '05 regular five.mp4',
+          mimeType: 'video/mp4',
+        },
+      ], { force: true });
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-regular-slot').should('have.length', 2);
+      cy.get('.pipeline-regular-post-track').should('have.length', 5);
+      cy.get('.pipeline-regular-post-track .pipeline-track-title').eq(0)
+        .should('have.value', '01 regular one');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-01"]').should('have.class', 'is-cycle-active');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-03"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '1');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-07"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '2');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-23"]')
+        .should('have.class', 'is-publish')
+        .and('contain.text', '5');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-24"]')
+        .should('not.have.class', 'is-cycle-active');
+
+      cy.get('.pipeline-regular-post-track .pipeline-track-remove').eq(1).click();
+      cy.get('.pipeline-regular-post-track').should('have.length', 4);
+      cy.get('.pipeline-regular-post-track .pipeline-track-title').eq(1)
+        .should('have.value', '03 regular three');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-23"]')
+        .should('not.have.class', 'is-publish');
+      cy.get('.pipeline-regular-calendar-day[data-date="2026-07-18"]')
+        .should('not.have.class', 'is-cycle-active');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    for (let index = 0; index < 4; index += 1) {
+      cy.wait('@startRegularPostUpload');
+      cy.wait('@finishRegularPostUpload');
+    }
+
+    cy.wrap(publishAtValues).should('deep.equal', [
+      '2026-07-03T09:30:00.000Z',
+      '2026-07-07T18:00:00.000Z',
+      '2026-07-13T09:30:00.000Z',
+      '2026-07-17T18:00:00.000Z',
+    ]);
+    cy.wrap(uploadTitles).should('deep.equal', [
+      '01 regular one',
+      '03 regular three',
+      '04 regular four',
+      '05 regular five',
+    ]);
   });
 
   it('resets added files from a stage without opening the full reset modal', () => {

@@ -15,7 +15,12 @@
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
+  const PREVIEW_RENDER_MAX_SIDE = 960;
   const PREVIEW_FFT_SIZE = 2048;
+  const PREVIEW_STAGE_PADDING = 18;
+  const PREVIEW_TOOLTIP_GAP = 12;
+  const DEFAULT_REGULAR_CYCLE_DAYS = 7;
+  const MAX_REGULAR_CYCLE_DAYS = 366;
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -108,6 +113,7 @@
   let resetHoldTimer = 0;
   let resetHoldCompleted = false;
   let draggedTrack = null;
+  let activePreviewTooltipTrigger = null;
   let activeStageId = '';
   let stageObserver = null;
   const pipelinePreviewCache = new Map();
@@ -125,10 +131,22 @@
     return toDateTimeLocalValue(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + minutesOffset * 60000));
   }
 
-  function createTrack(title, index = 0) {
-    return {
+  function createTrack(title, index = 0, fileName = '') {
+    const track = {
       id: createId('track'),
       title: title || `Track ${String(index + 1).padStart(2, '0')}`,
+    };
+    if (fileName) {
+      track.fileName = fileName;
+    }
+    return track;
+  }
+
+  function createRegularPostSlot(day = 1, time = '12:00') {
+    return {
+      id: createId('slot'),
+      day,
+      time,
     };
   }
 
@@ -195,6 +213,8 @@
         tags: 'release, audio, visualizer',
         releaseType: 'album',
         tracks: [createTrack('Track 01', 0), createTrack('Track 02', 1)],
+        regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
+        regularPostSlots: [createRegularPostSlot(1, '12:00')],
       },
       postalbum: {
         name: 'Post-album short',
@@ -246,15 +266,64 @@
   }
 
   function normalizeTrack(track, index) {
-    return {
+    const normalized = {
       id: typeof track?.id === 'string' ? track.id : createId('track'),
       title: typeof track?.title === 'string' ? track.title : `Track ${String(index + 1).padStart(2, '0')}`,
     };
+    if (typeof track?.fileName === 'string' && track.fileName) {
+      normalized.fileName = track.fileName;
+    }
+    return normalized;
   }
 
   function normalizeNonNegativeInteger(value, fallback = 0) {
     const number = Number(value);
     return Number.isFinite(number) && number >= 0 ? Math.floor(number) : fallback;
+  }
+
+  function normalizePositiveInteger(value, fallback = 1, max = Number.MAX_SAFE_INTEGER) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 1) {
+      return fallback;
+    }
+    return Math.min(max, Math.floor(number));
+  }
+
+  function normalizeRegularPostTime(value, fallback = '12:00') {
+    const candidate = String(value || '').trim();
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(candidate) ? candidate : fallback;
+  }
+
+  function getDefaultRegularPostTime(stage = {}) {
+    const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(stage.publishAtLocal || ''));
+    return normalizeRegularPostTime(match ? match[2] : '', '12:00');
+  }
+
+  function normalizeRegularPostSlot(slot, index, cycleDays, fallbackTime) {
+    const day = normalizePositiveInteger(slot?.day, Math.min(index + 1, cycleDays), cycleDays);
+    return {
+      id: typeof slot?.id === 'string' ? slot.id : createId('slot'),
+      day,
+      time: normalizeRegularPostTime(slot?.time, fallbackTime),
+    };
+  }
+
+  function sortRegularPostSlots(slots) {
+    return [...slots].sort((left, right) => {
+      if (left.day !== right.day) {
+        return left.day - right.day;
+      }
+      return String(left.time).localeCompare(String(right.time));
+    });
+  }
+
+  function normalizeRegularPostSlots(slots, cycleDays, fallbackTime) {
+    if (!Array.isArray(slots)) {
+      return [createRegularPostSlot(1, fallbackTime)];
+    }
+    return sortRegularPostSlots(slots.map((slot, index) => (
+      normalizeRegularPostSlot(slot, index, cycleDays, fallbackTime)
+    )));
   }
 
   function getRelativeOffsetParts(stage) {
@@ -304,6 +373,8 @@
       notifySubscribers: false,
       releaseType: 'single',
       tracks: [],
+      regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
+      regularPostSlots: null,
       sharedImageName: '',
       fileNames: [],
     };
@@ -315,6 +386,19 @@
     normalized.tracks = Array.isArray(normalized.tracks)
       ? normalized.tracks.map(normalizeTrack)
       : [];
+    normalized.releaseType = ['album', 'single', 'regular-posts'].includes(normalized.releaseType)
+      ? normalized.releaseType
+      : (normalized.kind === 'release' ? 'album' : 'single');
+    normalized.regularCycleDays = normalizePositiveInteger(
+      normalized.regularCycleDays,
+      DEFAULT_REGULAR_CYCLE_DAYS,
+      MAX_REGULAR_CYCLE_DAYS
+    );
+    normalized.regularPostSlots = normalizeRegularPostSlots(
+      normalized.regularPostSlots,
+      normalized.regularCycleDays,
+      getDefaultRegularPostTime(normalized)
+    );
     normalized.scheduleMode = normalized.scheduleMode === 'absolute' ? 'absolute' : 'relative';
     normalized.relativeReference = normalized.relativeReference === 'next' ? 'next' : 'previous';
     if (index === 0 && normalized.relativeReference === 'previous') {
@@ -332,6 +416,10 @@
     }
     if (normalized.kind === 'release' && normalized.releaseType === 'album' && !normalized.tracks.length) {
       normalized.tracks = [createTrack('Track 01', 0), createTrack('Track 02', 1)];
+    }
+    if (normalized.kind === 'release' && normalized.releaseType === 'regular-posts' &&
+      !normalized.tracks.length && normalized.fileNames.length) {
+      normalized.tracks = createTracksFromFileNames(normalized.fileNames);
     }
     return normalized;
   }
@@ -490,19 +578,55 @@
     updateStage(stageId, { tracks });
   }
 
+  function updateRegularPostSlot(stageId, slotId, changes) {
+    const stage = stages.find(item => item.id === stageId);
+    if (!stage) return;
+    const regularPostSlots = stage.regularPostSlots.map(slot => (
+      slot.id === slotId ? { ...slot, ...changes } : slot
+    ));
+    updateStage(stageId, { regularPostSlots }, true);
+  }
+
   function moveTrack(stageId, sourceTrackId, targetTrackId) {
     const stage = stages.find(item => item.id === stageId);
     if (!stage || sourceTrackId === targetTrackId) return;
-    const source = stage.tracks.find(track => track.id === sourceTrackId);
+    const sourceIndex = stage.tracks.findIndex(track => track.id === sourceTrackId);
+    const source = stage.tracks[sourceIndex];
     if (!source) return;
     const withoutSource = stage.tracks.filter(track => track.id !== sourceTrackId);
     const targetIndex = withoutSource.findIndex(track => track.id === targetTrackId);
+    if (targetIndex < 0) return;
     const nextTracks = [
       ...withoutSource.slice(0, targetIndex),
       source,
       ...withoutSource.slice(targetIndex),
     ];
-    updateStage(stageId, { tracks: nextTracks }, true);
+    const changes = { tracks: nextTracks };
+
+    if (isRegularPostsStage(stage)) {
+      const selectedFiles = selectedFilesByStageId.get(stage.id);
+      if (selectedFiles && selectedFiles.length === stage.tracks.length) {
+        selectedFilesByStageId.set(stage.id, moveArrayItem(selectedFiles, sourceIndex, targetIndex));
+      }
+      if (stage.fileNames.length === stage.tracks.length) {
+        changes.fileNames = moveArrayItem(stage.fileNames, sourceIndex, targetIndex);
+      }
+    }
+
+    updateStage(stageId, changes, true);
+  }
+
+  function moveArrayItem(items, sourceIndex, targetIndex) {
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+      return [...items];
+    }
+    const source = items[sourceIndex];
+    const withoutSource = items.filter((_, index) => index !== sourceIndex);
+    return [
+      ...withoutSource.slice(0, targetIndex),
+      source,
+      ...withoutSource.slice(targetIndex),
+    ];
   }
 
   function hasStageFiles(stage) {
@@ -531,6 +655,10 @@
     return stage.kind === 'release' && (stage.releaseType || 'album') === 'album';
   }
 
+  function isRegularPostsStage(stage) {
+    return stage.kind === 'release' && stage.releaseType === 'regular-posts';
+  }
+
   function getTrackTitleFromFileName(fileName, index = 0) {
     const normalized = String(fileName || '')
       .replace(/\.[^.]+$/, '')
@@ -541,7 +669,29 @@
   }
 
   function createTracksFromFiles(files = []) {
-    return files.map((file, index) => createTrack(getTrackTitleFromFileName(file.name, index), index));
+    return files.map((file, index) => createTrack(getTrackTitleFromFileName(file.name, index), index, file.name));
+  }
+
+  function createTracksFromFileNames(fileNames = []) {
+    return fileNames.map((fileName, index) => createTrack(getTrackTitleFromFileName(fileName, index), index, fileName));
+  }
+
+  function removeRegularPostTrack(stage, trackId) {
+    const trackIndex = stage.tracks.findIndex(track => track.id === trackId);
+    if (trackIndex < 0) return;
+
+    const selectedFiles = selectedFilesByStageId.get(stage.id);
+    if (selectedFiles && selectedFiles.length === stage.tracks.length) {
+      selectedFilesByStageId.set(stage.id, selectedFiles.filter((_, index) => index !== trackIndex));
+    }
+
+    const changes = {
+      tracks: stage.tracks.filter((_, index) => index !== trackIndex),
+    };
+    if (stage.fileNames.length === stage.tracks.length) {
+      changes.fileNames = stage.fileNames.filter((_, index) => index !== trackIndex);
+    }
+    updateStage(stage.id, changes, true);
   }
 
   function validateStage(stage, index = 0, stageBaseDates = computeStageBaseDates()) {
@@ -566,6 +716,14 @@
     }
     if (stage.kind === 'release' && stage.releaseType === 'album' && !stage.tracks.length) {
       return 'Album release stages need at least one track.';
+    }
+    if (isRegularPostsStage(stage)) {
+      if (!stage.regularPostSlots.length) {
+        return 'Regular post releases need at least one post slot.';
+      }
+      if (!stage.tracks.length && !stage.fileNames.length) {
+        return 'Regular post releases need an ordered material list.';
+      }
     }
     return '';
   }
@@ -789,17 +947,78 @@
 
   function getPreviewRenderSize(stage) {
     const dimensions = parseResolution(stage.resolution);
-    if (dimensions.width >= dimensions.height) {
+    return getContainedSize(dimensions.width, dimensions.height, PREVIEW_MAX_SIDE);
+  }
+
+  function getPreviewInternalRenderSize(stage) {
+    const dimensions = parseResolution(stage.resolution);
+    return getContainedSize(dimensions.width, dimensions.height, PREVIEW_RENDER_MAX_SIDE);
+  }
+
+  function getContainedSize(sourceWidth, sourceHeight, maxSide) {
+    if (sourceWidth >= sourceHeight) {
       return {
-        width: PREVIEW_MAX_SIDE,
-        height: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.height) / dimensions.width)),
+        width: maxSide,
+        height: Math.max(1, Math.round((maxSide * sourceHeight) / sourceWidth)),
       };
     }
 
     return {
-      width: Math.max(1, Math.round((PREVIEW_MAX_SIDE * dimensions.width) / dimensions.height)),
-      height: PREVIEW_MAX_SIDE,
+      width: Math.max(1, Math.round((maxSide * sourceWidth) / sourceHeight)),
+      height: maxSide,
     };
+  }
+
+  function getCanvasDrawSize(canvas, maxSide) {
+    return getContainedSize(canvas.width, canvas.height, maxSide);
+  }
+
+  function createDownsampledCanvas(sourceCanvas, maxSide = PREVIEW_MAX_SIDE) {
+    const size = getCanvasDrawSize(sourceCanvas, maxSide);
+    const canvas = document.createElement('canvas');
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return sourceCanvas;
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(sourceCanvas, 0, 0, size.width, size.height);
+    return canvas;
+  }
+
+  function getPreviewRenderScale(stage, renderWidth, renderHeight) {
+    const dimensions = parseResolution(stage.resolution);
+    return {
+      x: renderWidth / dimensions.width,
+      y: renderHeight / dimensions.height,
+      uniform: Math.min(renderWidth / dimensions.width, renderHeight / dimensions.height),
+    };
+  }
+
+  function scalePreviewLength(value, scale) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric * scale : value;
+  }
+
+  function scalePreviewRenderOptions(options, stage, renderWidth, renderHeight) {
+    const scale = getPreviewRenderScale(stage, renderWidth, renderHeight);
+    const scaledOptions = clonePlainObject(options);
+    scaledOptions.offsetX = scalePreviewLength(scaledOptions.offsetX, scale.x);
+    scaledOptions.offsetY = scalePreviewLength(scaledOptions.offsetY, scale.y);
+
+    if (scaledOptions.backgroundSizeMode === 'custom') {
+      scaledOptions.backgroundWidth = scalePreviewLength(scaledOptions.backgroundWidth, scale.x);
+      scaledOptions.backgroundHeight = scalePreviewLength(scaledOptions.backgroundHeight, scale.y);
+    }
+
+    if (scaledOptions.custom) {
+      scaledOptions.custom.centerImageOffsetX = scalePreviewLength(scaledOptions.custom.centerImageOffsetX, scale.x);
+      scaledOptions.custom.centerImageOffsetY = scalePreviewLength(scaledOptions.custom.centerImageOffsetY, scale.y);
+    }
+
+    return scaledOptions;
   }
 
   function getPresetLabel(presetId) {
@@ -846,10 +1065,10 @@
     const time = 1.35;
     for (let i = 0; i < binCount; i++) {
       const frequency = i / binCount;
-      const bass = Math.exp(-frequency * 3) * 200;
-      const mid = Math.exp(-Math.pow(frequency - 0.32, 2) * 10) * 150;
-      const high = Math.exp(-Math.pow(frequency - 0.7, 2) * 15) * 100;
-      const animation = Math.sin(time * 2 + i * 0.1) * 30 + 30;
+      const bass = Math.exp(-frequency * 3) * 72;
+      const mid = Math.exp(-Math.pow(frequency - 0.32, 2) * 10) * 44;
+      const high = Math.exp(-Math.pow(frequency - 0.7, 2) * 15) * 28;
+      const animation = Math.sin(time * 2 + i * 0.1) * 8 + 8;
       data[i] = Math.min(255, Math.max(0, bass + mid + high + animation));
     }
     return data;
@@ -860,12 +1079,61 @@
     const time = 1.35;
     for (let i = 0; i < length; i++) {
       const t = i / length;
-      const wave1 = Math.sin(t * Math.PI * 4 + time * 2) * 40;
-      const wave2 = Math.sin(t * Math.PI * 8 + time * 3) * 20;
-      const wave3 = Math.sin(t * Math.PI * 16 + time * 5) * 10;
+      const wave1 = Math.sin(t * Math.PI * 4 + time * 2) * 16;
+      const wave2 = Math.sin(t * Math.PI * 8 + time * 3) * 8;
+      const wave3 = Math.sin(t * Math.PI * 16 + time * 5) * 4;
       data[i] = Math.min(255, Math.max(0, 128 + wave1 + wave2 + wave3));
     }
     return data;
+  }
+
+  function drawMontageFrame(ctx, width, height) {
+    const lineWidth = Math.max(2, Math.round(Math.min(width, height) / 96));
+    const inset = Math.max(5, Math.round(lineWidth * 1.5));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(
+      inset + lineWidth / 2,
+      inset + lineWidth / 2,
+      width - inset * 2 - lineWidth,
+      height - inset * 2 - lineWidth
+    );
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.72)';
+    ctx.lineWidth = Math.max(1, Math.round(lineWidth / 2));
+    ctx.strokeRect(
+      inset + lineWidth * 2,
+      inset + lineWidth * 2,
+      width - inset * 2 - lineWidth * 4,
+      height - inset * 2 - lineWidth * 4
+    );
+    ctx.restore();
+  }
+
+  function createFramedPreviewCanvas(sourceCanvas) {
+    const frameCanvas = document.createElement('canvas');
+    frameCanvas.width = sourceCanvas.width;
+    frameCanvas.height = sourceCanvas.height;
+    const frameCtx = frameCanvas.getContext('2d');
+    if (!frameCtx) {
+      return sourceCanvas;
+    }
+
+    frameCtx.fillStyle = '#05070a';
+    frameCtx.fillRect(0, 0, frameCanvas.width, frameCanvas.height);
+    const padding = Math.min(
+      PREVIEW_STAGE_PADDING,
+      Math.max(8, Math.round(Math.min(frameCanvas.width, frameCanvas.height) * 0.08))
+    );
+    frameCtx.drawImage(
+      sourceCanvas,
+      padding,
+      padding,
+      Math.max(1, frameCanvas.width - padding * 2),
+      Math.max(1, frameCanvas.height - padding * 2)
+    );
+    drawMontageFrame(frameCtx, frameCanvas.width, frameCanvas.height);
+    return frameCanvas;
   }
 
   function resolvePreviewRenderSettings(stage) {
@@ -966,7 +1234,7 @@
       return pipelinePreviewCache.get(cacheKey);
     }
 
-    const { width, height } = getPreviewRenderSize(stage);
+    const { width, height } = getPreviewInternalRenderSize(stage);
     const renderSettings = resolvePreviewRenderSettings(stage);
     const promise = (async () => {
       const canvas = document.createElement('canvas');
@@ -980,11 +1248,11 @@
       const VisualizerClass = getVisualizerClass(renderSettings.visualizer);
       if (!VisualizerClass) {
         drawFallbackPreviewFrame(ctx, width, height, renderSettings.visualizerOptions);
-        return canvas.toDataURL('image/png');
+        return createFramedPreviewCanvas(createDownsampledCanvas(canvas)).toDataURL('image/png');
       }
 
       try {
-        const options = clonePlainObject(renderSettings.visualizerOptions);
+        const options = scalePreviewRenderOptions(renderSettings.visualizerOptions, stage, width, height);
         const visualizer = new VisualizerClass(options);
         await Promise.resolve(visualizer.init(canvas, options));
         visualizer.draw(ctx, {
@@ -996,7 +1264,10 @@
           sampleRate: 44100,
           fftSize: PREVIEW_FFT_SIZE,
         });
-        return canvas.toDataURL('image/png');
+        if (typeof visualizer.destroy === 'function') {
+          visualizer.destroy();
+        }
+        return createFramedPreviewCanvas(createDownsampledCanvas(canvas)).toDataURL('image/png');
       } catch (error) {
         const fallbackCanvas = document.createElement('canvas');
         fallbackCanvas.width = width;
@@ -1006,7 +1277,7 @@
           throw error;
         }
         drawFallbackPreviewFrame(fallbackCtx, width, height, renderSettings.visualizerOptions);
-        return fallbackCanvas.toDataURL('image/png');
+        return createFramedPreviewCanvas(createDownsampledCanvas(fallbackCanvas)).toDataURL('image/png');
       }
     })();
 
@@ -1037,6 +1308,81 @@
       });
   }
 
+  function getPipelinePreviewTooltip() {
+    let tooltip = document.getElementById('pipelinePreviewTooltip');
+    if (tooltip) {
+      return tooltip;
+    }
+
+    tooltip = document.createElement('div');
+    tooltip.id = 'pipelinePreviewTooltip';
+    tooltip.className = 'pipeline-preview-tooltip';
+    tooltip.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(tooltip);
+    return tooltip;
+  }
+
+  function positionPipelinePreviewTooltip(trigger, tooltip) {
+    const triggerRect = trigger.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportPadding = 10;
+    const availableWidth = Math.max(160, window.innerWidth - viewportPadding * 2);
+    const availableHeight = Math.max(160, window.innerHeight - viewportPadding * 2);
+    const left = Math.min(
+      window.innerWidth - viewportPadding - tooltipRect.width,
+      Math.max(viewportPadding, triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2)
+    );
+    const preferredTop = triggerRect.top - tooltipRect.height - PREVIEW_TOOLTIP_GAP;
+    const fallbackTop = triggerRect.bottom + PREVIEW_TOOLTIP_GAP;
+    const top = preferredTop >= viewportPadding
+      ? preferredTop
+      : Math.min(window.innerHeight - viewportPadding - tooltipRect.height, Math.max(viewportPadding, fallbackTop));
+
+    tooltip.style.left = `${Math.max(viewportPadding, left)}px`;
+    tooltip.style.top = `${Math.max(viewportPadding, top)}px`;
+    tooltip.style.maxWidth = `${availableWidth}px`;
+    tooltip.style.maxHeight = `${availableHeight}px`;
+  }
+
+  function showPipelinePreviewTooltip(trigger) {
+    if (!trigger.classList.contains('pipeline-preview-trigger') || trigger.dataset.previewState !== 'ready') {
+      return;
+    }
+
+    activePreviewTooltipTrigger = trigger;
+    const tooltip = getPipelinePreviewTooltip();
+    tooltip.style.setProperty('--pipeline-preview-aspect', trigger.style.getPropertyValue('--pipeline-preview-aspect') || '16 / 9');
+    tooltip.style.setProperty('--pipeline-preview-image', trigger.style.getPropertyValue('--pipeline-preview-image') || 'none');
+    tooltip.dataset.previewState = trigger.dataset.previewState || '';
+    tooltip.setAttribute('aria-label', trigger.dataset.tooltip || '');
+    tooltip.classList.add('is-visible');
+    tooltip.setAttribute('aria-hidden', 'false');
+    positionPipelinePreviewTooltip(trigger, tooltip);
+  }
+
+  function hidePipelinePreviewTooltip(trigger = activePreviewTooltipTrigger) {
+    if (trigger && activePreviewTooltipTrigger && trigger !== activePreviewTooltipTrigger) {
+      return;
+    }
+
+    activePreviewTooltipTrigger = null;
+    const tooltip = document.getElementById('pipelinePreviewTooltip');
+    if (!tooltip) {
+      return;
+    }
+    tooltip.classList.remove('is-visible');
+    tooltip.setAttribute('aria-hidden', 'true');
+  }
+
+  function updatePipelinePreviewTooltip() {
+    if (!activePreviewTooltipTrigger || !activePreviewTooltipTrigger.isConnected) {
+      hidePipelinePreviewTooltip();
+      return;
+    }
+
+    positionPipelinePreviewTooltip(activePreviewTooltipTrigger, getPipelinePreviewTooltip());
+  }
+
   function parseLocalDate(value) {
     if (!value) return null;
     const date = new Date(value);
@@ -1064,8 +1410,67 @@
     return date;
   }
 
+  function startOfLocalDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function endOfLocalMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  }
+
+  function addLocalDays(date, days) {
+    const next = new Date(date.getTime());
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  function getLocalDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function getMonthLabel(date) {
+    try {
+      return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
+    } catch (error) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+  }
+
+  function buildRegularPostDate(anchorDate, cycleDays, slot, cycleIndex) {
+    const date = addLocalDays(startOfLocalDay(anchorDate), cycleIndex * cycleDays + slot.day - 1);
+    const [hours, minutes] = normalizeRegularPostTime(slot.time).split(':').map(value => parseInt(value, 10));
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  }
+
+  function expandRegularPostSchedule(stage, stageBaseDate, count) {
+    const materialCount = normalizeNonNegativeInteger(count, 0);
+    if (!materialCount || !stageBaseDate || !Number.isFinite(stageBaseDate.getTime())) {
+      return [];
+    }
+
+    const cycleDays = normalizePositiveInteger(
+      stage.regularCycleDays,
+      DEFAULT_REGULAR_CYCLE_DAYS,
+      MAX_REGULAR_CYCLE_DAYS
+    );
+    const slots = sortRegularPostSlots(stage.regularPostSlots || []);
+    if (!slots.length) {
+      return [];
+    }
+
+    return Array.from({ length: materialCount }, (_, index) => {
+      const slot = slots[index % slots.length];
+      const cycleIndex = Math.floor(index / slots.length);
+      return buildRegularPostDate(stageBaseDate, cycleDays, slot, cycleIndex);
+    });
+  }
+
   function getPipelineAnchorDate() {
-    const releaseStage = stages.find(stage => isAlbumStage(stage) && stage.publishAtLocal);
+    const releaseStage = stages.find(stage => stage.kind === 'release' && stage.publishAtLocal);
     const absoluteStage = stages.find(stage => stage.scheduleMode === 'absolute' && stage.publishAtLocal);
     return parseLocalDate((releaseStage || absoluteStage || {}).publishAtLocal) ||
       new Date(Date.now() + 15 * 60 * 1000);
@@ -1153,7 +1558,7 @@
   }
 
   function getTaskTitle(stage, file, index, totalFiles) {
-    if (isAlbumStage(stage)) {
+    if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
       return (stage.tracks[index] && stage.tracks[index].title) ||
         getTrackTitleFromFileName(file.name, index);
     }
@@ -1223,11 +1628,13 @@
       const stageBaseDate = stage.publishImmediately
         ? null
         : stageBaseDates[stageIndex];
+      const regularPostDates = isRegularPostsStage(stage)
+        ? expandRegularPostSchedule(stage, stageBaseDate, files.length)
+        : [];
 
       files.forEach((file, fileIndex) => {
-        const publishDate = stageBaseDate
-          ? new Date(stageBaseDate.getTime() + fileIndex * 60000)
-          : null;
+        const publishDate = regularPostDates[fileIndex] ||
+          (stageBaseDate ? new Date(stageBaseDate.getTime() + fileIndex * 60000) : null);
         tasks.push({
           stage,
           stageIndex,
@@ -1249,6 +1656,9 @@
     }
     if (stage.publishImmediately) {
       return 'Immediately';
+    }
+    if (isRegularPostsStage(stage)) {
+      return `Regular: ${stage.regularCycleDays}d / ${stage.regularPostSlots.length}`;
     }
     if (stage.scheduleMode === 'absolute' && stage.publishAtLocal) {
       return stage.publishAtLocal.replace('T', ' ');
@@ -1750,7 +2160,7 @@
       const files = Array.from(fileInput.files || []);
       selectedFilesByStageId.set(stage.id, files);
       const changes = { fileNames: files.map(file => file.name) };
-      if (isAlbumStage(stage) && files.length) {
+      if ((isAlbumStage(stage) || isRegularPostsStage(stage)) && files.length) {
         changes.tracks = createTracksFromFiles(files);
       }
       updateStage(stage.id, changes, true);
@@ -1773,7 +2183,7 @@
     reset.title = reset.dataset.tooltip;
     reset.addEventListener('click', () => {
       selectedFilesByStageId.delete(stage.id);
-      if (isAlbumStage(stage)) {
+      if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
         updateStage(stage.id, { fileNames: [], tracks: [] }, true);
       } else {
         updateStage(stage.id, { fileNames: [] }, true);
@@ -1787,7 +2197,276 @@
     return cell;
   }
 
-  function renderAlbumEditor(stage) {
+  function getRegularPostMaterialCount(stage) {
+    return stage.tracks.length || stage.fileNames.length || getStageFiles(stage).length;
+  }
+
+  function renderRegularPostSlots(stage) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pipeline-regular-slots';
+
+    stage.regularPostSlots.forEach((slot, index) => {
+      const row = document.createElement('div');
+      row.className = 'pipeline-regular-slot';
+
+      const number = document.createElement('span');
+      number.className = 'pipeline-track-handle';
+      number.textContent = String(index + 1);
+
+      const day = document.createElement('input');
+      day.type = 'number';
+      day.min = '1';
+      day.max = String(stage.regularCycleDays);
+      day.step = '1';
+      day.value = String(slot.day);
+      day.className = 'pipeline-regular-slot-day';
+      day.setAttribute('aria-label', `Regular post slot ${index + 1} day`);
+      day.addEventListener('input', () => {
+        updateRegularPostSlot(stage.id, slot.id, { day: day.value });
+      });
+
+      const time = document.createElement('input');
+      time.type = 'time';
+      time.value = slot.time;
+      time.className = 'pipeline-regular-slot-time';
+      time.setAttribute('aria-label', `Regular post slot ${index + 1} time`);
+      time.addEventListener('input', () => {
+        updateRegularPostSlot(stage.id, slot.id, { time: time.value });
+      });
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn-danger pipeline-track-remove';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', `Remove regular post slot ${index + 1}`);
+      remove.addEventListener('click', () => {
+        updateStage(stage.id, {
+          regularPostSlots: stage.regularPostSlots.filter(item => item.id !== slot.id),
+        }, true);
+      });
+
+      row.appendChild(number);
+      row.appendChild(day);
+      row.appendChild(time);
+      row.appendChild(remove);
+      wrapper.appendChild(row);
+    });
+
+    const addSlot = document.createElement('button');
+    addSlot.type = 'button';
+    addSlot.className = 'btn-secondary compact-btn';
+    addSlot.textContent = '+ Slot';
+    addSlot.dataset.tooltip = 'Add a publication position inside each cycle.';
+    addSlot.title = addSlot.dataset.tooltip;
+    addSlot.addEventListener('click', () => {
+      const nextDay = stage.regularPostSlots.length
+        ? Math.min(stage.regularCycleDays, stage.regularPostSlots[stage.regularPostSlots.length - 1].day + 1)
+        : 1;
+      updateStage(stage.id, {
+        regularPostSlots: [
+          ...stage.regularPostSlots,
+          createRegularPostSlot(nextDay, getDefaultRegularPostTime(stage)),
+        ],
+      }, true);
+    });
+    wrapper.appendChild(addSlot);
+
+    return wrapper;
+  }
+
+  function renderRegularPostTracks(stage) {
+    const tracks = document.createElement('div');
+    tracks.className = 'pipeline-regular-post-tracks';
+
+    stage.tracks.forEach((track, index) => {
+      const row = document.createElement('div');
+      row.className = 'pipeline-regular-post-track pipeline-album-track';
+      row.draggable = true;
+      row.dataset.trackId = track.id;
+
+      const handle = document.createElement('span');
+      handle.className = 'pipeline-track-handle';
+      handle.textContent = String(index + 1);
+      applyPipelinePreviewTooltip(handle, stage, `Regular post ${index + 1} preview`);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = track.title;
+      input.className = 'pipeline-track-title';
+      input.setAttribute('aria-label', `Regular post ${index + 1} title`);
+      input.title = 'Rendered video title for this regular post.';
+      input.addEventListener('input', () => updateTrack(stage.id, track.id, { title: input.value }));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn-danger pipeline-track-remove';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', `Remove regular post ${index + 1}`);
+      remove.addEventListener('click', () => {
+        removeRegularPostTrack(stage, track.id);
+      });
+
+      row.addEventListener('dragstart', event => {
+        draggedTrack = { stageId: stage.id, trackId: track.id };
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', track.id);
+      });
+      row.addEventListener('dragover', event => {
+        if (draggedTrack && draggedTrack.stageId === stage.id && draggedTrack.trackId !== track.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+        }
+      });
+      row.addEventListener('drop', event => {
+        event.preventDefault();
+        const sourceTrackId = event.dataTransfer.getData('text/plain') || draggedTrack?.trackId;
+        moveTrack(stage.id, sourceTrackId, track.id);
+        draggedTrack = null;
+      });
+      row.addEventListener('dragend', () => {
+        draggedTrack = null;
+      });
+
+      row.appendChild(handle);
+      row.appendChild(input);
+      row.appendChild(remove);
+      tracks.appendChild(row);
+    });
+
+    const addPost = document.createElement('button');
+    addPost.type = 'button';
+    addPost.className = 'btn-secondary compact-btn';
+    addPost.textContent = '+ Post';
+    addPost.dataset.tooltip = 'Add one or more regular post files.';
+    addPost.title = addPost.dataset.tooltip;
+
+    const addPostInput = document.createElement('input');
+    addPostInput.type = 'file';
+    addPostInput.multiple = true;
+    addPostInput.accept = 'audio/*,video/*';
+    addPostInput.className = 'pipeline-add-regular-post-input pipeline-file-input';
+    addPostInput.setAttribute('aria-label', `Add regular post files for ${stage.name || 'release stage'}`);
+    addPostInput.addEventListener('change', () => {
+      const files = Array.from(addPostInput.files || []);
+      if (!files.length) {
+        return;
+      }
+
+      const existingFiles = selectedFilesByStageId.get(stage.id) || [];
+      const nextFiles = [...existingFiles, ...files];
+      selectedFilesByStageId.set(stage.id, nextFiles);
+      updateStage(stage.id, {
+        fileNames: nextFiles.map(file => file.name),
+        tracks: [
+          ...stage.tracks,
+          ...files.map((file, offset) => createTrack(getTrackTitleFromFileName(file.name, stage.tracks.length + offset), stage.tracks.length + offset, file.name)),
+        ],
+      }, true);
+    });
+    addPost.addEventListener('click', () => {
+      addPostInput.click();
+    });
+
+    tracks.appendChild(addPost);
+    tracks.appendChild(addPostInput);
+    return tracks;
+  }
+
+  function renderRegularPostsCalendar(stage, stageBaseDate) {
+    const calendar = document.createElement('div');
+    calendar.className = 'pipeline-regular-calendar';
+
+    const materialCount = getRegularPostMaterialCount(stage);
+    const anchorDate = stageBaseDate || parseLocalDate(stage.publishAtLocal) || new Date();
+    const publishDates = expandRegularPostSchedule(stage, anchorDate, materialCount);
+    const cycleDays = normalizePositiveInteger(
+      stage.regularCycleDays,
+      DEFAULT_REGULAR_CYCLE_DAYS,
+      MAX_REGULAR_CYCLE_DAYS
+    );
+    const lastPublishDate = publishDates.length ? startOfLocalDay(publishDates[publishDates.length - 1]) : null;
+    const activeStart = startOfLocalDay(anchorDate);
+    const activeEnd = lastPublishDate;
+    const calendarEnd = endOfLocalMonth(lastPublishDate || addLocalDays(activeStart, cycleDays - 1));
+    const publishByDate = new Map();
+
+    publishDates.forEach((date, index) => {
+      const key = getLocalDateKey(date);
+      const posts = publishByDate.get(key) || [];
+      posts.push({ index: index + 1, time: normalizeRegularPostTime(stage.regularPostSlots[index % stage.regularPostSlots.length]?.time) });
+      publishByDate.set(key, posts);
+    });
+
+    const summary = document.createElement('div');
+    summary.className = 'pipeline-regular-calendar-summary';
+    summary.textContent = `${materialCount} post${materialCount === 1 ? '' : 's'} · ${cycleDays}-day cycle`;
+    calendar.appendChild(summary);
+
+    let month = new Date(activeStart.getFullYear(), activeStart.getMonth(), 1);
+    while (month.getTime() <= calendarEnd.getTime()) {
+      const monthBlock = document.createElement('div');
+      monthBlock.className = 'pipeline-regular-calendar-month';
+
+      const title = document.createElement('h4');
+      title.textContent = getMonthLabel(month);
+      monthBlock.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'pipeline-regular-calendar-grid';
+      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(dayName => {
+        const weekday = document.createElement('span');
+        weekday.className = 'pipeline-regular-calendar-weekday';
+        weekday.textContent = dayName;
+        grid.appendChild(weekday);
+      });
+
+      const firstDayOffset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
+      for (let i = 0; i < firstDayOffset; i++) {
+        const blank = document.createElement('span');
+        blank.className = 'pipeline-regular-calendar-blank';
+        grid.appendChild(blank);
+      }
+
+      const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(month.getFullYear(), month.getMonth(), day);
+        const key = getLocalDateKey(date);
+        const posts = publishByDate.get(key) || [];
+        const cell = document.createElement('div');
+        cell.className = 'pipeline-regular-calendar-day';
+        cell.dataset.date = key;
+        if (activeEnd && date.getTime() >= activeStart.getTime() && date.getTime() <= activeEnd.getTime()) {
+          cell.classList.add('is-cycle-active');
+        }
+        if (posts.length) {
+          cell.classList.add('is-publish');
+          cell.title = posts.map(post => `Post ${post.index} at ${post.time}`).join(', ');
+        }
+
+        const dayNumber = document.createElement('span');
+        dayNumber.className = 'pipeline-regular-calendar-number';
+        dayNumber.textContent = String(day);
+        cell.appendChild(dayNumber);
+
+        posts.forEach(post => {
+          const badge = document.createElement('span');
+          badge.className = 'pipeline-regular-calendar-badge';
+          badge.textContent = String(post.index);
+          cell.appendChild(badge);
+        });
+
+        grid.appendChild(cell);
+      }
+
+      monthBlock.appendChild(grid);
+      calendar.appendChild(monthBlock);
+      month = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    }
+
+    return calendar;
+  }
+
+  function renderAlbumEditor(stage, stageBaseDate) {
     const wrapper = document.createElement('div');
     wrapper.className = 'pipeline-album-editor';
 
@@ -1796,6 +2475,7 @@
     setSelectOptions(releaseType, [
       ['album', 'Album'],
       ['single', 'Single'],
+      ['regular-posts', 'Regular posts'],
     ], stage.releaseType || 'album');
     releaseType.addEventListener('change', () => {
       updateStage(stage.id, { releaseType: releaseType.value }, true);
@@ -1819,7 +2499,7 @@
     imageField.appendChild(imageInput);
     wrapper.appendChild(imageField);
 
-    const presetField = createField('Album preset', 'span-4', 'Visualizer preset used for album render tasks.');
+    const presetField = createField('Release preset', 'span-4', 'Visualizer preset used for release render tasks.');
     const presetSelect = document.createElement('select');
     presetSelect.className = 'pipeline-preset-select';
     presetSelect.dataset.stageId = stage.id;
@@ -1925,6 +2605,32 @@
       tracks.appendChild(addTrack);
       tracks.appendChild(addTrackInput);
       wrapper.appendChild(tracks);
+    }
+
+    if ((stage.releaseType || 'album') === 'regular-posts') {
+      const cycleField = createField('Cycle length (days)', 'span-4', 'Number of days in one regular posting cycle.');
+      const cycleDays = document.createElement('input');
+      cycleDays.type = 'number';
+      cycleDays.min = '1';
+      cycleDays.max = String(MAX_REGULAR_CYCLE_DAYS);
+      cycleDays.step = '1';
+      cycleDays.value = String(stage.regularCycleDays);
+      cycleDays.className = 'pipeline-regular-cycle-days';
+      cycleDays.addEventListener('input', () => {
+        updateStage(stage.id, { regularCycleDays: cycleDays.value }, true);
+      });
+      cycleField.appendChild(cycleDays);
+      wrapper.appendChild(cycleField);
+
+      const slotsField = createField('Post slots', 'span-8', 'Day and time positions inside each regular posting cycle.');
+      slotsField.appendChild(renderRegularPostSlots(stage));
+      wrapper.appendChild(slotsField);
+
+      const postsField = createField('Ordered posts', 'span-12', 'Files are rendered and uploaded in this numbered order.');
+      postsField.appendChild(renderRegularPostTracks(stage));
+      wrapper.appendChild(postsField);
+
+      wrapper.appendChild(renderRegularPostsCalendar(stage, stageBaseDate));
     }
 
     return wrapper;
@@ -2332,7 +3038,7 @@
       fields.appendChild(privacyField);
 
       if (stage.kind === 'release') {
-        fields.appendChild(renderAlbumEditor(stage));
+        fields.appendChild(renderAlbumEditor(stage, stageBaseDates[index]));
       }
 
       fields.appendChild(renderYouTubeDetails(stage));
@@ -2506,6 +3212,8 @@
       if (options.album && stage.kind === 'release') {
         changes.releaseType = template.releaseType;
         changes.tracks = template.tracks;
+        changes.regularCycleDays = template.regularCycleDays;
+        changes.regularPostSlots = template.regularPostSlots;
         changes.sharedImageName = template.sharedImageName;
       }
       return normalizeStage({ ...stage, ...changes }, index);
@@ -2586,6 +3294,33 @@
     saveStages();
     renderStages();
   });
+
+  stagesContainer.addEventListener('pointerover', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && stagesContainer.contains(trigger)) {
+      showPipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('pointerout', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && !trigger.contains(event.relatedTarget)) {
+      hidePipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('focusin', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger && stagesContainer.contains(trigger)) {
+      showPipelinePreviewTooltip(trigger);
+    }
+  });
+  stagesContainer.addEventListener('focusout', event => {
+    const trigger = event.target.closest('.pipeline-preview-trigger');
+    if (trigger) {
+      hidePipelinePreviewTooltip(trigger);
+    }
+  });
+  window.addEventListener('scroll', updatePipelinePreviewTooltip, true);
+  window.addEventListener('resize', updatePipelinePreviewTooltip);
 
   runPipelineBtn.addEventListener('click', () => {
     if (runPipelineBtn.disabled) return;
