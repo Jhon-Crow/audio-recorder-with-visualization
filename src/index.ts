@@ -6,6 +6,8 @@ export { AudioToVideoConverter, type ConversionResult } from './AudioToVideoConv
 export { AudioAnalyzer } from './core/AudioAnalyzer';
 export { VideoRecorder } from './core/VideoRecorder';
 export { EventEmitter } from './core/EventEmitter';
+export { OfflineAudioAnalyzer } from './core/OfflineAudioAnalyzer';
+export type { AudioAnalysisCache, CachedVisualizationData, OfflineAnalyzerOptions } from './core/OfflineAudioAnalyzer';
 export {
   YouTubeUploader,
   YouTubeUploadError,

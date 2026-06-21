@@ -127,5 +127,8 @@
     "portable": {
       "artifactName": "${productName}-${version}-portable.exe"
     }
+  },
+  "dependencies": {
+    "mp4-muxer": "^5.2.2"
   }
 }
