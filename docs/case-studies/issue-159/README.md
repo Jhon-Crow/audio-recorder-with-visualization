@@ -71,6 +71,20 @@ Restart sequence exposing the bug:
 
 **Fix:** After removing from localStorage, call `window.electronAPI.deletePresetFile(preset.sourcePath)` to delete the on-disk `.json` file if one exists. A new `preset-delete-file` IPC handler is added to `electron/main.js` and exposed via `electron/preload.js`. The guard `if (preset.sourcePath && window.electronAPI && window.electronAPI.deletePresetFile)` ensures this is a no-op in browser/non-Electron mode.
 
+### Root Cause 5: Renamed presets revert to original name after Electron restart
+
+The same architectural gap affected rename. `renamePreset()` updated the preset's name in localStorage and re-rendered the sidebar, but **never updated the `.json` file on disk**. On next startup, `loadPresetsFromFolder` read the old file (with the pre-rename name) and `mergePresets` used the file data to overwrite the localStorage entry, silently rolling back the rename.
+
+```
+Restart sequence exposing the bug:
+1. User renames preset "A" → "B" → localStorage updated, file on disk still has name "A"
+2. App restarts → loadPresetsFromFolder reads all .json files (name "A")
+3. mergePresets() finds matching ID in localStorage (name "B") and merges — file data wins
+4. Preset reverts to "A" as if rename never happened
+```
+
+**Fix:** After updating localStorage, call `window.electronAPI.updatePresetFile(preset.sourcePath, updatedPreset)` to write the updated preset JSON back to disk. A new `preset-update-file` IPC handler is added to `electron/main.js` and exposed as `updatePresetFile` in `electron/preload.js`. The rename guard ensures this is a no-op in browser/non-Electron mode.
+
 ---
 
 ## Changes Made
@@ -95,14 +109,17 @@ Restart sequence exposing the bug:
 
 ### `electron/main.js`
 - Added `preset-delete-file` IPC handler that deletes the preset `.json` file from disk
+- Added `preset-update-file` IPC handler that overwrites a preset `.json` file with updated content
 
 ### `electron/preload.js`
 - Exposed `deletePresetFile(filePath)` on `window.electronAPI`
+- Exposed `updatePresetFile(filePath, preset)` on `window.electronAPI`
 
 ### `cypress/e2e/preset-management.cy.js`
 - Updated existing rename/delete/reorder test: replaced `cy.stub(win, 'confirm')` with the new custom modal flow
 - Added test: `rename input receives focus and accepts typing after context menu click`
 - Added test: `delete confirmation uses a custom modal instead of window.confirm`
+- Added test: `persists rename to disk via updatePresetFile when sourcePath is present`
 
 ---
 
@@ -116,8 +133,8 @@ Restart sequence exposing the bug:
 
 ## Test Results
 
-All 9 Cypress tests pass after the fix, including 2 new tests that verify the specific bugs.
+All 10 Cypress tests pass after the fix, including 3 new tests that verify the specific bugs.
 
 ```
-✔  preset-management.cy.js   9 passing
+✔  preset-management.cy.js   10 passing
 ```

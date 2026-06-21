@@ -1562,17 +1562,23 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     closePresetRenameDialog();
   }
 
-  function renamePreset(presetId, nextName) {
+  async function renamePreset(presetId, nextName) {
     const preset = presets.find(item => item.id === presetId);
     if (!preset) return;
 
     const trimmedName = nextName ? nextName.trim() : '';
     if (!trimmedName) return;
 
+    const updatedPreset = { ...preset, name: trimmedName };
     presets = presets.map(item => (
-      item.id === presetId ? { ...item, name: trimmedName } : item
+      item.id === presetId ? updatedPreset : item
     ));
     savePresets(presets);
+
+    if (preset.sourcePath && window.electronAPI && window.electronAPI.updatePresetFile) {
+      await window.electronAPI.updatePresetFile(preset.sourcePath, updatedPreset);
+    }
+
     renderPresets();
     openPresetSidebar();
     updateStatus(`Preset renamed to "${trimmedName}"`, 'ready');

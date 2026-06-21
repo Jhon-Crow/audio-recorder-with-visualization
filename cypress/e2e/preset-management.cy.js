@@ -215,6 +215,41 @@ describe('Preset Management', () => {
     });
   });
 
+  it('persists rename to disk via updatePresetFile when sourcePath is present', () => {
+    visitWithPresets([
+      {
+        id: 'folder-preset',
+        name: 'OriginalName',
+        sourcePath: '/presets/original-folder-preset.json',
+        createdAt: '2026-06-04T00:00:00.000Z',
+        settings: {},
+      },
+    ]);
+
+    cy.window().then((win) => {
+      win.electronAPI = {
+        updatePresetFile: cy.stub().as('updatePresetFile').resolves({ success: true }),
+      };
+    });
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetList .preset-load-btn').first().rightclick();
+    cy.get('#presetContextMenu').should('be.visible');
+    cy.get('#presetRenameBtn').click();
+    cy.get('#presetRenameModal').should('be.visible');
+    cy.get('#presetRenameInput').clear().type('RenamedName');
+    cy.get('#presetConfirmRenameBtn').click();
+    cy.get('#presetRenameModal').should('not.be.visible');
+    cy.get('#presetList .preset-load-btn').first().should('contain', 'RenamedName');
+
+    cy.get('@updatePresetFile').should('have.been.calledOnce');
+    cy.get('@updatePresetFile').then((stub) => {
+      const [filePath, preset] = stub.getCall(0).args;
+      expect(filePath).to.equal('/presets/original-folder-preset.json');
+      expect(preset.name).to.equal('RenamedName');
+    });
+  });
+
   it('loads presets from a manually selected Electron folder', () => {
     cy.window().then((win) => {
       win.electronAPI = {
