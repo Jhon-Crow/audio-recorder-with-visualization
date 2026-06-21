@@ -190,6 +190,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const presetRenameInput = document.getElementById('presetRenameInput');
   const presetCancelRenameBtn = document.getElementById('presetCancelRenameBtn');
   const presetConfirmRenameBtn = document.getElementById('presetConfirmRenameBtn');
+  const presetDeleteModal = document.getElementById('presetDeleteModal');
+  const presetDeleteMessage = document.getElementById('presetDeleteMessage');
+  const presetCancelDeleteBtn = document.getElementById('presetCancelDeleteBtn');
+  const presetConfirmDeleteBtn = document.getElementById('presetConfirmDeleteBtn');
 
   // Settings persistence
   const SETTINGS_KEY = 'audio-recorder-settings';
@@ -506,6 +510,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   let activePresetMenuId = null;
   let activeLoadedPresetId = loadActivePresetId();
   let presetRenameTargetId = null;
+  let presetDeleteTargetId = null;
   let draggedPresetId = null;
   let presetSidebarCloseTimer = null;
   const savedRecordings = [];
@@ -1498,7 +1503,13 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   function scheduleClosePresetSidebar() {
     clearTimeout(presetSidebarCloseTimer);
     presetSidebarCloseTimer = setTimeout(() => {
-      if (!presetSidebar.matches(':hover') && !presetContextMenu.classList.contains('active')) {
+      if (
+        !presetSidebar.matches(':hover') &&
+        !presetContextMenu.classList.contains('active') &&
+        !presetRenameModal.classList.contains('active') &&
+        !presetSaveModal.classList.contains('active') &&
+        !presetDeleteModal.classList.contains('active')
+      ) {
         presetSidebar.classList.remove('is-open');
       }
     }, 180);
@@ -1526,8 +1537,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     presetRenameTargetId = presetId;
     presetRenameInput.value = preset.name || '';
     openModal(presetRenameModal);
-    presetRenameInput.focus();
-    presetRenameInput.select();
+    requestAnimationFrame(() => {
+      presetRenameInput.focus();
+      presetRenameInput.select();
+    });
   }
 
   function closePresetRenameDialog() {
@@ -1565,11 +1578,28 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     updateStatus(`Preset renamed to "${trimmedName}"`, 'ready');
   }
 
-  function deletePreset(presetId) {
+  function openPresetDeleteDialog(presetId) {
     const preset = presets.find(item => item.id === presetId);
     if (!preset) return;
 
-    if (!window.confirm(`Delete preset "${preset.name}"?`)) return;
+    presetDeleteTargetId = presetId;
+    presetDeleteMessage.textContent = `Delete preset "${preset.name}"?`;
+    openModal(presetDeleteModal);
+  }
+
+  function closePresetDeleteDialog() {
+    presetDeleteTargetId = null;
+    closeModal(presetDeleteModal);
+  }
+
+  function confirmPresetDelete() {
+    const presetId = presetDeleteTargetId;
+    if (!presetId) return;
+
+    const preset = presets.find(item => item.id === presetId);
+    if (!preset) return;
+
+    closePresetDeleteDialog();
 
     presets = presets.filter(item => item.id !== presetId);
     if (activeLoadedPresetId === presetId) {
@@ -1725,8 +1755,10 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     presetFolderInput.value = presetOptions.savePath || 'Browser local storage';
     presetDontShowAgain.checked = presetOptions.skipDialog || false;
     openModal(presetSaveModal);
-    presetNameInput.focus();
-    presetNameInput.select();
+    requestAnimationFrame(() => {
+      presetNameInput.focus();
+      presetNameInput.select();
+    });
   }
 
   function initializePresetControls() {
@@ -1778,10 +1810,12 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       event.stopPropagation();
       const presetId = activePresetMenuId;
       hidePresetContextMenu();
-      deletePreset(presetId);
+      openPresetDeleteDialog(presetId);
     });
     presetCancelRenameBtn.addEventListener('click', closePresetRenameDialog);
     presetConfirmRenameBtn.addEventListener('click', confirmPresetRename);
+    presetCancelDeleteBtn.addEventListener('click', closePresetDeleteDialog);
+    presetConfirmDeleteBtn.addEventListener('click', confirmPresetDelete);
     presetRenameInput.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         confirmPresetRename();
@@ -1801,14 +1835,19 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         if (presetRenameModal.classList.contains('active')) {
           closePresetRenameDialog();
         }
+        if (presetDeleteModal.classList.contains('active')) {
+          closePresetDeleteDialog();
+        }
       }
     });
 
-    [presetSaveModal, presetSettingsModal, presetRenameModal].forEach(modal => {
+    [presetSaveModal, presetSettingsModal, presetRenameModal, presetDeleteModal].forEach(modal => {
       modal.addEventListener('click', event => {
         if (event.target === modal) {
           if (modal === presetRenameModal) {
             closePresetRenameDialog();
+          } else if (modal === presetDeleteModal) {
+            closePresetDeleteDialog();
           } else {
             closeModal(modal);
           }

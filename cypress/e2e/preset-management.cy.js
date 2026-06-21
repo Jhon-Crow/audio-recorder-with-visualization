@@ -62,9 +62,6 @@ describe('Preset Management', () => {
       { id: 'preset-b', name: 'B', createdAt: '2026-06-04T00:00:01.000Z', settings: {} },
       { id: 'preset-c', name: 'C', createdAt: '2026-06-04T00:00:02.000Z', settings: {} },
     ]);
-    cy.window().then((win) => {
-      cy.stub(win, 'confirm').returns(true);
-    });
     cy.get('#presetEdgeTrigger').trigger('pointerenter');
 
     cy.get('#presetList .preset-load-btn').eq(1).rightclick();
@@ -82,6 +79,10 @@ describe('Preset Management', () => {
 
     cy.get('#presetList .preset-load-btn').eq(2).rightclick();
     cy.get('#presetDeleteBtn').click();
+    cy.get('#presetDeleteModal').should('be.visible');
+    cy.get('#presetDeleteMessage').should('contain', 'C');
+    cy.get('#presetConfirmDeleteBtn').click();
+    cy.get('#presetDeleteModal').should('not.be.visible');
     cy.get('#presetList .preset-load-btn').should('have.length', 2);
 
     cy.get('#presetList .preset-load-btn').eq(1).trigger('dragstart', {
@@ -99,6 +100,56 @@ describe('Preset Management', () => {
       const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
       expect(presets.map((preset) => preset.name)).to.deep.equal(['Renamed', 'A']);
     });
+  });
+
+  it('rename input receives focus and accepts typing after context menu click', () => {
+    visitWithPresets([
+      { id: 'preset-a', name: 'Alpha', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().rightclick();
+    cy.get('#presetContextMenu').should('be.visible');
+    cy.get('#presetRenameBtn').click();
+
+    cy.get('#presetRenameModal').should('be.visible');
+    cy.get('#presetRenameInput').should('be.focused');
+    cy.get('#presetRenameInput').clear().type('Beta');
+    cy.get('#presetRenameInput').should('have.value', 'Beta');
+
+    cy.get('#presetConfirmRenameBtn').click();
+    cy.get('#presetRenameModal').should('not.be.visible');
+    cy.get('#presetList .preset-load-btn').first().should('contain', 'Beta');
+  });
+
+  it('delete confirmation uses a custom modal instead of window.confirm', () => {
+    visitWithPresets([
+      { id: 'preset-a', name: 'ToDelete', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+    ]);
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').as('nativeConfirm');
+    });
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().rightclick();
+    cy.get('#presetContextMenu').should('be.visible');
+    cy.get('#presetDeleteBtn').click();
+
+    cy.get('#presetDeleteModal').should('be.visible');
+    cy.get('#presetDeleteMessage').should('contain', 'ToDelete');
+    cy.get('@nativeConfirm').should('not.have.been.called');
+
+    cy.get('#presetCancelDeleteBtn').click();
+    cy.get('#presetDeleteModal').should('not.be.visible');
+    cy.get('#presetList .preset-load-btn').should('have.length', 1);
+
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+    cy.get('#presetList .preset-load-btn').first().rightclick();
+    cy.get('#presetDeleteBtn').click();
+    cy.get('#presetDeleteModal').should('be.visible');
+    cy.get('#presetConfirmDeleteBtn').click();
+    cy.get('#presetDeleteModal').should('not.be.visible');
+    cy.get('#presetList .preset-load-btn').should('have.length', 0);
   });
 
   it('highlights the loaded preset until settings change', () => {
