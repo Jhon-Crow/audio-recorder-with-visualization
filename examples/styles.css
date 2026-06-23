@@ -1743,6 +1743,45 @@ button:focus-visible {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.pipeline-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.pipeline-review-item {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: var(--spacing-md);
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pipeline-review-video {
+  width: 100%;
+  max-height: 160px;
+  border-radius: var(--radius-sm);
+  background: #000;
+}
+
+.pipeline-review-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.pipeline-review-details strong {
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
 .pipeline-report-title {
   display: flex;
   flex-wrap: wrap;
@@ -1822,6 +1861,10 @@ button:focus-visible {
   }
 
   .pipeline-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline-review-item {
     grid-template-columns: 1fr;
   }
 
