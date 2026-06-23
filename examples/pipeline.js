@@ -2051,7 +2051,20 @@
       url: result.url || (result.id ? `https://www.youtube.com/watch?v=${result.id}` : ''),
       publishAt,
       playlistIds: task.stage.playlistIds || '',
+      warnings: Array.isArray(result.warnings) ? result.warnings : [],
     };
+  }
+
+  function formatYouTubeWarning(warning) {
+    const parts = [];
+    if (warning.playlistId) {
+      parts.push(`playlist ${warning.playlistId}`);
+    } else if (warning.operation) {
+      parts.push(warning.operation);
+    }
+
+    parts.push(warning.message || 'Unknown warning');
+    return parts.join(': ');
   }
 
   function formatReportDate(value) {
@@ -2118,6 +2131,13 @@
           playlists.className = 'pipeline-report-playlists';
           playlists.textContent = `Playlists: ${report.playlistIds}`;
           item.appendChild(playlists);
+        }
+
+        if (report.warnings && report.warnings.length) {
+          const warnings = document.createElement('div');
+          warnings.className = 'pipeline-report-warnings';
+          warnings.textContent = `Warnings: ${report.warnings.map(formatYouTubeWarning).join('; ')}`;
+          item.appendChild(warnings);
         }
 
         reportList.appendChild(item);

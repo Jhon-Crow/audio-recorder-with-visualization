@@ -150,6 +150,25 @@
     link.rel = 'noopener';
     link.textContent = result.id;
     uploadStatus.appendChild(link);
+
+    if (Array.isArray(result.warnings) && result.warnings.length) {
+      uploadStatus.appendChild(document.createElement('br'));
+      uploadStatus.appendChild(document.createTextNode(
+        `Warnings: ${result.warnings.map(formatYouTubeWarning).join('; ')}`
+      ));
+    }
+  }
+
+  function formatYouTubeWarning(warning) {
+    const parts = [];
+    if (warning.playlistId) {
+      parts.push(`playlist ${warning.playlistId}`);
+    } else if (warning.operation) {
+      parts.push(warning.operation);
+    }
+
+    parts.push(warning.message || 'Unknown warning');
+    return parts.join(': ');
   }
 
   function getPlaylistIds(value) {
