@@ -675,6 +675,16 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('keeps upload review enabled by default and can disable it from settings', () => {
+    cy.get('#pipelineSettingsBtn').click();
+    cy.get('#pipelineReviewBeforeUpload').should('be.checked').uncheck();
+    cy.get('#confirmPipelineTimezoneBtn').click();
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('audio-recorder-pipeline-review-before-upload')).to.equal('false');
+    });
+  });
+
   it('deletes a stage only after confirmation', () => {
     cy.get('#clearPipelineBtn').click();
     cy.get('#addPipelineStageBtn').click();
@@ -1098,6 +1108,56 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineReviewList').should('not.be.visible');
     cy.get('#pipelineReportList').should('contain.text', 'Confirmed upload');
     cy.get('#pipelineReportList').should('contain.text', 'reviewed-video-id');
+  });
+
+  it('uploads rendered visualization results immediately when review is disabled', () => {
+    cy.get('#pipelineSettingsBtn').click();
+    cy.get('#pipelineReviewBeforeUpload').uncheck();
+    cy.get('#confirmPipelineTimezoneBtn').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Immediate upload',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'immediate-upload.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'immediate-video-id',
+        url: 'https://www.youtube.com/watch?v=immediate-video-id',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@pipelineUploadDirect').should('have.been.calledOnce');
+    cy.get('#pipelineReportModal').should('be.visible');
+    cy.get('#pipelineReviewList').should('not.be.visible');
+    cy.get('#pipelineReportList').should('contain.text', 'Immediate upload');
+    cy.get('#pipelineReportList').should('contain.text', 'immediate-video-id');
   });
 
   it('uploads direct YouTube stages with stage metadata when already signed in', () => {

@@ -10,6 +10,7 @@
   const ACTIVE_PIPELINE_KEY = 'audio-recorder-active-pipeline-id';
   const PIPELINE_TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const PIPELINE_UPLOAD_ORDER_KEY = 'audio-recorder-pipeline-upload-order';
+  const PIPELINE_REVIEW_BEFORE_UPLOAD_KEY = 'audio-recorder-pipeline-review-before-upload';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const HOLD_TO_RESET_MS = 600;
@@ -69,6 +70,7 @@
   const timezoneModal = document.getElementById('pipelineTimezoneModal');
   const timezoneSelect = document.getElementById('pipelineTimezoneSelect');
   const uploadOrderSelect = document.getElementById('pipelineUploadOrderSelect');
+  const reviewBeforeUploadCheckbox = document.getElementById('pipelineReviewBeforeUpload');
   const cancelTimezoneBtn = document.getElementById('cancelPipelineTimezoneBtn');
   const cancelTimezoneXBtn = document.getElementById('cancelPipelineTimezoneXBtn');
   const confirmTimezoneBtn = document.getElementById('confirmPipelineTimezoneBtn');
@@ -89,7 +91,8 @@
     pipelineRenameModal, pipelineRenameInput, pipelineCancelRenameBtn, pipelineConfirmRenameBtn,
     deleteModal, deleteMessage, cancelDeleteBtn, cancelDeleteXBtn,
     confirmDeleteBtn, resetModal, cancelResetBtn, cancelResetXBtn, confirmResetHoldBtn,
-    timezoneModal, timezoneSelect, uploadOrderSelect, cancelTimezoneBtn, cancelTimezoneXBtn, confirmTimezoneBtn,
+    timezoneModal, timezoneSelect, uploadOrderSelect, reviewBeforeUploadCheckbox,
+    cancelTimezoneBtn, cancelTimezoneXBtn, confirmTimezoneBtn,
     reportModal, reportSummary, reviewList, reportList, closeReportBtn, closeReportXBtn,
     skipUploadsBtn, confirmUploadsBtn,
     ...Object.values(resetCheckboxes),
@@ -121,6 +124,7 @@
   let pipelineUploadOrder = localStorage.getItem(PIPELINE_UPLOAD_ORDER_KEY) === 'manual'
     ? 'manual'
     : 'chronological';
+  let pipelineReviewBeforeUpload = localStorage.getItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY) !== 'false';
   let pendingDeleteStageId = '';
   let hasPipelineRun = false;
   let isPipelineRunning = false;
@@ -2059,6 +2063,10 @@
 
     const rendered = await renderTask(task, taskIndex, totalTasks);
     if (task.stage.action === 'visualize-upload') {
+      if (!pipelineReviewBeforeUpload) {
+        const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
+        return { type: 'uploaded', report: createUploadReport(task, result) };
+      }
       return {
         type: 'review',
         item: {
@@ -3265,6 +3273,7 @@
       createdAt: new Date().toISOString(),
       timezone: pipelineTimezone,
       uploadOrder: pipelineUploadOrder,
+      reviewBeforeUpload: pipelineReviewBeforeUpload,
       stages: stages.map(sanitizeStage),
     };
     savedPipelines = [...savedPipelines, pipeline];
@@ -3282,12 +3291,14 @@
     stages = Array.isArray(pipeline.stages) ? pipeline.stages.map(normalizeStage) : [];
     pipelineTimezone = pipeline.timezone || pipelineTimezone;
     pipelineUploadOrder = pipeline.uploadOrder === 'manual' ? 'manual' : 'chronological';
+    pipelineReviewBeforeUpload = pipeline.reviewBeforeUpload !== false;
     activePipelineId = pipeline.id;
     localStorage.setItem(ACTIVE_PIPELINE_KEY, activePipelineId);
     if (pipelineTimezone) {
       localStorage.setItem(PIPELINE_TIMEZONE_KEY, pipelineTimezone);
     }
     localStorage.setItem(PIPELINE_UPLOAD_ORDER_KEY, pipelineUploadOrder);
+    localStorage.setItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY, String(pipelineReviewBeforeUpload));
     saveStages();
     updateTimezoneButton();
     renderStages();
@@ -3533,6 +3544,7 @@
     }
     timezoneSelect.value = currentTimezone;
     uploadOrderSelect.value = pipelineUploadOrder;
+    reviewBeforeUploadCheckbox.checked = pipelineReviewBeforeUpload;
     timezoneModal.style.display = 'flex';
   }
 
@@ -3549,8 +3561,10 @@
   function saveTimezone() {
     pipelineTimezone = timezoneSelect.value || getBrowserTimezone();
     pipelineUploadOrder = uploadOrderSelect.value === 'manual' ? 'manual' : 'chronological';
+    pipelineReviewBeforeUpload = reviewBeforeUploadCheckbox.checked;
     localStorage.setItem(PIPELINE_TIMEZONE_KEY, pipelineTimezone);
     localStorage.setItem(PIPELINE_UPLOAD_ORDER_KEY, pipelineUploadOrder);
+    localStorage.setItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY, String(pipelineReviewBeforeUpload));
     updateTimezoneButton();
     closeTimezoneModal();
     updateRunState();

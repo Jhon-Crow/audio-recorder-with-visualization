@@ -1817,6 +1817,11 @@ button:focus-visible {
   align-items: stretch;
 }
 
+.pipeline-modal-checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
 .pipeline-modal-field select {
   width: 100%;
   padding: 10px 12px;
