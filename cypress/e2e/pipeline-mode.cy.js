@@ -582,6 +582,69 @@ describe('Pipeline Mode', () => {
       });
   });
 
+  it('refreshes tooltip previews when the selected visualization preset changes', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'custom',
+          name: 'Refreshing tooltip preview',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+
+    let initialPreviewImage = '';
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .then(($trigger) => {
+        initialPreviewImage = $trigger[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(initialPreviewImage).to.match(/^url\("data:image\/png;base64,/);
+      });
+
+    cy.window().then((win) => {
+      const presets = JSON.parse(win.localStorage.getItem('audio-recorder-presets'));
+      win.localStorage.setItem('audio-recorder-presets', JSON.stringify(presets.map((preset) => (
+        preset.id === 'preset-cypress-bars'
+          ? {
+            ...preset,
+            name: 'Cypress Bars Updated',
+            settings: {
+              ...preset.settings,
+              visualizer: 'circular',
+              primaryColor: '#ffffff',
+              secondaryColor: '#ffffff',
+              backgroundColor: '#000000',
+              backgroundImage: null,
+              offsetX: 480,
+              offsetY: -180,
+              visualizationScale: 120,
+            },
+          }
+          : preset
+      ))));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip')
+      .should('contain', 'Stage 1 preview: 1920x1080, Cypress Bars Updated');
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-number.pipeline-preview-trigger')
+      .then(($trigger) => {
+        const refreshedPreviewImage = $trigger[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(refreshedPreviewImage).to.match(/^url\("data:image\/png;base64,/);
+        expect(refreshedPreviewImage).to.not.equal(initialPreviewImage);
+        expectPreviewBrightSpotNear(refreshedPreviewImage, 0.63, 0.39);
+      });
+  });
+
   it('shows fetched YouTube playlists in pipeline stages and creates playlists by name', () => {
     cy.clearLocalStorage();
     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {

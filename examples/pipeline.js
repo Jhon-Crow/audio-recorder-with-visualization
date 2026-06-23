@@ -1298,6 +1298,11 @@
     return promise;
   }
 
+  function resetPipelinePreviewCache() {
+    pipelinePreviewCache.clear();
+    hidePipelinePreviewTooltip();
+  }
+
   function applyPipelinePreviewTooltip(element, stage, labelPrefix) {
     element.classList.add('pipeline-preview-trigger');
     element.dataset.tooltip = getPreviewLabel(stage, labelPrefix);
@@ -3558,7 +3563,13 @@
     }
   });
   window.addEventListener('audioRecorderPresetsChanged', () => {
+    resetPipelinePreviewCache();
     refreshStagePresetSelections();
+    renderStages();
+  });
+  window.addEventListener('audioRecorderVisualizationSettingsChanged', () => {
+    resetPipelinePreviewCache();
+    renderStages();
   });
   window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
     renderStages();
@@ -3573,6 +3584,7 @@
     replaceStages(nextStages) {
       selectedFilesByStageId.clear();
       selectedCoversByStageId.clear();
+      resetPipelinePreviewCache();
       stages = Array.isArray(nextStages) ? nextStages.map(normalizeStage) : [];
       saveStages();
       renderStages();
