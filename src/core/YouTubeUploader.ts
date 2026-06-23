@@ -67,8 +67,11 @@ export interface YouTubeUploadResult {
   id: string;
   url: string;
   thumbnail?: unknown;
+  thumbnailError?: YouTubeUploadWarning;
   playlistItem?: unknown;
   playlistItems?: unknown[];
+  playlistErrors?: YouTubeUploadWarning[];
+  warnings?: YouTubeUploadWarning[];
   rawResponse: unknown;
 }
 
@@ -85,6 +88,14 @@ export interface YouTubeVideoResource {
     containsSyntheticMedia?: boolean;
     publishAt?: string;
   };
+}
+
+export interface YouTubeUploadWarning {
+  operation: 'thumbnail' | 'playlist';
+  message: string;
+  status?: number;
+  details?: unknown;
+  playlistId?: string;
 }
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -367,13 +378,22 @@ export class YouTubeUploader {
     const result = await this.uploadChunks(fetchImpl, uploadUrl, request, contentType);
 
     if (request.thumbnail && request.thumbnail.size > 0) {
-      result.thumbnail = await this.uploadThumbnail(
-        fetchImpl,
-        request.accessToken,
-        result.id,
-        request.thumbnail,
-        request.signal
-      );
+      try {
+        result.thumbnail = await this.uploadThumbnail(
+          fetchImpl,
+          request.accessToken,
+          result.id,
+          request.thumbnail,
+          request.signal
+        );
+      } catch (error) {
+        if (isAbortError(error)) {
+          throw error;
+        }
+
+        result.thumbnailError = normalizeUploadWarning('thumbnail', error);
+        result.warnings = [...(result.warnings || []), result.thumbnailError];
+      }
     }
 
     const playlistIds = normalizeYouTubePlaylistIds([
@@ -385,13 +405,23 @@ export class YouTubeUploader {
       result.playlistItems = [];
 
       for (const playlistId of playlistIds) {
-        result.playlistItems.push(await this.addVideoToPlaylist(
-          fetchImpl,
-          request.accessToken,
-          playlistId,
-          result.id,
-          request.signal
-        ));
+        try {
+          result.playlistItems.push(await this.addVideoToPlaylist(
+            fetchImpl,
+            request.accessToken,
+            playlistId,
+            result.id,
+            request.signal
+          ));
+        } catch (error) {
+          if (isAbortError(error)) {
+            throw error;
+          }
+
+          const warning = normalizeUploadWarning('playlist', error, playlistId);
+          result.playlistErrors = [...(result.playlistErrors || []), warning];
+          result.warnings = [...(result.warnings || []), warning];
+        }
       }
 
       result.playlistItem = result.playlistItems[0];
@@ -508,7 +538,10 @@ export class YouTubeUploader {
 
   private async createError(response: Response, fallbackMessage: string): Promise<YouTubeUploadError> {
     const details = await readResponseBody(response);
-    const message = extractErrorMessage(details) || fallbackMessage;
+    const detailMessage = extractErrorMessage(details);
+    const message = detailMessage
+      ? `${fallbackMessage}: ${detailMessage} (HTTP ${response.status})`
+      : `${fallbackMessage} (HTTP ${response.status})`;
     return new YouTubeUploadError(message, response.status, details);
   }
 
@@ -664,6 +697,32 @@ function extractErrorMessage(value: unknown): string | null {
   }
 
   return typeof value.message === 'string' ? value.message : null;
+}
+
+function normalizeUploadWarning(
+  operation: YouTubeUploadWarning['operation'],
+  error: unknown,
+  playlistId?: string
+): YouTubeUploadWarning {
+  const warning: YouTubeUploadWarning = {
+    operation,
+    message: error instanceof Error ? error.message : String(error || 'Unknown error'),
+  };
+
+  if (error instanceof YouTubeUploadError) {
+    warning.status = error.status;
+    warning.details = error.details;
+  }
+
+  if (playlistId) {
+    warning.playlistId = playlistId;
+  }
+
+  return warning;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
