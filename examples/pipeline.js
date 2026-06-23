@@ -2737,7 +2737,7 @@
   }
 
   function renderPlaylistChooser(stage, onChange) {
-    const selectedIds = getPlaylistIds(stage.playlistIds);
+    let selectedIds = getPlaylistIds(stage.playlistIds);
     const youtube = window.AudioRecorderYouTube;
     const known = youtube && typeof youtube.getSavedPlaylists === 'function'
       ? youtube.getSavedPlaylists()
@@ -2761,6 +2761,7 @@
     list.className = 'youtube-playlist-list';
     const setSelectedIds = (ids) => {
       const nextIds = ids.filter((item, index, list) => list.indexOf(item) === index);
+      selectedIds = nextIds;
       hidden.value = nextIds.join(', ');
       onChange(nextIds.join(', '));
     };
@@ -2844,6 +2845,8 @@
       try {
         const playlist = await youtube.createPlaylist(title);
         setSelectedIds([...selectedIds, playlist.id]);
+        saveSavedYouTubePlaylists([...known.filter(item => item.id !== playlist.id), playlist]);
+        renderStages();
       } catch (error) {
         updateAppStatus(error.message || 'Unable to create YouTube playlist.', 'error');
         input.focus();
