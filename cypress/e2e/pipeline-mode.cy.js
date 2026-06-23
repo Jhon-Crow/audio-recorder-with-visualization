@@ -1106,6 +1106,63 @@ describe('Pipeline Mode', () => {
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-video-id');
   });
 
+  it('starts YouTube authorization from Run for upload stages without a separate YouTube click', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      expect(req.headers.authorization).to.equal('Bearer electron-token');
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: 'https://upload.example/pipeline-auth-session' },
+        body: '',
+      });
+    }).as('startPipelineUpload');
+
+    cy.intercept('PUT', 'https://upload.example/pipeline-auth-session', {
+      statusCode: 201,
+      body: { id: 'pipeline-auth-video-id' },
+    }).as('finishPipelineUpload');
+
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-desktop-client-id.apps.googleusercontent.com');
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            accessToken: 'electron-token',
+            expiresIn: 3600,
+            scope: combinedYouTubeScope,
+          }),
+        };
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Run authorizes upload');
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-video'),
+      fileName: 'direct-video.webm',
+      mimeType: 'video/webm',
+    }, { force: true });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@authorizeYouTube')
+      .should('have.been.calledOnce')
+      .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
+    cy.wait('@startPipelineUpload');
+    cy.wait('@finishPipelineUpload');
+    cy.get('#youtubeAuthModal').should('not.be.visible');
+    cy.get('#status').should('contain.text', 'Pipeline complete: 1 task finished');
+    cy.get('#pipelineReportList a')
+      .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-auth-video-id');
+  });
+
   it('keeps generated tooltip boxes inside the viewport', () => {
     cy.viewport(360, 640);
     cy.get('.pipeline-stage').first().find('.pipeline-file-btn').trigger('mouseover');

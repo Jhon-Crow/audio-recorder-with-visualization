@@ -1029,8 +1029,22 @@
     }
   }
 
+  async function ensureAuthorizedForPipeline() {
+    if (hasValidAccessToken()) {
+      return true;
+    }
+
+    if (await restoreElectronYouTubeAuthorization()) {
+      return true;
+    }
+
+    openAuthModal();
+    throw new Error('Complete YouTube sign-in, then run the pipeline again.');
+  }
+
   window.AudioRecorderYouTube = {
     createPlaylist: createYouTubePlaylist,
+    ensureAuthorizedForPipeline,
     getSavedPlaylists: loadSavedYouTubePlaylists,
     hasValidAccessToken,
     hasPlaylistScope,

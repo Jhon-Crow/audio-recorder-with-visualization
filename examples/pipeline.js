@@ -2017,13 +2017,27 @@
 
   function assertUploadReady(tasks) {
     if (!tasks.some(task => actionIncludesUpload(task.stage.action))) {
-      return;
+      return false;
     }
 
     const youtube = window.AudioRecorderYouTube;
     if (!youtube || typeof youtube.uploadDirect !== 'function') {
       throw new Error('YouTube upload is not ready. Run npm run build before using upload pipeline stages.');
     }
+    return true;
+  }
+
+  async function ensureUploadReady(tasks) {
+    if (!assertUploadReady(tasks)) {
+      return;
+    }
+
+    const youtube = window.AudioRecorderYouTube;
+    if (typeof youtube.ensureAuthorizedForPipeline === 'function') {
+      await youtube.ensureAuthorizedForPipeline();
+      return;
+    }
+
     if (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) {
       throw new Error('Sign in to YouTube before running upload pipeline stages.');
     }
@@ -2148,7 +2162,7 @@
     updateRunState();
 
     try {
-      assertUploadReady(tasks);
+      await ensureUploadReady(tasks);
       const uploadReports = [];
 
       for (let index = 0; index < tasks.length; index++) {
