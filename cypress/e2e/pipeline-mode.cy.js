@@ -635,6 +635,10 @@ describe('Pipeline Mode', () => {
     cy.wait('@createPipelineStagePlaylist');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids')
       .should('have.value', 'PL-existing, PL-created');
+    cy.get('.pipeline-stage').first()
+      .contains('.youtube-playlist-option', 'Pipeline created playlist')
+      .find('input')
+      .should('be.checked');
   });
 
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
