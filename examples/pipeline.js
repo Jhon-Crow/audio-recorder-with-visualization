@@ -3246,6 +3246,18 @@
       });
       nameField.appendChild(nameInput);
 
+      if (isFullAlbumStage(stage)) {
+        const typeField = createField('Type', 'span-4', 'Derived full-album stages always render the source album as one Album video.');
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'pipeline-stage-type';
+        typeSelect.disabled = true;
+        setSelectOptions(typeSelect, [
+          ['album', 'Album'],
+        ], 'album');
+        typeField.appendChild(typeSelect);
+        fields.appendChild(typeField);
+      }
+
       const actionField = createField('Action', 'span-4', 'Choose whether the stage renders visualization, uploads to YouTube, or does both.');
       const actionSelect = document.createElement('select');
       setSelectOptions(actionSelect, [
@@ -3355,7 +3367,7 @@
         relativeSummary.appendChild(line);
       });
 
-      fields.appendChild(nameField);
+      fields.insertBefore(nameField, fields.firstChild);
       fields.appendChild(actionField);
       fields.appendChild(timingField);
       fields.appendChild(publishField);

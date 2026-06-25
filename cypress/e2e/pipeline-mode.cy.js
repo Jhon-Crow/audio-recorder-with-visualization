@@ -840,6 +840,13 @@ describe('Pipeline Mode', () => {
       expect(win.AudioRecorderPipeline.getStageFileDurationsForDebug(albumStageId)).to.deep.equal([75, 145]);
     });
     cy.get('.pipeline-stage').eq(2).should('have.class', 'pipeline-full-album-stage');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-type')
+      .should('have.value', 'album')
+      .and('be.disabled');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-fields > .pipeline-field').then(($fields) => {
+      const labels = [...$fields].map(field => field.firstElementChild?.textContent.trim());
+      expect(labels.indexOf('Type')).to.be.lessThan(labels.indexOf('Action'));
+    });
     cy.get('.pipeline-stage').eq(2).find('.pipeline-release-type')
       .should('have.value', 'album')
       .and('be.disabled');
