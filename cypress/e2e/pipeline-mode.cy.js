@@ -791,6 +791,86 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
   });
 
+  it('renders a checked album stage as one uploaded video named after the stage', () => {
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-name').clear().type('Album premiere');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('pre-save'),
+      fileName: 'pre-save.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-file-input').selectFile([
+      {
+        contents: Cypress.Buffer.from('track-one'),
+        fileName: 'track-one.mp3',
+        mimeType: 'audio/mpeg',
+      },
+      {
+        contents: Cypress.Buffer.from('track-two'),
+        fileName: 'track-two.mp3',
+        mimeType: 'audio/mpeg',
+      },
+    ], { force: true });
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('post-album'),
+      fileName: 'post-album.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
+      .should('not.be.checked')
+      .check();
+
+    cy.window().then((win) => {
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback')
+        .callsFake(({ audioSource }) => Promise.resolve({
+          blob: new win.Blob([audioSource.name], { type: 'video/webm' }),
+          format: 'webm',
+          usedFallback: false,
+        }))
+        .as('pipelineConvert');
+      const uploadTitles = [];
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect')
+        .callsFake(({ video, metadata }) => {
+          uploadTitles.push(metadata.title);
+          expect(video.type).to.equal('video/webm');
+          return Promise.resolve({
+            id: 'album-video-id',
+            url: 'https://www.youtube.com/watch?v=album-video-id',
+          });
+        })
+        .as('pipelineUpload');
+      cy.wrap(uploadTitles).as('pipelineUploadTitles');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@pipelineConvert').should('have.callCount', 4);
+    cy.get('@pipelineUpload').should('have.callCount', 3);
+    cy.get('@pipelineUploadTitles').should('include', 'Album premiere');
+    cy.get('#status').should('contain.text', 'Pipeline complete: 3 tasks finished');
+    cy.get('#pipelineReportList li').should('have.length', 3)
+      .and('contain.text', 'Album premiere');
+
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video').should('be.checked');
+  });
+
   it('schedules regular release posts from ordered files and cycle slots', () => {
     const publishAtValues = [];
     const uploadTitles = [];

@@ -385,6 +385,7 @@
       syntheticMedia: false,
       notifySubscribers: false,
       releaseType: 'single',
+      fullAlbumVideo: false,
       tracks: [],
       regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
       regularPostSlots: null,
@@ -402,6 +403,7 @@
     normalized.releaseType = ['album', 'single', 'regular-posts'].includes(normalized.releaseType)
       ? normalized.releaseType
       : (normalized.kind === 'release' ? 'album' : 'single');
+    normalized.fullAlbumVideo = Boolean(normalized.fullAlbumVideo);
     normalized.regularCycleDays = normalizePositiveInteger(
       normalized.regularCycleDays,
       DEFAULT_REGULAR_CYCLE_DAYS,
@@ -1581,6 +1583,10 @@
     return stage.name || getTrackTitleFromFileName(file.name, index);
   }
 
+  function getAlbumTaskTitle(stage) {
+    return stage.name || 'Album';
+  }
+
   function pluralRu(value, one, few, many) {
     const mod10 = value % 10;
     const mod100 = value % 100;
@@ -1644,6 +1650,21 @@
       const regularPostDates = isRegularPostsStage(stage)
         ? expandRegularPostSchedule(stage, stageBaseDate, files.length)
         : [];
+
+      if (isAlbumStage(stage) && stage.fullAlbumVideo) {
+        tasks.push({
+          stage,
+          stageIndex,
+          files,
+          file: files[0],
+          fileIndex: 0,
+          totalFiles: files.length,
+          title: getAlbumTaskTitle(stage),
+          publishAt: stageBaseDate ? stageBaseDate.toISOString() : undefined,
+          fullAlbumVideo: true,
+        });
+        return;
+      }
 
       files.forEach((file, fileIndex) => {
         const publishDate = regularPostDates[fileIndex] ||
@@ -1946,6 +1967,10 @@
   }
 
   async function renderTask(task, taskIndex, totalTasks) {
+    if (task.fullAlbumVideo) {
+      return renderCombinedAlbumTask(task, taskIndex, totalTasks);
+    }
+
     const app = getPipelineApp();
     const dimensions = parseResolution(task.stage.resolution);
     const renderSettings = resolveRenderSettings(task.stage, app);
@@ -1979,6 +2004,51 @@
     }
 
     return result;
+  }
+
+  async function renderCombinedAlbumTask(task, taskIndex, totalTasks) {
+    const files = Array.isArray(task.files) ? task.files : [task.file].filter(Boolean);
+    if (!files.length) {
+      throw new Error('Album stage has no files to render.');
+    }
+
+    const app = getPipelineApp();
+    const renderedParts = [];
+
+    for (let index = 0; index < files.length; index++) {
+      const trackTask = {
+        ...task,
+        file: files[index],
+        fileIndex: index,
+        totalFiles: files.length,
+        title: getTaskTitle(task.stage, files[index], index, files.length),
+        fullAlbumVideo: false,
+      };
+      updateAppStatus(
+        `Pipeline rendering ${taskIndex + 1} of ${totalTasks}: ${task.title} (${index + 1}/${files.length})`,
+        'recording'
+      );
+      const result = await renderTask(trackTask, taskIndex, totalTasks);
+      renderedParts.push(result.blob);
+    }
+
+    const format = renderedParts[0]?.type?.includes('mp4') ? 'mp4' : getRequestedVideoFormat(app);
+    const blob = new Blob(renderedParts, {
+      type: renderedParts[0]?.type || `video/${format}`,
+    });
+
+    if (typeof app.addRecording === 'function') {
+      app.addRecording(blob, {
+        sourceName: `${task.title}.${format}`,
+        format,
+      });
+    }
+
+    return {
+      blob,
+      format,
+      usedFallback: false,
+    };
   }
 
   function collectTaskMetadata(task) {
@@ -2567,6 +2637,28 @@
     wrapper.appendChild(presetField);
 
     if ((stage.releaseType || 'album') === 'album') {
+      const fullAlbumField = document.createElement('label');
+      fullAlbumField.className = 'pipeline-inline-check span-12';
+      fullAlbumField.dataset.tooltip = 'Render every album track sequentially into one long video and upload it with the stage name.';
+      fullAlbumField.title = fullAlbumField.dataset.tooltip;
+
+      const fullAlbumCheckbox = document.createElement('input');
+      fullAlbumCheckbox.type = 'checkbox';
+      fullAlbumCheckbox.className = 'pipeline-full-album-video';
+      fullAlbumCheckbox.checked = Boolean(stage.fullAlbumVideo);
+      fullAlbumCheckbox.setAttribute('aria-label', 'Render full album as one video');
+      fullAlbumCheckbox.addEventListener('change', () => {
+        updateStage(stage.id, { fullAlbumVideo: fullAlbumCheckbox.checked });
+      });
+
+      const fullAlbumText = document.createElement('span');
+      fullAlbumText.className = 'pipeline-check-text';
+      fullAlbumText.textContent = 'Full album in one video';
+
+      fullAlbumField.appendChild(fullAlbumCheckbox);
+      fullAlbumField.appendChild(fullAlbumText);
+      wrapper.appendChild(fullAlbumField);
+
       const tracks = document.createElement('div');
       tracks.className = 'pipeline-album-tracks';
       stage.tracks.forEach((track, index) => {
