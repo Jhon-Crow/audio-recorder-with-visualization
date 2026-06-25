@@ -791,7 +791,7 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
   });
 
-  it('renders a checked album stage as one uploaded video named after the stage', () => {
+  it('adds a dependent full album stage with its own schedule and generated timestamps', () => {
     cy.reload();
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
@@ -807,6 +807,7 @@ describe('Pipeline Mode', () => {
     cy.contains('.tab', 'Pipeline').click();
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-name').clear().type('Album premiere');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-description').type('Album release description');
     cy.get('.pipeline-stage').eq(0).find('.pipeline-stage-file-input').selectFile({
       contents: Cypress.Buffer.from('pre-save'),
       fileName: 'pre-save.mp3',
@@ -824,15 +825,29 @@ describe('Pipeline Mode', () => {
         mimeType: 'audio/mpeg',
       },
     ], { force: true });
-    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-file-input').selectFile({
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
+      .should('not.be.checked')
+      .check();
+    cy.get('.pipeline-stage').should('have.length', 4);
+    cy.get('.pipeline-stage').eq(2).should('have.class', 'pipeline-full-album-stage');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name')
+      .should('have.value', 'Album premiere - full album');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').clear();
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').type('Complete album visual');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-description')
+      .should('have.value', 'Album release description');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-description').clear();
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-description').type('Complete album description');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').clear();
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').type('45');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-album-timestamps')
+      .should('contain.value', '00:00 - track one')
+      .and('contain.value', '00:00 - track two');
+    cy.get('.pipeline-stage').eq(3).find('.pipeline-stage-file-input').selectFile({
       contents: Cypress.Buffer.from('post-album'),
       fileName: 'post-album.mp3',
       mimeType: 'audio/mpeg',
     }, { force: true });
-
-    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
-      .should('not.be.checked')
-      .check();
 
     cy.window().then((win) => {
       cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback')
@@ -843,9 +858,11 @@ describe('Pipeline Mode', () => {
         }))
         .as('pipelineConvert');
       const uploadTitles = [];
+      const uploadDescriptions = [];
       cy.stub(win.AudioRecorderYouTube, 'uploadDirect')
         .callsFake(({ video, metadata }) => {
           uploadTitles.push(metadata.title);
+          uploadDescriptions.push(metadata.description);
           expect(video.type).to.equal('video/webm');
           return Promise.resolve({
             id: 'album-video-id',
@@ -854,21 +871,27 @@ describe('Pipeline Mode', () => {
         })
         .as('pipelineUpload');
       cy.wrap(uploadTitles).as('pipelineUploadTitles');
+      cy.wrap(uploadDescriptions).as('pipelineUploadDescriptions');
     });
 
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
 
-    cy.get('@pipelineConvert').should('have.callCount', 4);
-    cy.get('@pipelineUpload').should('have.callCount', 3);
-    cy.get('@pipelineUploadTitles').should('include', 'Album premiere');
-    cy.get('#status').should('contain.text', 'Pipeline complete: 3 tasks finished');
-    cy.get('#pipelineReportList li').should('have.length', 3)
-      .and('contain.text', 'Album premiere');
+    cy.get('@pipelineConvert').should('have.callCount', 6);
+    cy.get('@pipelineUpload').should('have.callCount', 5);
+    cy.get('@pipelineUploadTitles').should('include', 'Complete album visual');
+    cy.get('@pipelineUploadDescriptions').then((descriptions) => {
+      expect(descriptions).to.include('Complete album description\n\n00:00 - track one\n00:00 - track two');
+    });
+    cy.get('#status').should('contain.text', 'Pipeline complete: 5 tasks finished');
+    cy.get('#pipelineReportList li').should('have.length', 5)
+      .and('contain.text', 'Complete album visual');
 
     cy.reload();
     cy.waitForVisualization();
     cy.contains('.tab', 'Pipeline').click();
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video').should('be.checked');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').should('have.value', 'Complete album visual');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').should('have.value', '45');
   });
 
   it('schedules regular release posts from ordered files and cycle slots', () => {
