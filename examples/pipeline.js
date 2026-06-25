@@ -292,6 +292,20 @@
     ];
   }
 
+  function createAddedStage(index = stages.length) {
+    const base = createDefaultStage('custom', index);
+    return normalizeStage({
+      ...base,
+      kind: 'release',
+      releaseType: 'album',
+      fullAlbumVideo: false,
+      tracks: [],
+      regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
+      regularPostSlots: [createRegularPostSlot(1, getDefaultRegularPostTime(base))],
+      sharedImageName: '',
+    }, index);
+  }
+
   function normalizeTrack(track, index) {
     const normalized = {
       id: typeof track?.id === 'string' ? track.id : createId('track'),
@@ -1760,6 +1774,12 @@
       return (albumStage?.tracks[index] && albumStage.tracks[index].title) ||
         getTrackTitleFromFileName(file.name, index);
     }
+    if (stage.action === 'upload-youtube' && !isRegularPostsStage(stage)) {
+      if (totalFiles > 1) {
+        return `${stage.name || 'Pipeline stage'} ${index + 1}`;
+      }
+      return stage.name || getTrackTitleFromFileName(file.name, index);
+    }
     if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
       return (stage.tracks[index] && stage.tracks[index].title) ||
         getTrackTitleFromFileName(file.name, index);
@@ -3047,6 +3067,7 @@
   }
 
   function renderYouTubeDetails(stage) {
+    const youtubeDisabled = !actionIncludesUpload(stage.action);
     const details = document.createElement('details');
     details.className = 'pipeline-youtube-details';
     details.open = true;
@@ -3063,6 +3084,7 @@
     description.rows = 2;
     description.value = stage.description || '';
     description.className = 'pipeline-stage-description';
+    description.disabled = youtubeDisabled;
     description.addEventListener('input', () => updateStage(stage.id, { description: description.value }));
     descriptionField.appendChild(description);
     grid.appendChild(descriptionField);
@@ -3083,6 +3105,7 @@
     tags.type = 'text';
     tags.value = stage.tags || '';
     tags.className = 'pipeline-stage-tags';
+    tags.disabled = youtubeDisabled;
     tags.addEventListener('input', () => updateStage(stage.id, { tags: tags.value }));
     tagsField.appendChild(tags);
     grid.appendChild(tagsField);
@@ -3090,7 +3113,7 @@
     const playlistField = createField('Playlists', 'span-12', 'Choose existing YouTube playlists or create a new playlist.');
     const playlistChooser = renderPlaylistChooser(stage, (playlistIds) => {
       updateStage(stage.id, { playlistIds }, true);
-    });
+    }, youtubeDisabled);
     playlistField.appendChild(playlistChooser);
     grid.appendChild(playlistField);
 
@@ -3107,6 +3130,7 @@
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = Boolean(stage[key]);
+      checkbox.disabled = youtubeDisabled;
       checkbox.setAttribute('aria-label', ariaLabel);
       checkbox.addEventListener('change', () => updateStage(stage.id, { [key]: checkbox.checked }));
       const text = document.createElement('span');
@@ -3121,7 +3145,7 @@
     return details;
   }
 
-  function renderPlaylistChooser(stage, onChange) {
+  function renderPlaylistChooser(stage, onChange, disabled = false) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
     const youtube = window.AudioRecorderYouTube;
     const known = youtube && typeof youtube.getSavedPlaylists === 'function'
@@ -3156,6 +3180,7 @@
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = selectedIds.includes(playlist.id);
+      checkbox.disabled = disabled;
       checkbox.addEventListener('change', () => {
         const nextIds = checkbox.checked
           ? [...selectedIds, playlist.id]
@@ -3184,7 +3209,7 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = !youtube ||
+    refreshButton.disabled = disabled || !youtube ||
       typeof youtube.refreshPlaylists !== 'function' ||
       (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
       (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
@@ -3209,10 +3234,12 @@
     input.type = 'text';
     input.placeholder = 'New playlist name';
     input.setAttribute('aria-label', 'New YouTube playlist name');
+    input.disabled = disabled;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-secondary compact-btn';
     button.textContent = 'Create new';
+    button.disabled = disabled;
     button.addEventListener('click', async () => {
       const title = input.value.trim();
       if (!title) {
@@ -3490,6 +3517,7 @@
       uploadBtn.textContent = 'YouTube';
       uploadBtn.dataset.tooltip = 'Open the stage-specific YouTube upload form.';
       uploadBtn.title = uploadBtn.dataset.tooltip;
+      uploadBtn.disabled = !actionIncludesUpload(stage.action);
       uploadBtn.addEventListener('click', () => requestStageUpload(stage));
 
       const deleteBtn = document.createElement('button');
@@ -3711,11 +3739,16 @@
     const defaults = createDefaultStages();
 
     stages = stages.map((stage, index) => {
-      const template = defaults[index] || createDefaultStage(stage.kind || 'custom', index);
+      const template = defaults[index] || (
+        stage.kind === 'release'
+          ? createAddedStage(index)
+          : createDefaultStage(stage.kind || 'custom', index)
+      );
       const changes = {};
       if (options.names) changes.name = template.name;
       if (options.files) {
         selectedFilesByStageId.delete(stage.id);
+        selectedFileDurationsByStageId.delete(stage.id);
         selectedCoversByStageId.delete(stage.id);
         changes.fileNames = [];
       }
@@ -3824,13 +3857,14 @@
   }
 
   addStageBtn.addEventListener('click', () => {
-    stages.push(createDefaultStage('custom', stages.length));
+    stages.push(createAddedStage(stages.length));
     saveStages();
     renderStages();
   });
 
   clearPipelineBtn.addEventListener('click', () => {
     selectedFilesByStageId.clear();
+    selectedFileDurationsByStageId.clear();
     selectedCoversByStageId.clear();
     stages = [];
     hasPipelineRun = false;
@@ -3967,7 +4001,7 @@
   });
 
   window.AudioRecorderPipeline = {
-    addStage(stage = createDefaultStage('custom', stages.length)) {
+    addStage(stage = createAddedStage(stages.length)) {
       stages.push(normalizeStage(stage, stages.length));
       saveStages();
       renderStages();

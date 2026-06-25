@@ -704,6 +704,22 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('shows release type controls on stages added after clearing the pipeline', () => {
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+
+    cy.get('.pipeline-stage').should('have.length', 1);
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-stage-name').should('have.value', 'Stage 1');
+      cy.contains('label', 'Release type').find('select')
+        .should('have.class', 'pipeline-release-type')
+        .and('have.value', 'album');
+      cy.get('.pipeline-full-album-video')
+        .should('exist')
+        .and('not.be.checked');
+    });
+  });
+
   it('keeps YouTube upload options separate for each stage', () => {
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', {
       statusCode: 200,
@@ -1126,7 +1142,24 @@ describe('Pipeline Mode', () => {
     cy.get('#clearPipelineBtn').click();
     cy.get('#addPipelineStageBtn').click();
     cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Rendered stage');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-description').type('Keep this description');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-tags').clear().type('keep, youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-youtube-details input[type="checkbox"]').first().check();
     cy.get('.pipeline-stage').first().find('select').first().select('visualize-only');
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-stage-description')
+        .should('be.disabled')
+        .and('have.value', 'Keep this description');
+      cy.get('.pipeline-stage-tags')
+        .should('be.disabled')
+        .and('have.value', 'keep, youtube');
+      cy.get('.pipeline-youtube-details input[type="checkbox"]').first()
+        .should('be.disabled')
+        .and('be.checked');
+      cy.get('.youtube-playlist-create input').should('be.disabled');
+      cy.get('.youtube-playlist-create button').should('be.disabled');
+      cy.contains('button', 'YouTube').should('be.disabled');
+    });
     cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
       contents: Cypress.Buffer.from('stage-audio'),
       fileName: 'render-me.mp3',
