@@ -128,6 +128,7 @@
   let activeStageId = '';
   let stageObserver = null;
   const pipelinePreviewCache = new Map();
+  const renderedPipelineVideos = new Map();
   let activePipelineMenuId = null;
   let pipelineRenameTargetId = null;
   let draggedPipelineId = null;
@@ -758,6 +759,19 @@
     return fileNames.map((fileName, index) => createTrack(getTrackTitleFromFileName(fileName, index), index, fileName));
   }
 
+  function findStageByFileNames(fileNames = [], excludeStageId = '') {
+    const names = Array.isArray(fileNames) ? fileNames : [];
+    if (!names.length) {
+      return null;
+    }
+    return stages.find(candidate => (
+      candidate.id !== excludeStageId &&
+      Array.isArray(candidate.fileNames) &&
+      candidate.fileNames.length === names.length &&
+      candidate.fileNames.every((name, index) => name === names[index])
+    )) || null;
+  }
+
   function removeRegularPostTrack(stage, trackId) {
     const trackIndex = stage.tracks.findIndex(track => track.id === trackId);
     if (trackIndex < 0) return;
@@ -1011,6 +1025,25 @@
     if (window.AudioRecorderApp && typeof window.AudioRecorderApp.updateStatus === 'function') {
       window.AudioRecorderApp.updateStatus(message, type);
     }
+  }
+
+  function setPipelineProgress(percent) {
+    const progressFill = window.AudioRecorderApp?.elements?.progressFill;
+    const progressBar = progressFill?.parentElement;
+    if (!progressFill || !progressBar) {
+      return;
+    }
+
+    const normalizedPercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    progressBar.style.display = normalizedPercent > 0 && normalizedPercent < 100 ? 'block' : 'none';
+    progressBar.setAttribute('aria-valuenow', String(normalizedPercent));
+    progressFill.style.width = `${normalizedPercent}%`;
+  }
+
+  function updateTaskProgress(taskIndex, totalTasks, taskProgress = 0) {
+    const taskCount = Math.max(1, Number(totalTasks) || 1);
+    const normalizedTaskProgress = Math.max(0, Math.min(1, Number(taskProgress) || 0));
+    setPipelineProgress(((taskIndex + normalizedTaskProgress) / taskCount) * 100);
   }
 
   function getPipelineApp() {
@@ -1741,6 +1774,10 @@
     return stage.name || 'Album';
   }
 
+  function getRenderedVideoCacheKey(stageId, fileIndex) {
+    return `${stageId}:${fileIndex}`;
+  }
+
   function pluralRu(value, one, few, many) {
     const mod10 = value % 10;
     const mod100 = value % 100;
@@ -2142,7 +2179,9 @@
       videoHeight: dimensions.height,
       format: getRequestedVideoFormat(app),
       onProgress: progress => {
-        const percent = Math.round(Number(progress?.percent || 0) * 100);
+        const progressPercent = Number(progress?.percent || 0);
+        const percent = Math.round(progressPercent * 100);
+        updateTaskProgress(taskIndex, totalTasks, progressPercent);
         updateAppStatus(
           `Pipeline rendering ${taskIndex + 1} of ${totalTasks}: ${task.title} (${percent}%)`,
           'recording'
@@ -2157,6 +2196,8 @@
       });
     }
 
+    renderedPipelineVideos.set(getRenderedVideoCacheKey(task.stage.id, task.fileIndex), result);
+
     return result;
   }
 
@@ -2166,31 +2207,31 @@
       throw new Error('Album stage has no files to render.');
     }
 
-    const app = getPipelineApp();
     const renderedParts = [];
+    const albumStage = stages.find(item => item.id === task.stage.derivedFromStageId);
 
     for (let index = 0; index < files.length; index++) {
-      const trackTask = {
-        ...task,
-        file: files[index],
-        fileIndex: index,
-        totalFiles: files.length,
-        title: getTaskTitle(task.stage, files[index], index, files.length),
-        fullAlbumVideo: false,
-      };
+      const rendered = albumStage
+        ? renderedPipelineVideos.get(getRenderedVideoCacheKey(albumStage.id, index))
+        : null;
+      if (!rendered?.blob) {
+        throw new Error('Run the source album visualization stage before joining the full album video.');
+      }
       updateAppStatus(
-        `Pipeline rendering ${taskIndex + 1} of ${totalTasks}: ${task.title} (${index + 1}/${files.length})`,
+        `Pipeline joining ${taskIndex + 1} of ${totalTasks}: ${task.title} (${index + 1}/${files.length})`,
         'recording'
       );
-      const result = await renderTask(trackTask, taskIndex, totalTasks);
-      renderedParts.push(result.blob);
+      updateTaskProgress(taskIndex, totalTasks, (index + 1) / files.length);
+      renderedParts.push(rendered.blob);
     }
 
-    const format = renderedParts[0]?.type?.includes('mp4') ? 'mp4' : getRequestedVideoFormat(app);
+    const firstType = renderedParts[0]?.type || '';
+    const format = firstType.includes('mp4') ? 'mp4' : firstType.includes('webm') ? 'webm' : 'webm';
     const blob = new Blob(renderedParts, {
-      type: renderedParts[0]?.type || `video/${format}`,
+      type: firstType || `video/${format}`,
     });
 
+    const app = window.AudioRecorderApp;
     if (typeof app.addRecording === 'function') {
       app.addRecording(blob, {
         sourceName: `${task.title}.${format}`,
@@ -2433,6 +2474,8 @@
 
     hasPipelineRun = true;
     isPipelineRunning = true;
+    renderedPipelineVideos.clear();
+    setPipelineProgress(0);
     updateRunState();
 
     try {
@@ -2456,6 +2499,7 @@
       updateAppStatus(`Pipeline failed: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       isPipelineRunning = false;
+      setPipelineProgress(100);
       updateRunState();
     }
   }
@@ -2484,6 +2528,11 @@
     fileInput.disabled = isFullAlbumStage(stage);
     fileInput.addEventListener('change', () => {
       const files = Array.from(fileInput.files || []);
+      const previousStageWithFiles = findStageByFileNames(files.map(file => file.name), stage.id);
+      if (previousStageWithFiles) {
+        selectedFilesByStageId.delete(previousStageWithFiles.id);
+        selectedFileDurationsByStageId.delete(previousStageWithFiles.id);
+      }
       selectedFilesByStageId.set(stage.id, files);
       updateSelectedFileDurations(stage.id, files);
       const changes = { fileNames: files.map(file => file.name) };

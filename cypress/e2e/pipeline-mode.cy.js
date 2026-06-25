@@ -884,12 +884,18 @@ describe('Pipeline Mode', () => {
     }, { force: true });
 
     cy.window().then((win) => {
+      win.__pipelineProgressWidths = [];
       cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback')
-        .callsFake(({ audioSource }) => Promise.resolve({
-          blob: new win.Blob([audioSource.name], { type: 'video/webm' }),
-          format: 'webm',
-          usedFallback: false,
-        }))
+        .callsFake(({ audioSource, onProgress }) => {
+          onProgress?.({ percent: 0.5 });
+          win.__pipelineProgressWidths.push(win.AudioRecorderApp.elements.progressFill.style.width);
+          onProgress?.({ percent: 1 });
+          return Promise.resolve({
+            blob: new win.Blob([audioSource.name], { type: 'video/webm' }),
+            format: 'webm',
+            usedFallback: false,
+          });
+        })
         .as('pipelineConvert');
       const uploadTitles = [];
       const uploadDescriptions = [];
@@ -910,8 +916,24 @@ describe('Pipeline Mode', () => {
 
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
 
-    cy.get('@pipelineConvert').should('have.callCount', 6);
+    cy.get('@pipelineConvert').should('have.callCount', 4);
     cy.get('@pipelineUpload').should('have.callCount', 5);
+    cy.get('@pipelineConvert').then((convert) => {
+      const convertedNames = convert.getCalls().map(call => call.args[0].audioSource.name);
+      expect(convertedNames).to.deep.equal([
+        'pre-save.mp3',
+        'track-one.mp3',
+        'track-two.mp3',
+        'post-album.mp3',
+      ]);
+    });
+    cy.get('@pipelineUpload').then((upload) => {
+      const fullAlbumUpload = upload.getCalls().find(call => call.args[0].metadata.title === 'Complete album visual');
+      expect(fullAlbumUpload.args[0].video).to.have.property('size', 'track-one.mp3track-two.mp3'.length);
+    });
+    cy.window().its('__pipelineProgressWidths').should((widths) => {
+      expect(widths.some(width => parseFloat(width) > 0)).to.equal(true);
+    });
     cy.get('@pipelineUploadTitles').should('include', 'Complete album visual');
     cy.get('@pipelineUploadDescriptions').then((descriptions) => {
       expect(descriptions).to.include('Complete album description\n\n00:00 - track one\n01:15 - track two');

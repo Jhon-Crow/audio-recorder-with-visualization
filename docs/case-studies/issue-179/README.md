@@ -14,6 +14,7 @@ This folder preserves the issue and pull request context used to diagnose the fu
 - 2026-06-25 14:53 UTC: PR updated with a derived full-album stage model.
 - 2026-06-25 15:55 UTC: Owner reported regressions: no type selector on the added stage, checkbox could not be unchecked, derived stage needed a thick solid gold border, generated timestamps ignored track durations, and typing in date/time inputs caused scroll jumps and closed the picker.
 - 2026-06-25 17:19 UTC: Owner verified the latest build and reported that added full-album stages still did not show the expected stage type selector in the primary stage controls.
+- 2026-06-25 17:41 UTC: Owner reported that the full-album stage still re-rendered every album track instead of joining the already-rendered album videos, and that visualization progress stayed at 0%.
 
 ## Root Causes
 
@@ -22,6 +23,8 @@ This folder preserves the issue and pull request context used to diagnose the fu
 - Timestamp generation only read ad hoc duration properties from `File` objects. Browser `File` objects do not expose audio duration, so offsets stayed at `00:00`.
 - Schedule and numeric input handlers requested a full stage rerender on every `input` event. Replacing the focused DOM node explains the scroll jump and the native date/time picker closing after one edit.
 - The follow-up type selector fix placed a disabled Album selector inside the nested release editor, below other stage controls. The requested control was expected in the primary stage control row near the stage title/action controls, so the latest build still appeared to have no stage type selector.
+- The derived full-album execution path called the normal per-track render function for every source album file. That duplicated the visualization work that the source album stage had already performed.
+- Pipeline rendering forwarded converter progress only to the status text. The existing global progress bar was available through `AudioRecorderApp.elements.progressFill`, but pipeline mode never updated it.
 
 ## Implemented Fixes
 
@@ -31,6 +34,8 @@ This folder preserves the issue and pull request context used to diagnose the fu
 - Selected album files are loaded with browser audio metadata to calculate cumulative timestamp offsets.
 - Text, date, time, and relative interval typing no longer forces whole-stage rerenders; structural changes still rerender when needed.
 - Full-album stages now also show a disabled top-level `Type` selector set to `Album` before the main action selector, matching the placement of a stage type control in the primary controls.
+- Source album track renders are cached during a pipeline run. The dependent full-album stage now joins those cached video blobs and fails fast if the source album render has not run first.
+- Pipeline render and join progress now updates the visible global progress bar as each task advances.
 
 ## Verification
 
@@ -49,3 +54,4 @@ This folder preserves the issue and pull request context used to diagnose the fu
 - `npm-ci.log`, `typecheck.log`, `unit-tests.log`: local setup and verification logs.
 - `reviewer-screenshot.png`: screenshot attached to the owner feedback. The PNG header was verified locally as `89 50 4e 47 0d 0a 1a 0a` because the `file` utility was unavailable in the environment.
 - `reviewer-screenshot-type-select-missing.png`: screenshot attached to the 2026-06-25 17:19 UTC owner feedback. The PNG header was verified locally as `89 50 4e 47 0d 0a 1a 0a` because the `file` and `xxd` utilities were unavailable in the environment.
+- `reviewer-screenshot-progress.png`: screenshot attached to the 2026-06-25 17:41 UTC owner feedback showing the progress stuck at 0%. The PNG header was verified locally as `89 50 4e 47 0d 0a 1a 0a` because the `file` utility was unavailable in the environment.
