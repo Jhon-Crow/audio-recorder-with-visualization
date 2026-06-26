@@ -267,6 +267,9 @@
     };
 
     localStorage.setItem(CHANNEL_DEFAULTS_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubeChannelDefaultsChanged', {
+      detail: { defaults: normalized },
+    }));
     return normalized;
   }
 

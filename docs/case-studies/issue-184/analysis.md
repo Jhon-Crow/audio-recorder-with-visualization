@@ -16,7 +16,7 @@ The feedback screenshots were saved as `pr-comment-screenshot.png` and `images/`
 - CI run list for this branch: `recent-ci-runs.json`
 - Reviewer screenshots: `pr-comment-screenshot.png`, `images/channel-settings-default-tags.png`, `images/current-empty-tags.png`
 
-The latest CI runs captured for branch `issue-184-361501480150` were successful through commit `459de66`.
+The latest CI runs captured for branch `issue-184-361501480150` were successful through commit `de47dab`.
 
 ## Timeline
 
@@ -25,6 +25,7 @@ The latest CI runs captured for branch `issue-184-361501480150` were successful 
 - 2026-06-26 12:03 UTC: Reviewer reported PR 183 still showed old information after restart and requested reuse of PR 185 if relevant.
 - 2026-06-26 12:20 UTC: Reviewer reported PR 187 did not work and asked to analyze PR 183 and adopt relevant work.
 - 2026-06-26 18:24 UTC: Reviewer clarified that the upload Tags field must contain the same default tags shown in YouTube channel settings and attached screenshots showing channel defaults versus the current empty field.
+- 2026-06-26 18:50 UTC: Reviewer reported that newly created pipeline stages still opened with the same old tag value, not blank and not the tags from YouTube.
 
 ## External Facts
 
@@ -45,7 +46,10 @@ The first issue-184 fix only handled channel tags. It missed the related stale-a
 3. Creating one playlist replaced the whole cache instead of merging the new playlist into the current cache.
 4. Pipeline playlist controls captured `window.AudioRecorderYouTube` at render time, so late helper availability could leave actions bound to an old or missing helper.
 
-The latest feedback exposed one additional root cause: `openUploadModal()` only applied freshly loaded channel defaults when there was no saved upload form state at all. If localStorage already contained an upload form state with `tags: ""`, the empty saved value won and the field stayed blank even though `channels.list?part=brandingSettings&mine=true` returned channel keywords.
+Follow-up feedback exposed two additional root causes:
+
+1. `openUploadModal()` only applied freshly loaded channel defaults when there was no saved upload form state at all. If localStorage already contained an upload form state with `tags: ""`, the empty saved value won and the field stayed blank even though `channels.list?part=brandingSettings&mine=true` returned channel keywords.
+2. Pipeline stages had their own independent hard-coded tag defaults such as `audio, visualizer`, `release, audio, visualizer`, and `shorts, pre-save, audio`. Newly added stages therefore kept app defaults even after YouTube channel defaults were refreshed for the standalone upload modal.
 
 ## Adopted Solution
 
@@ -56,6 +60,8 @@ The latest feedback exposed one additional root cause: `openUploadModal()` only 
 - Reuse the PR 185 pattern of reading `window.AudioRecorderYouTube` at action time for pipeline playlist actions.
 - Treat blank saved upload tags as no user override, so channel defaults populate the Tags field.
 - Apply freshly refreshed channel defaults when the upload modal's tag field is still empty.
+- Use cached YouTube channel default tags when creating default pipeline stages, added release stages, and fallback-normalized stages.
+- Dispatch and listen for `audioRecorderYouTubeChannelDefaultsChanged` so pipeline UI can re-render when startup refresh saves new channel defaults.
 - Add Cypress coverage for upload and pipeline startup refresh, plus late helper availability.
 
 ## Verification Strategy
@@ -65,3 +71,4 @@ The latest feedback exposed one additional root cause: `openUploadModal()` only 
 - Cypress pipeline regression verifies the same replacement behavior in pipeline stages.
 - Cypress late-helper regression verifies pipeline create actions use the current YouTube helper.
 - Cypress channel-default regression covers the exact blank-saved-tags case from the latest reviewer screenshot.
+- Cypress new-stage regression verifies newly added pipeline stages and their upload modal use the signed-in channel's default tags after startup refresh.

@@ -792,6 +792,47 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('uses signed-in YouTube channel default tags for newly added stages', () => {
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/channels*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            brandingSettings: {
+              channel: {
+                keywords: 'ambient "visual album" cypress ambient',
+              },
+            },
+          },
+        ],
+      },
+    }).as('loadYouTubeChannelDefaults');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@loadYouTubeChannelDefaults');
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+
+    cy.get('.pipeline-stage').should('have.length', 1);
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-tags')
+      .should('have.value', 'ambient, visual album, cypress');
+    cy.get('.pipeline-stage').first().contains('button', 'YouTube').click();
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTags').should('have.value', 'ambient, visual album, cypress');
+  });
+
   it('keeps YouTube upload options separate for each stage', () => {
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', {
       statusCode: 200,

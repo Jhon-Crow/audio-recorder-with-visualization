@@ -12,6 +12,7 @@
   const PIPELINE_UPLOAD_ORDER_KEY = 'audio-recorder-pipeline-upload-order';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const CHANNEL_DEFAULTS_KEY = 'audio-recorder-youtube-channel-defaults';
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
@@ -165,6 +166,35 @@
     };
   }
 
+  function normalizeTagsValue(tags) {
+    if (!tags) {
+      return '';
+    }
+
+    const rawTags = Array.isArray(tags) ? tags : String(tags).split(',');
+    const normalized = [];
+    const seen = new Set();
+
+    rawTags.forEach(tag => {
+      const value = String(tag).replace(/\s+/g, ' ').trim();
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return;
+      normalized.push(value);
+      seen.add(key);
+    });
+
+    return normalized.join(', ');
+  }
+
+  function getDefaultYouTubeTags(fallback = 'audio, visualizer') {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHANNEL_DEFAULTS_KEY) || '{}');
+      return normalizeTagsValue(saved.tags) || fallback;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
   function getDefaultPresetId() {
     const firstPreset = loadSavedVisualizationPresets()[0];
     return firstPreset ? `preset:${firstPreset.id}` : '';
@@ -214,7 +244,7 @@
         ...createRelativeOffsetFields(-2 * 24 * 60, 'next'),
         publishAtLocal: defaultPublishAt(0),
         short: true,
-        tags: 'shorts, pre-save, audio',
+        tags: getDefaultYouTubeTags('shorts, pre-save, audio'),
       },
       release: {
         name: 'Release',
@@ -225,7 +255,7 @@
         ...createRelativeOffsetFields(0, 'previous'),
         publishAtLocal: defaultPublishAt(1),
         short: false,
-        tags: 'release, audio, visualizer',
+        tags: getDefaultYouTubeTags('release, audio, visualizer'),
         releaseType: 'album',
         tracks: [createTrack('Track 01', 0), createTrack('Track 02', 1)],
         regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
@@ -240,7 +270,7 @@
         ...createRelativeOffsetFields(24 * 60, 'previous'),
         publishAtLocal: defaultPublishAt(2),
         short: true,
-        tags: 'shorts, album, audio',
+        tags: getDefaultYouTubeTags('shorts, album, audio'),
       },
       fullalbum: {
         name: 'Full album',
@@ -251,7 +281,7 @@
         ...createRelativeOffsetFields(30, 'previous'),
         publishAtLocal: defaultPublishAt(index),
         short: false,
-        tags: 'album, full album, visualizer',
+        tags: getDefaultYouTubeTags('album, full album, visualizer'),
         derivedFromStageId: '',
       },
       custom: {
@@ -263,7 +293,7 @@
         ...createRelativeOffsetFields(DEFAULT_RELATIVE_OFFSET_MINUTES, index > 0 ? 'previous' : 'next'),
         publishAtLocal: defaultPublishAt(index),
         short: false,
-        tags: 'audio, visualizer',
+        tags: getDefaultYouTubeTags('audio, visualizer'),
       },
     };
 
@@ -406,7 +436,7 @@
       relativeOffsetMinutes: DEFAULT_RELATIVE_OFFSET_MINUTES,
       privacyStatus: 'private',
       description: '',
-      tags: 'audio, visualizer',
+      tags: getDefaultYouTubeTags('audio, visualizer'),
       playlistIds: '',
       short: false,
       madeForKids: false,
@@ -4054,6 +4084,9 @@
     refreshStagePresetSelections();
   });
   window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
+    renderStages();
+  });
+  window.addEventListener('audioRecorderYouTubeChannelDefaultsChanged', () => {
     renderStages();
   });
 
