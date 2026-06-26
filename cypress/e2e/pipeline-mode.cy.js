@@ -1363,4 +1363,37 @@ describe('Pipeline Mode', () => {
       expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
     });
   });
+
+  it('rename input selects the existing saved pipeline name before typing', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
+        { id: 'pipe-a', name: 'Alpha Pipeline', timezone: '', uploadOrder: 'chronological', stages: [] },
+      ]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#pipelineList .pipeline-load-btn').first().rightclick();
+    cy.get('#pipelineContextMenu').should('be.visible');
+    cy.get('#pipelineRenameBtn').click();
+
+    cy.get('#pipelineRenameModal').should('be.visible');
+    cy.get('#pipelineRenameInput')
+      .should('be.focused')
+      .should(($input) => {
+        expect($input[0].selectionStart).to.equal(0);
+        expect($input[0].selectionEnd).to.equal('Alpha Pipeline'.length);
+      })
+      .type('Release Pipeline');
+    cy.get('#pipelineRenameInput').should('have.value', 'Release Pipeline');
+
+    cy.get('#pipelineConfirmRenameBtn').click();
+    cy.get('#pipelineRenameModal').should('not.be.visible');
+    cy.get('#pipelineList .pipeline-load-btn').first().should('contain', 'Release Pipeline');
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines[0].name).to.equal('Release Pipeline');
+    });
+  });
 });
