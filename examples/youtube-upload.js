@@ -336,12 +336,19 @@
   }
 
   async function refreshYouTubePlaylists({ force = false } = {}) {
-    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
-      return loadSavedYouTubePlaylists();
-    }
-
     if (playlistRefreshPromise && !force) {
       return playlistRefreshPromise;
+    }
+
+    if ((!hasValidAccessToken() || !hasPlaylistScope()) && force) {
+      await restoreElectronYouTubeAuthorization();
+      if (!hasValidAccessToken()) {
+        throw new Error('Sign in to YouTube again before refreshing playlists.');
+      }
+    }
+
+    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
+      return loadSavedYouTubePlaylists();
     }
 
     playlistRefreshPromise = uploader.listPlaylists(accessToken)
@@ -406,8 +413,11 @@
   }
 
   async function restoreElectronYouTubeAuthorization() {
-    if (hasValidAccessToken() || !isElectronYouTubeOAuthAvailable()) {
+    if (hasValidAccessToken()) {
       return hasValidAccessToken();
+    }
+    if (!isElectronYouTubeOAuthAvailable()) {
+      return false;
     }
 
     const savedClientId = clientIdInput.value.trim();

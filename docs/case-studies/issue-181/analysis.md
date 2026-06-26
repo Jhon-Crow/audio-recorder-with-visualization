@@ -45,6 +45,8 @@ Follow-up PR feedback on 2026-06-26 showed an additional manual-check failure: t
 
 Later PR feedback on 2026-06-26 reported that clicking Refresh produced no network request and no console errors. That makes the next likely failure point an unobserved click-path prerequisite, such as a missing `window.AudioRecorderYouTube` helper, missing `refreshPlaylists`, missing token/scope state, or a click handler not firing. The pipeline refresh action now logs a compact console diagnostic for click, blocked, success, and failure states so manual verification can identify which prerequisite prevents the YouTube request.
 
+Reviewer console output after those diagnostics showed the click handler did fire and the YouTube helper existed, but `hasValidAccessToken` was `false` while the refresh still logged "completed" and returned the saved playlist count. The root cause was that forced playlist refresh could still fall back to `loadSavedYouTubePlaylists()` when token/scope state needed renewal. In Electron, the restore helper also returned before attempting OAuth renewal when token state was expired, so no YouTube API request was made.
+
 ## Solution
 
 - Treat successful playlist refresh as replacement with the latest YouTube API response.
@@ -53,6 +55,8 @@ Later PR feedback on 2026-06-26 reported that clicking Refresh produced no netwo
 - Apply the PR 185 late-helper pattern to pipeline playlist refresh/create actions.
 - Keep the pipeline manual Refresh button enabled whenever the stage itself is editable, and perform YouTube helper/token/scope validation inside the click handler.
 - Log pipeline YouTube playlist refresh diagnostics to the console so manual checks show whether the click handler fired and which prerequisite blocked or completed refresh.
+- On forced playlist refresh, attempt Electron YouTube authorization restoration when the access token is invalid or playlist scope is missing before falling back to saved playlists.
+- Let expired Electron tokens reach the OAuth restore path instead of returning before renewal is attempted.
 - Add Cypress regressions for upload and pipeline startup refresh replacing stale cached playlists.
 - Add a Cypress regression for manual pipeline refresh after YouTube helpers become available post-render.
 
@@ -69,3 +73,4 @@ Later PR feedback on 2026-06-26 reported that clicking Refresh produced no netwo
 - Cypress pipeline regression seeds the same stale cache, waits for startup refresh, then verifies pipeline stages only show the refreshed playlist.
 - Cypress manual refresh regression renders pipeline stale cached playlists first, installs YouTube helpers after render, clicks Refresh, and verifies the selector re-renders with the fresh helper data.
 - Cypress manual refresh regression also asserts the console diagnostics for click and successful refresh are emitted.
+- A new Cypress regression models an expired Electron token and verifies manual pipeline Refresh attempts to restore authorization and then list playlists with the refreshed token. In the current local Cypress setup the full pipeline spec still reports unrelated existing failures, and this Electron-stub case does not complete in headless Cypress even after the production restore fix; the log is preserved in `ci-logs/cypress-pipeline-restored-token.log` for follow-up.
