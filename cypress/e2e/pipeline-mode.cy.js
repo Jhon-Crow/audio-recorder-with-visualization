@@ -637,6 +637,106 @@ describe('Pipeline Mode', () => {
       .should('have.value', 'PL-existing, PL-created');
   });
 
+  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      const youtube = win.AudioRecorderYouTube;
+      delete win.AudioRecorderYouTube;
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Late YouTube helper',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-02T12:00',
+          playlistIds: '',
+        },
+      ]);
+      win.AudioRecorderYouTube = {
+        ...youtube,
+        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
+          id: 'PL-late-created',
+          title: 'Late created playlist',
+        }),
+      };
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-create input').type('Late created playlist');
+      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
+      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
+    });
+    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
+  });
+
+  it('refreshes pipeline playlists after expired Electron authorization is replaced', () => {
+    cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      expect(req.headers.authorization).to.equal('Bearer electron-fresh-token');
+      req.reply({
+        statusCode: 200,
+        body: {
+          items: [
+            {
+              id: 'PL-electron-refreshed',
+              snippet: { title: 'Electron refreshed playlist' },
+              contentDetails: { itemCount: 1 },
+            },
+          ],
+        },
+      });
+    }).as('listElectronPlaylists');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-electron-client-id.apps.googleusercontent.com');
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'expired-token',
+          accessTokenExpiresAt: Date.now() - 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+
+        let authorizeCalls = 0;
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().callsFake(() => {
+            authorizeCalls += 1;
+            if (authorizeCalls === 1) {
+              return Promise.reject(new Error('Token has been expired or revoked.'));
+            }
+            return Promise.resolve({
+              success: true,
+              accessToken: 'electron-fresh-token',
+              expiresIn: 3600,
+              scope: combinedYouTubeScope,
+            });
+          }).as('authorizeElectronYouTube'),
+          clearYouTubeAuthorization: cy.stub().resolves().as('clearElectronYouTubeAuthorization'),
+        };
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+    cy.contains('.pipeline-stage .youtube-playlist-empty', 'Sign in to load YouTube playlists');
+
+    cy.get('.pipeline-stage').first().contains('button', 'YouTube').click();
+    cy.get('@authorizeElectronYouTube').should('have.been.calledOnce');
+    cy.get('@clearElectronYouTubeAuthorization').should('have.been.calledOnce');
+    cy.get('#youtubeAuthModal').should('be.visible');
+    cy.get('#authorizeYouTubeBtn').click();
+
+    cy.wait('@listElectronPlaylists');
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.contains('.pipeline-stage .youtube-playlist-option', 'Electron refreshed playlist')
+      .find('input')
+      .check({ force: true });
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids')
+      .should('have.value', 'PL-electron-refreshed');
+  });
+
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([

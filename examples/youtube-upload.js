@@ -236,8 +236,16 @@
     renderPlaylistSelector();
   }
 
-  function renderPlaylistSelector() {
-    const selectedIds = getPlaylistIds(playlistIdsInput.value);
+  function renderSharedPlaylistSelector({
+    container,
+    value,
+    getValue,
+    disabled = false,
+    onChange,
+    onStatus,
+    onRefresh,
+  }) {
+    const selectedIds = getPlaylistIds(value);
     const playlists = loadSavedYouTubePlaylists();
     selectedIds.forEach(id => {
       if (!playlists.some(item => item.id === id)) {
@@ -245,21 +253,34 @@
       }
     });
 
-    playlistSelector.innerHTML = '';
+    container.innerHTML = '';
 
     const list = document.createElement('div');
     list.className = 'youtube-playlist-list';
+    const emitChange = (ids) => {
+      const nextIds = getPlaylistIds(ids);
+      onChange(nextIds.join(', '));
+    };
+    const getCurrentSelectedIds = () => {
+      if (typeof getValue === 'function') {
+        return getPlaylistIds(getValue());
+      }
+      return selectedIds;
+    };
+
     playlists.forEach(playlist => {
       const label = document.createElement('label');
       label.className = 'youtube-playlist-option';
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = selectedIds.includes(playlist.id);
+      checkbox.disabled = disabled;
       checkbox.addEventListener('change', () => {
+        const currentIds = getCurrentSelectedIds();
         const nextIds = checkbox.checked
-          ? [...selectedIds, playlist.id]
-          : selectedIds.filter(id => id !== playlist.id);
-        setPlaylistIds(nextIds);
+          ? [...currentIds, playlist.id]
+          : currentIds.filter(id => id !== playlist.id);
+        emitChange(nextIds);
       });
       const text = document.createElement('span');
       text.textContent = playlist.title || playlist.id;
@@ -283,15 +304,19 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = !hasValidAccessToken() || !hasPlaylistScope();
+    refreshButton.disabled = disabled || !hasValidAccessToken() || !hasPlaylistScope();
     refreshButton.addEventListener('click', async () => {
       refreshButton.disabled = true;
       refreshButton.textContent = 'Refreshing...';
       try {
         await refreshYouTubePlaylists({ force: true });
-        renderPlaylistSelector();
+        if (typeof onRefresh === 'function') {
+          onRefresh();
+        } else {
+          renderSharedPlaylistSelector({ container, value: selectedIds.join(', '), disabled, onChange, onStatus, onRefresh });
+        }
       } catch (error) {
-        setStatus(uploadStatus, error.message || 'Unable to load YouTube playlists.', 'error');
+        onStatus(error.message || 'Unable to load YouTube playlists.', 'error');
       } finally {
         refreshButton.disabled = false;
         refreshButton.textContent = 'Refresh';
@@ -305,10 +330,12 @@
     input.type = 'text';
     input.placeholder = 'New playlist name';
     input.setAttribute('aria-label', 'New YouTube playlist name');
+    input.disabled = disabled;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-secondary compact-btn';
     button.textContent = 'Create new';
+    button.disabled = disabled;
     button.addEventListener('click', async () => {
       const title = input.value.trim();
       if (!title) {
@@ -318,12 +345,16 @@
       button.disabled = true;
       button.textContent = 'Creating...';
       try {
-        const playlist = await createYouTubePlaylist(title);
-        setPlaylistIds([...getPlaylistIds(playlistIdsInput.value), playlist.id]);
+        const youtubeApi = window.AudioRecorderYouTube || null;
+        const createPlaylist = youtubeApi && typeof youtubeApi.createPlaylist === 'function'
+          ? youtubeApi.createPlaylist
+          : createYouTubePlaylist;
+        const playlist = await createPlaylist(title);
+        emitChange([...getCurrentSelectedIds(), playlist.id]);
         input.value = '';
-        setStatus(uploadStatus, `Playlist "${playlist.title}" created.`, 'success');
+        onStatus(`Playlist "${playlist.title}" created.`, 'success');
       } catch (error) {
-        setStatus(uploadStatus, error.message || 'Unable to create YouTube playlist.', 'error');
+        onStatus(error.message || 'Unable to create YouTube playlist.', 'error');
         input.focus();
       } finally {
         button.disabled = false;
@@ -333,9 +364,20 @@
     createRow.appendChild(input);
     createRow.appendChild(button);
 
-    playlistSelector.appendChild(list);
-    playlistSelector.appendChild(actions);
-    playlistSelector.appendChild(createRow);
+    container.appendChild(list);
+    container.appendChild(actions);
+    container.appendChild(createRow);
+  }
+
+  function renderPlaylistSelector() {
+    renderSharedPlaylistSelector({
+      container: playlistSelector,
+      value: playlistIdsInput.value,
+      getValue: () => playlistIdsInput.value,
+      onChange: setPlaylistIds,
+      onStatus: (message, type) => setStatus(uploadStatus, message, type),
+      onRefresh: renderPlaylistSelector,
+    });
   }
 
   async function refreshYouTubePlaylists({ force = false } = {}) {
@@ -354,6 +396,12 @@
       });
 
     return playlistRefreshPromise;
+  }
+
+  function notifyYouTubePlaylistsChanged() {
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
+      detail: { playlists: loadSavedYouTubePlaylists() },
+    }));
   }
 
   async function createYouTubePlaylist(title) {
@@ -416,9 +464,14 @@
 
     try {
       await requestAccessToken(savedClientId);
+      if (hasValidAccessToken() && hasPlaylistScope()) {
+        await refreshYouTubePlaylists({ force: true });
+        notifyYouTubePlaylistsChanged();
+      }
       return hasValidAccessToken();
     } catch (error) {
       console.warn('Failed to restore stored Electron YouTube authorization:', error);
+      clearYouTubeAuth();
       return false;
     }
   }
@@ -928,6 +981,10 @@
 
     try {
       await requestAccessToken(clientId);
+      if (hasValidAccessToken() && hasPlaylistScope()) {
+        await refreshYouTubePlaylists({ force: true });
+        notifyYouTubePlaylistsChanged();
+      }
       closeAuthModal();
       openUploadModal();
     } catch (error) {
@@ -1055,6 +1112,9 @@
     hasPlaylistScope,
     refreshPlaylists: refreshYouTubePlaylists,
     uploadDirect,
+  };
+  window.AudioRecorderYouTubePlaylistSelector = {
+    render: renderSharedPlaylistSelector,
   };
 
   if (hasValidAccessToken() && hasPlaylistScope()) {

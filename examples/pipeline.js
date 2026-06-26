@@ -3147,16 +3147,6 @@
 
   function renderPlaylistChooser(stage, onChange, disabled = false) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
-    const youtube = window.AudioRecorderYouTube;
-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
-      ? youtube.getSavedPlaylists()
-      : loadSavedYouTubePlaylists();
-    selectedIds.forEach(id => {
-      if (!known.some(item => item.id === id)) {
-        known.push({ id, title: id });
-      }
-    });
-
     const wrapper = document.createElement('div');
     wrapper.className = 'youtube-playlist-selector pipeline-playlist-selector';
 
@@ -3166,110 +3156,33 @@
     hidden.value = selectedIds.join(', ');
     wrapper.appendChild(hidden);
 
-    const list = document.createElement('div');
-    list.className = 'youtube-playlist-list';
     const setSelectedIds = (ids) => {
-      const nextIds = ids.filter((item, index, list) => list.indexOf(item) === index);
-      hidden.value = nextIds.join(', ');
-      onChange(nextIds.join(', '));
+      const nextValue = getPlaylistIds(ids).join(', ');
+      hidden.value = nextValue;
+      onChange(nextValue);
     };
 
-    known.forEach(playlist => {
-      const label = document.createElement('label');
-      label.className = 'youtube-playlist-option';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = selectedIds.includes(playlist.id);
-      checkbox.disabled = disabled;
-      checkbox.addEventListener('change', () => {
-        const nextIds = checkbox.checked
-          ? [...selectedIds, playlist.id]
-          : selectedIds.filter(id => id !== playlist.id);
-        setSelectedIds(nextIds);
-      });
-      const text = document.createElement('span');
-      text.textContent = playlist.title || playlist.id;
-      label.appendChild(checkbox);
-      label.appendChild(text);
-      list.appendChild(label);
-    });
+    const selectorHost = document.createElement('div');
+    wrapper.appendChild(selectorHost);
 
-    if (!known.length) {
+    const sharedSelector = window.AudioRecorderYouTubePlaylistSelector;
+    if (sharedSelector && typeof sharedSelector.render === 'function') {
+      sharedSelector.render({
+        container: selectorHost,
+        value: hidden.value,
+        getValue: () => hidden.value,
+        disabled,
+        onChange: setSelectedIds,
+        onStatus: updateAppStatus,
+        onRefresh: renderStages,
+      });
+    } else {
       const empty = document.createElement('div');
       empty.className = 'youtube-playlist-empty';
-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
-        ? 'No playlists loaded yet'
-        : 'Sign in to load YouTube playlists';
-      list.appendChild(empty);
+      empty.textContent = disabled ? 'YouTube upload is disabled' : 'Sign in to load YouTube playlists';
+      selectorHost.appendChild(empty);
     }
 
-    const actions = document.createElement('div');
-    actions.className = 'youtube-playlist-actions';
-    const refreshButton = document.createElement('button');
-    refreshButton.type = 'button';
-    refreshButton.className = 'btn-secondary compact-btn';
-    refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = disabled || !youtube ||
-      typeof youtube.refreshPlaylists !== 'function' ||
-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
-    refreshButton.addEventListener('click', async () => {
-      refreshButton.disabled = true;
-      refreshButton.textContent = 'Refreshing...';
-      try {
-        await youtube.refreshPlaylists({ force: true });
-        renderStages();
-      } catch (error) {
-        updateAppStatus(error.message || 'Unable to load YouTube playlists.', 'error');
-      } finally {
-        refreshButton.disabled = false;
-        refreshButton.textContent = 'Refresh';
-      }
-    });
-    actions.appendChild(refreshButton);
-
-    const createRow = document.createElement('div');
-    createRow.className = 'youtube-playlist-create';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'New playlist name';
-    input.setAttribute('aria-label', 'New YouTube playlist name');
-    input.disabled = disabled;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn-secondary compact-btn';
-    button.textContent = 'Create new';
-    button.disabled = disabled;
-    button.addEventListener('click', async () => {
-      const title = input.value.trim();
-      if (!title) {
-        input.focus();
-        return;
-      }
-      if (!youtube || typeof youtube.createPlaylist !== 'function') {
-        updateAppStatus('Sign in to YouTube before creating playlists.', 'error');
-        input.focus();
-        return;
-      }
-      button.disabled = true;
-      button.textContent = 'Creating...';
-      try {
-        const playlist = await youtube.createPlaylist(title);
-        setSelectedIds([...selectedIds, playlist.id]);
-      } catch (error) {
-        updateAppStatus(error.message || 'Unable to create YouTube playlist.', 'error');
-        input.focus();
-      } finally {
-        button.disabled = false;
-        button.textContent = 'Create new';
-      }
-    });
-    createRow.appendChild(input);
-    createRow.appendChild(button);
-
-    wrapper.appendChild(list);
-    wrapper.appendChild(actions);
-    wrapper.appendChild(createRow);
     return wrapper;
   }
 

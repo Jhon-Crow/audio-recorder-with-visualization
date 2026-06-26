@@ -1,0 +1,433 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index ad38cb7..ebdc5a5 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -671,6 +671,72 @@ describe('Pipeline Mode', () => {
+     cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
+   });
+ 
++  it('refreshes pipeline playlists after expired Electron authorization is replaced', () => {
++    cy.clearLocalStorage();
++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
++      expect(req.headers.authorization).to.equal('Bearer electron-fresh-token');
++      req.reply({
++        statusCode: 200,
++        body: {
++          items: [
++            {
++              id: 'PL-electron-refreshed',
++              snippet: { title: 'Electron refreshed playlist' },
++              contentDetails: { itemCount: 1 },
++            },
++          ],
++        },
++      });
++    }).as('listElectronPlaylists');
++
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-electron-client-id.apps.googleusercontent.com');
++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++          accessToken: 'expired-token',
++          accessTokenExpiresAt: Date.now() - 3600 * 1000,
++          tokenScope: combinedYouTubeScope,
++        }));
++
++        let authorizeCalls = 0;
++        win.electronAPI = {
++          isElectron: true,
++          authorizeYouTube: cy.stub().callsFake(() => {
++            authorizeCalls += 1;
++            if (authorizeCalls === 1) {
++              return Promise.reject(new Error('Token has been expired or revoked.'));
++            }
++            return Promise.resolve({
++              success: true,
++              accessToken: 'electron-fresh-token',
++              expiresIn: 3600,
++              scope: combinedYouTubeScope,
++            });
++          }).as('authorizeElectronYouTube'),
++          clearYouTubeAuthorization: cy.stub().resolves().as('clearElectronYouTubeAuthorization'),
++        };
++      },
++    });
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++    cy.contains('.pipeline-stage .youtube-playlist-empty', 'Sign in to load YouTube playlists');
++
++    cy.get('.pipeline-stage').first().contains('button', 'YouTube').click();
++    cy.get('@authorizeElectronYouTube').should('have.been.calledOnce');
++    cy.get('@clearElectronYouTubeAuthorization').should('have.been.calledOnce');
++    cy.get('#youtubeAuthModal').should('be.visible');
++    cy.get('#authorizeYouTubeBtn').click();
++
++    cy.wait('@listElectronPlaylists');
++    cy.get('#youtubeUploadModal').should('be.visible');
++    cy.contains('.pipeline-stage .youtube-playlist-option', 'Electron refreshed playlist')
++      .find('input')
++      .check({ force: true });
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids')
++      .should('have.value', 'PL-electron-refreshed');
++  });
++
+   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
+diff --git a/docs/case-studies/issue-182/README.md b/docs/case-studies/issue-182/README.md
+index 190a767..88637f7 100644
+--- a/docs/case-studies/issue-182/README.md
++++ b/docs/case-studies/issue-182/README.md
+@@ -6,8 +6,12 @@
+ - Issue comments: `issue-comments.json`
+ - Pull request metadata: `pr-185.json`
+ - Pull request conversation comments: `pr-185-conversation-comments.json`
++- Latest pull request conversation comments: `pr-comments.json`
+ - Pull request review comments: `pr-185-review-comments.json`
++- Latest pull request review comments: `pr-review-comments.json`
+ - Pull request reviews: `pr-185-reviews.json`
++- Latest pull request reviews: `pr-reviews.json`
++- Current pull request diff snapshot: `pr-185-current.diff`
+ - Local verification logs:
+   - `npm-install.log`
+   - `jest-youtube-uploader.log`
+@@ -23,6 +27,8 @@
+ - 2026-06-26 09:05 UTC: CI passed for the first PR version.
+ - 2026-06-26 12:46 UTC: Repository owner reported that playlist creation in the pipeline still did not work in manual verification. The owner also clarified that YouTube upload flows should use the same inputs everywhere and avoid duplicated functionality.
+ - 2026-06-26 12:47 UTC and later: This follow-up investigation collected issue/PR data into this folder and reworked the playlist selector so the pipeline delegates to the same selector implementation used by the YouTube upload modal.
++- 2026-06-26 13:19 UTC: Repository owner reported that playlists did not auto-refresh and provided an Electron console log where stored YouTube authorization restore failed with `Token has been expired or revoked.`
++- 2026-06-26 13:37 UTC and later: The revoked-token path was reproduced in Cypress and fixed so invalid Electron authorization is cleared, manual re-authorization refreshes playlists immediately, and already-rendered pipeline selectors receive the refreshed playlist list.
+ 
+ ## Root Cause
+ 
+@@ -38,6 +44,8 @@ The modal implementation in `examples/youtube-upload.js` owned the real playlist
+ 
+ The pipeline implementation in `examples/pipeline.js` duplicated the UI and part of the behavior. That duplicate path could drift from the modal implementation and could make the pipeline form appear to have equivalent controls while not reliably using the same state and helper behavior as the main upload flow.
+ 
++The later auto-refresh failure had a separate auth-state root cause. When Electron restore failed because the stored Google token had expired or been revoked, `restoreElectronYouTubeAuthorization()` only logged the error and returned `false`. It did not clear the stale local token state, and a later successful manual authorization did not force a playlist refresh before the already-rendered pipeline selector was reused.
++
+ ## Fix
+ 
+ `examples/youtube-upload.js` now exposes a shared browser-native selector through `window.AudioRecorderYouTubePlaylistSelector.render`.
+@@ -54,6 +62,8 @@ The pipeline uses the same renderer for each stage playlist field and passes a s
+ 
+ This keeps the pipeline stage controls separate per stage while sharing the playlist creation, refresh, storage, checkbox rendering, and selected-ID mutation behavior with the main YouTube upload UI.
+ 
++The Electron recovery path now clears invalid stored authorization after a failed restore. After successful restore or manual authorization, it force-refreshes YouTube playlists and emits the shared playlist-change event so pipeline selectors already visible on screen can re-render with the latest playlist checkboxes.
++
+ ## Verification
+ 
+ Passed:
+@@ -66,7 +76,9 @@ Pipeline Cypress status:
+ 
+ - `npm run test:e2e -- --spec cypress/e2e/pipeline-mode.cy.js` was run with the local server at `http://localhost:8080`.
+ - The issue-specific test `shows fetched YouTube playlists in pipeline stages and creates playlists by name` passed.
+-- The full spec completed with 25 passing tests and 2 existing unrelated failures in stage navigation and relative publish date assertions. The saved log is `cypress-pipeline-mode-full.log`.
++- The regression test `creates a pipeline playlist after YouTube helpers become available post-render` passed.
++- The regression test `refreshes pipeline playlists after expired Electron authorization is replaced` passed.
++- The full spec completed with 27 passing tests and 2 existing unrelated failures in stage navigation and relative publish date assertions. The saved log is `cypress-pipeline-mode-full.log`.
+ 
+ ## Notes
+ 
+diff --git a/docs/case-studies/issue-182/build.log b/docs/case-studies/issue-182/build.log
+index 3282827..4aef3dc 100644
+--- a/docs/case-studies/issue-182/build.log
++++ b/docs/case-studies/issue-182/build.log
+@@ -2,9 +2,9 @@
+ > audio-recorder-with-visualization@1.0.0 build
+ > rollup -c
+ 
+-(node:7885) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782478011740/rollup.config.js is not specified and it doesn't parse as CommonJS.
++(node:5841) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782481065710/rollup.config.js is not specified and it doesn't parse as CommonJS.
+ Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+-To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782478011740/package.json.
++To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782481065710/package.json.
+ (Use `node --trace-warnings ...` to show where the warning was created)
+ 
+ src/index.ts → dist/index.js, dist/index.esm.js...
+@@ -12,7 +12,7 @@ created dist/index.js, dist/index.esm.js in 2.7s
+ 
+ src/index.ts → dist/audio-recorder-visualization.umd.js...
+ (!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.
+-created dist/audio-recorder-visualization.umd.js in 2s
++created dist/audio-recorder-visualization.umd.js in 1.9s
+ 
+ dist/index.d.ts → dist/index.d.ts...
+-created dist/index.d.ts in 124ms
++created dist/index.d.ts in 187ms
+diff --git a/docs/case-studies/issue-182/cypress-pipeline-mode-full.log b/docs/case-studies/issue-182/cypress-pipeline-mode-full.log
+index 68600ad..eaa178b 100644
+--- a/docs/case-studies/issue-182/cypress-pipeline-mode-full.log
++++ b/docs/case-studies/issue-182/cypress-pipeline-mode-full.log
+@@ -3,7 +3,7 @@
+ > cypress run --spec cypress/e2e/pipeline-mode.cy.js
+ 
+ 
+-DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-82e6-ec1e92198471
++DevTools listening on ws://127.0.0.1:45001/devtools/browser/5fb66394-1085-40ba-bfb7-14a268718998
+ 
+ ================================================================================
+ 
+@@ -24,36 +24,38 @@ DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-8
+ 
+ 
+   Pipeline Mode
+-    ✓ seeds and persists the default release pipeline with a right sidebar (3074ms)
++    ✓ seeds and persists the default release pipeline with a right sidebar (2697ms)
+     1) shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards
+-    ✓ keeps the stage navigator fixed at the bottom of the viewport on narrow screens (1200ms)
+-    ✓ requires files before running and resets selected fields with a hold action (3108ms)
+-    ✓ asks for and persists a timezone when delayed publishing is first used (2378ms)
+-    ✓ uses saved visualization presets and disables inactive timing fields (1373ms)
++    ✓ keeps the stage navigator fixed at the bottom of the viewport on narrow screens (1005ms)
++    ✓ requires files before running and resets selected fields with a hold action (2749ms)
++    ✓ asks for and persists a timezone when delayed publishing is first used (2159ms)
++    ✓ uses saved visualization presets and disables inactive timing fields (1153ms)
+     2) keeps relative publish dates current when the reference date changes
+-    ✓ loads sidebar presets stored as flat setting objects (2066ms)
+-    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (2037ms)
+-    ✓ updates pipeline preset choices immediately after saving a new preset (3575ms)
+-    ✓ updates pipeline preset choices when preset persistence fails but the in-memory preset is saved (2890ms)
+-    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (1251ms)
+-    ✓ applies preset visualization offsets to generated tooltip previews (1081ms)
+-    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (3125ms)
+-    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1747ms)
+-    ✓ deletes a stage only after confirmation (1984ms)
+-    ✓ shows release type controls on stages added after clearing the pipeline (1373ms)
+-    ✓ keeps YouTube upload options separate for each stage (4405ms)
+-    ✓ turns selected album files into ordered editable tracks (1108ms)
+-    ✓ adds a dependent full album stage with its own schedule and generated timestamps (7979ms)
+-    ✓ schedules regular release posts from ordered files and cycle slots (3058ms)
+-    ✓ resets added files from a stage without opening the full reset modal (1215ms)
+-    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (1080ms)
+-    ✓ runs visualization-only stages through the converter (2897ms)
+-    ✓ uploads direct YouTube stages with stage metadata when already signed in (5709ms)
+-    ✓ keeps generated tooltip boxes inside the viewport (1272ms)
+-    ✓ renames, deletes, and reorders saved pipelines from the sidebar (3369ms)
+-
+-
+-  25 passing (2m)
++    ✓ loads sidebar presets stored as flat setting objects (1977ms)
++    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (1931ms)
++    ✓ updates pipeline preset choices immediately after saving a new preset (3176ms)
++    ✓ updates pipeline preset choices when preset persistence fails but the in-memory preset is saved (2659ms)
++    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (1155ms)
++    ✓ applies preset visualization offsets to generated tooltip previews (998ms)
++    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (2525ms)
++    ✓ creates a pipeline playlist after YouTube helpers become available post-render (2341ms)
++    ✓ refreshes pipeline playlists after expired Electron authorization is replaced (2163ms)
++    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1386ms)
++    ✓ deletes a stage only after confirmation (1494ms)
++    ✓ shows release type controls on stages added after clearing the pipeline (1090ms)
++    ✓ keeps YouTube upload options separate for each stage (3785ms)
++    ✓ turns selected album files into ordered editable tracks (1065ms)
++    ✓ adds a dependent full album stage with its own schedule and generated timestamps (7491ms)
++    ✓ schedules regular release posts from ordered files and cycle slots (2790ms)
++    ✓ resets added files from a stage without opening the full reset modal (1055ms)
++    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (1001ms)
++    ✓ runs visualization-only stages through the converter (2669ms)
++    ✓ uploads direct YouTube stages with stage metadata when already signed in (5116ms)
++    ✓ keeps generated tooltip boxes inside the viewport (1326ms)
++    ✓ renames, deletes, and reorders saved pipelines from the sidebar (3244ms)
++
++
++  27 passing (1m)
+   2 failing
+ 
+   1) Pipeline Mode
+@@ -73,7 +75,7 @@ DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-8
+       Timed out retrying after 10000ms
+       + expected - actual
+ 
+-      -'2026-07-01T13:02'
++      -'2026-07-01T13:48'
+       +'2026-08-08T18:00'
+       
+       at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:396:7)
+@@ -84,31 +86,31 @@ DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-8
+   (Results)
+ 
+   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+-  │ Tests:        27                                                                               │
+-  │ Passing:      25                                                                               │
++  │ Tests:        29                                                                               │
++  │ Passing:      27                                                                               │
+   │ Failing:      2                                                                                │
+   │ Pending:      0                                                                                │
+   │ Skipped:      0                                                                                │
+   │ Screenshots:  2                                                                                │
+   │ Video:        true                                                                             │
+-  │ Duration:     1 minute, 30 seconds                                                             │
++  │ Duration:     1 minute, 27 seconds                                                             │
+   │ Spec Ran:     pipeline-mode.cy.js                                                              │
+   └────────────────────────────────────────────────────────────────────────────────────────────────┘
+ 
+ 
+   (Screenshots)
+ 
+-  -  /tmp/gh-issue-solver-1782478011740/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
++  -  /tmp/gh-issue-solver-1782481065710/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+      ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag               
+      es without narrowing cards (failed).png                                                        
+-  -  /tmp/gh-issue-solver-1782478011740/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
++  -  /tmp/gh-issue-solver-1782481065710/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+      ine Mode -- keeps relative publish dates current when the reference date changes               
+       (failed).png                                                                                  
+ 
+ 
+   (Video)
+ 
+-  -  Video output: /tmp/gh-issue-solver-1782478011740/cypress/videos/pipeline-mode.cy.js.mp4
++  -  Video output: /tmp/gh-issue-solver-1782481065710/cypress/videos/pipeline-mode.cy.js.mp4
+ 
+ 
+ ================================================================================
+@@ -118,7 +120,7 @@ DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-8
+ 
+        Spec                                              Tests  Passing  Failing  Pending  Skipped  
+   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+-  │ ✖  pipeline-mode.cy.js                      01:30       27       25        2        -        - │
++  │ ✖  pipeline-mode.cy.js                      01:27       29       27        2        -        - │
+   └────────────────────────────────────────────────────────────────────────────────────────────────┘
+-    ✖  1 of 1 failed (100%)                     01:30       27       25        2        -        -  
++    ✖  1 of 1 failed (100%)                     01:27       29       27        2        -        -  
+ 
+diff --git a/docs/case-studies/issue-182/jest-youtube-uploader.log b/docs/case-studies/issue-182/jest-youtube-uploader.log
+index b1f3ed5..8cc386e 100644
+--- a/docs/case-studies/issue-182/jest-youtube-uploader.log
++++ b/docs/case-studies/issue-182/jest-youtube-uploader.log
+@@ -6,26 +6,26 @@ PASS tests/YouTubeUploader.test.ts
+   YouTubeUploader
+     metadata helpers
+       ✓ normalizes comma-separated tags and removes duplicates (3 ms)
+-      ✓ normalizes comma-separated and newline playlist IDs
+-      ✓ appends #shorts to descriptions only when enabled and not already present
+-      ✓ builds YouTube video metadata with private privacy by default
+-      ✓ requires a non-empty video title (25 ms)
++      ✓ normalizes comma-separated and newline playlist IDs (1 ms)
++      ✓ appends #shorts to descriptions only when enabled and not already present (1 ms)
++      ✓ builds YouTube video metadata with private privacy by default (1 ms)
++      ✓ requires a non-empty video title (19 ms)
+       ✓ sets scheduled publish date and keeps scheduled videos private (2 ms)
+       ✓ rejects invalid scheduled publish dates (1 ms)
+     playlist helpers
+-      ✓ lists the signed-in channel playlists across pages (5 ms)
++      ✓ lists the signed-in channel playlists across pages (6 ms)
+       ✓ creates a private playlist by title (1 ms)
+     upload()
+-      ✓ starts a resumable session and uploads the video blob (4 ms)
+-      ✓ sets a custom video thumbnail after uploading the video (3 ms)
+-      ✓ adds the uploaded video to requested playlists (2 ms)
++      ✓ starts a resumable session and uploads the video blob (5 ms)
++      ✓ sets a custom video thumbnail after uploading the video (11 ms)
++      ✓ adds the uploaded video to requested playlists (3 ms)
+       ✓ returns the uploaded video with warnings when playlist follow-up fails (2 ms)
+       ✓ continues after a 308 resumable response (2 ms)
+-      ✓ throws a descriptive error for API failures (1 ms)
+-      ✓ rejects empty videos before calling the API
++      ✓ throws a descriptive error for API failures (2 ms)
++      ✓ rejects empty videos before calling the API (1 ms)
+ 
+ Test Suites: 1 passed, 1 total
+ Tests:       16 passed, 16 total
+ Snapshots:   0 total
+-Time:        1.945 s, estimated 2 s
++Time:        1.986 s, estimated 3 s
+ Ran all test suites within paths "tests/YouTubeUploader.test.ts".
+diff --git a/docs/case-studies/issue-182/npm-install.log b/docs/case-studies/issue-182/npm-install.log
+index aacb0ea..c10c74c 100644
+--- a/docs/case-studies/issue-182/npm-install.log
++++ b/docs/case-studies/issue-182/npm-install.log
+@@ -7,8 +7,8 @@ npm warn deprecated domexception@4.0.0: Use your platform's native DOMException
+ npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+ npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+ npm warn deprecated gauge@4.0.4: This package is no longer supported.
+-npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+ npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
++npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+ npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+ npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+ npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+@@ -29,20 +29,20 @@ npm warn deprecated eslint@8.57.1: This version is no longer supported. Please s
+ > audio-recorder-with-visualization@1.0.0 build
+ > rollup -c
+ 
+-(node:3902) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782478011740/rollup.config.js is not specified and it doesn't parse as CommonJS.
++(node:3753) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782481065710/rollup.config.js is not specified and it doesn't parse as CommonJS.
+ Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+-To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782478011740/package.json.
++To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782481065710/package.json.
+ (Use `node --trace-warnings ...` to show where the warning was created)
+ 
+ src/index.ts → dist/index.js, dist/index.esm.js...
+-created dist/index.js, dist/index.esm.js in 3.3s
++created dist/index.js, dist/index.esm.js in 2.7s
+ 
+ src/index.ts → dist/audio-recorder-visualization.umd.js...
+ (!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.
+-created dist/audio-recorder-visualization.umd.js in 2.3s
++created dist/audio-recorder-visualization.umd.js in 1.8s
+ 
+ dist/index.d.ts → dist/index.d.ts...
+-created dist/index.d.ts in 122ms
++created dist/index.d.ts in 106ms
+ 
+ added 1134 packages, and audited 1135 packages in 2m
+ 
+diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+index 6a384eb..ce3dfc9 100644
+--- a/examples/youtube-upload.js
++++ b/examples/youtube-upload.js
+@@ -345,7 +345,11 @@
+       button.disabled = true;
+       button.textContent = 'Creating...';
+       try {
+-        const playlist = await createYouTubePlaylist(title);
++        const youtubeApi = window.AudioRecorderYouTube || null;
++        const createPlaylist = youtubeApi && typeof youtubeApi.createPlaylist === 'function'
++          ? youtubeApi.createPlaylist
++          : createYouTubePlaylist;
++        const playlist = await createPlaylist(title);
+         emitChange([...getCurrentSelectedIds(), playlist.id]);
+         input.value = '';
+         onStatus(`Playlist "${playlist.title}" created.`, 'success');
+@@ -394,6 +398,12 @@
+     return playlistRefreshPromise;
+   }
+ 
++  function notifyYouTubePlaylistsChanged() {
++    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
++      detail: { playlists: loadSavedYouTubePlaylists() },
++    }));
++  }
++
+   async function createYouTubePlaylist(title) {
+     if (!hasValidAccessToken()) {
+       throw new Error('Sign in to YouTube before creating playlists.');
+@@ -454,9 +464,14 @@
+ 
+     try {
+       await requestAccessToken(savedClientId);
++      if (hasValidAccessToken() && hasPlaylistScope()) {
++        await refreshYouTubePlaylists({ force: true });
++        notifyYouTubePlaylistsChanged();
++      }
+       return hasValidAccessToken();
+     } catch (error) {
+       console.warn('Failed to restore stored Electron YouTube authorization:', error);
++      clearYouTubeAuth();
+       return false;
+     }
+   }
+@@ -966,6 +981,10 @@
+ 
+     try {
+       await requestAccessToken(clientId);
++      if (hasValidAccessToken() && hasPlaylistScope()) {
++        await refreshYouTubePlaylists({ force: true });
++        notifyYouTubePlaylistsChanged();
++      }
+       closeAuthModal();
+       openUploadModal();
+     } catch (error) {
