@@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
       .should('have.value', 'PL-existing, PL-created');
   });
 
+  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
+    cy.visit('/examples/index.html');
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      const youtube = win.AudioRecorderYouTube;
+      delete win.AudioRecorderYouTube;
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Late YouTube helper',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-02T12:00',
+          playlistIds: '',
+        },
+      ]);
+      win.AudioRecorderYouTube = {
+        ...youtube,
+        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
+          id: 'PL-late-created',
+          title: 'Late created playlist',
+        }),
+      };
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-create input').type('Late created playlist');
+      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
+      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
+    });
+    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
+  });
+
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([
