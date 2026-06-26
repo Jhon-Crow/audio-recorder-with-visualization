@@ -1,0 +1,124 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run --spec cypress/e2e/pipeline-mode.cy.js
+
+
+DevTools listening on ws://127.0.0.1:39327/devtools/browser/9fc3a9cd-63b9-41f2-82e6-ec1e92198471
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-mode.cy.js)                                                  │
+  │ Searched:       cypress/e2e/pipeline-mode.cy.js                                                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  pipeline-mode.cy.js                                                             (1 of 1)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (3074ms)
+    1) shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards
+    ✓ keeps the stage navigator fixed at the bottom of the viewport on narrow screens (1200ms)
+    ✓ requires files before running and resets selected fields with a hold action (3108ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (2378ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (1373ms)
+    2) keeps relative publish dates current when the reference date changes
+    ✓ loads sidebar presets stored as flat setting objects (2066ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (2037ms)
+    ✓ updates pipeline preset choices immediately after saving a new preset (3575ms)
+    ✓ updates pipeline preset choices when preset persistence fails but the in-memory preset is saved (2890ms)
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (1251ms)
+    ✓ applies preset visualization offsets to generated tooltip previews (1081ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (3125ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1747ms)
+    ✓ deletes a stage only after confirmation (1984ms)
+    ✓ shows release type controls on stages added after clearing the pipeline (1373ms)
+    ✓ keeps YouTube upload options separate for each stage (4405ms)
+    ✓ turns selected album files into ordered editable tracks (1108ms)
+    ✓ adds a dependent full album stage with its own schedule and generated timestamps (7979ms)
+    ✓ schedules regular release posts from ordered files and cycle slots (3058ms)
+    ✓ resets added files from a stage without opening the full reset modal (1215ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (1080ms)
+    ✓ runs visualization-only stages through the converter (2897ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (5709ms)
+    ✓ keeps generated tooltip boxes inside the viewport (1272ms)
+    ✓ renames, deletes, and reorders saved pipelines from the sidebar (3369ms)
+
+
+  25 passing (2m)
+  2 failing
+
+  1) Pipeline Mode
+       shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards:
+     AssertionError: Timed out retrying after 10000ms: expected '<button.pipeline-stage-nav-btn>' to have class 'is-active'
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:256:9)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+
+  2) Pipeline Mode
+       keeps relative publish dates current when the reference date changes:
+
+      Timed out retrying after 10000ms
+      + expected - actual
+
+      -'2026-07-01T13:02'
+      +'2026-08-08T18:00'
+      
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:396:7)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        27                                                                               │
+  │ Passing:      25                                                                               │
+  │ Failing:      2                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 minute, 30 seconds                                                             │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1782478011740/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag               
+     es without narrowing cards (failed).png                                                        
+  -  /tmp/gh-issue-solver-1782478011740/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- keeps relative publish dates current when the reference date changes               
+      (failed).png                                                                                  
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1782478011740/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  pipeline-mode.cy.js                      01:30       27       25        2        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     01:30       27       25        2        -        -  
+

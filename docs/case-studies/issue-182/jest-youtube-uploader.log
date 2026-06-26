@@ -1,0 +1,31 @@
+
+> audio-recorder-with-visualization@1.0.0 test
+> jest --runTestsByPath tests/YouTubeUploader.test.ts
+
+PASS tests/YouTubeUploader.test.ts
+  YouTubeUploader
+    metadata helpers
+      ✓ normalizes comma-separated tags and removes duplicates (3 ms)
+      ✓ normalizes comma-separated and newline playlist IDs
+      ✓ appends #shorts to descriptions only when enabled and not already present
+      ✓ builds YouTube video metadata with private privacy by default
+      ✓ requires a non-empty video title (25 ms)
+      ✓ sets scheduled publish date and keeps scheduled videos private (2 ms)
+      ✓ rejects invalid scheduled publish dates (1 ms)
+    playlist helpers
+      ✓ lists the signed-in channel playlists across pages (5 ms)
+      ✓ creates a private playlist by title (1 ms)
+    upload()
+      ✓ starts a resumable session and uploads the video blob (4 ms)
+      ✓ sets a custom video thumbnail after uploading the video (3 ms)
+      ✓ adds the uploaded video to requested playlists (2 ms)
+      ✓ returns the uploaded video with warnings when playlist follow-up fails (2 ms)
+      ✓ continues after a 308 resumable response (2 ms)
+      ✓ throws a descriptive error for API failures (1 ms)
+      ✓ rejects empty videos before calling the API
+
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        1.945 s, estimated 2 s
+Ran all test suites within paths "tests/YouTubeUploader.test.ts".
