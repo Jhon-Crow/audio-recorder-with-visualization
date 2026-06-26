@@ -31,6 +31,7 @@ describe('Preset Management', () => {
       expect(presets).to.have.length(1);
       expect(presets[0].name).to.equal('1');
       expect(presets[0].settings.visualizer).to.equal('bars');
+      expect(presets[0].thumbnail).to.match(/^data:image\/png;base64,/);
     });
 
     cy.get('#visualizerSelect').select('waveform');
@@ -41,6 +42,47 @@ describe('Preset Management', () => {
     cy.get('#presetList .preset-load-btn').first().click();
     cy.get('#visualizerSelect').should('have.value', 'bars');
     cy.get('#primaryColor').should('have.value', '#00ff88');
+  });
+
+  it('shows saved preset names over square visualization thumbnails', () => {
+    const thumbnail = 'data:image/png;base64,iVBORw0KGgo=';
+    visitWithPresets([
+      {
+        id: 'preset-thumb',
+        name: 'Thumb',
+        createdAt: '2026-06-26T00:00:00.000Z',
+        settings: {},
+        thumbnail,
+      },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'has-thumbnail')
+      .and('have.css', 'background-image')
+      .and('include', 'data:image/png;base64');
+    cy.get('#presetList .preset-load-btn .saved-item-label').first()
+      .should('have.text', 'Thumb');
+  });
+
+  it('gives legacy presets without stored thumbnails a generated visual background', () => {
+    visitWithPresets([
+      {
+        id: 'legacy-preset',
+        name: 'Legacy',
+        createdAt: '2026-06-25T00:00:00.000Z',
+        settings: {},
+      },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'has-generated-thumbnail')
+      .and('not.have.class', 'has-thumbnail')
+      .and('have.css', 'background-image')
+      .and('include', 'radial-gradient');
+    cy.get('#presetList .preset-load-btn .saved-item-label').first()
+      .should('have.text', 'Legacy');
   });
 
   it('uses skip dialog mode with numbered default names', () => {
@@ -120,6 +162,18 @@ describe('Preset Management', () => {
     cy.get('#presetConfirmRenameBtn').click();
     cy.get('#presetRenameModal').should('not.be.visible');
     cy.get('#presetList .preset-load-btn').first().should('contain', 'Beta');
+  });
+
+  it('opens the rename dialog when a saved preset is shift-clicked', () => {
+    visitWithPresets([
+      { id: 'preset-a', name: 'Alpha', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().click({ shiftKey: true });
+
+    cy.get('#presetRenameModal').should('be.visible');
+    cy.get('#presetRenameInput').should('be.focused').and('have.value', 'Alpha');
   });
 
   it('delete confirmation uses a custom modal instead of window.confirm', () => {
