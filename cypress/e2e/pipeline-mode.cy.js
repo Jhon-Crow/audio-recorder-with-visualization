@@ -879,6 +879,13 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name')
       .should('have.value', 'Album premiere - full album');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
+      .should('contain.text', 'track-one.mp3')
+      .and('contain.text', 'track-two.mp3')
+      .and('not.contain.text', 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ')
+      .and('be.disabled');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-names')
+      .should('contain.text', '2 selected');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
       .should('have.attr', 'data-preview-state', 'ready')
       .and('have.attr', 'data-tooltip')
       .and('contain', 'album-cover.png preview');

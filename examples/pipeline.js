@@ -1746,6 +1746,15 @@
     return selectedFilesByStageId.get(stage.id) || [];
   }
 
+  function getStageFileNames(stage) {
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return albumStage ? getStageFileNames(albumStage) : [];
+    }
+    const selected = selectedFilesByStageId.get(stage.id) || [];
+    return selected.length ? selected.map(file => file.name) : stage.fileNames;
+  }
+
   function readAudioDuration(file) {
     return new Promise(resolve => {
       const testDurations = window.__pipelineTestDurations;
@@ -2580,9 +2589,10 @@
     button.dataset.tooltip = 'Select one or more source files for this pipeline stage.';
     button.title = button.dataset.tooltip;
     const selected = getStageFiles(stage);
+    const fileNames = getStageFileNames(stage);
     button.disabled = isFullAlbumStage(stage);
-    button.textContent = selected.length
-      ? selected.map(file => file.name).join(', ')
+    button.textContent = fileNames.length
+      ? fileNames.join(', ')
       : 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ';
     applyCoverPreviewTooltip(button, stage);
 
@@ -2615,13 +2625,13 @@
     names.className = 'pipeline-file-names';
     names.textContent = selected.length
       ? `${selected.length} selected`
-      : stage.fileNames.length ? `Last: ${stage.fileNames.join(', ')}` : '';
+      : fileNames.length ? `Last: ${fileNames.join(', ')}` : '';
 
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'btn-secondary compact-btn pipeline-reset-files-btn';
     reset.textContent = 'Сбросить файлы';
-    reset.disabled = isFullAlbumStage(stage) || (!selected.length && !stage.fileNames.length);
+    reset.disabled = isFullAlbumStage(stage) || (!selected.length && !fileNames.length);
     reset.dataset.tooltip = 'Clear files added to this stage.';
     reset.title = reset.dataset.tooltip;
     reset.addEventListener('click', () => {
