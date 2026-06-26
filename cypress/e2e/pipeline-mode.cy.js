@@ -1071,6 +1071,7 @@ describe('Pipeline Mode', () => {
       .and('contain', 'album-cover.png preview');
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
       .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-preview-src')
       .and('have.class', 'pipeline-preview-trigger')
       .and('have.attr', 'aria-label')
       .and('contain', 'album-cover.png preview');
@@ -1085,7 +1086,9 @@ describe('Pipeline Mode', () => {
       });
     cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
       .should('have.attr', 'src')
-      .and('include', `data:image/png;base64,${tinyPngBase64}`);
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
       .should('not.be.checked')
@@ -1268,8 +1271,9 @@ describe('Pipeline Mode', () => {
 
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
       .should('have.attr', 'data-preview-state', 'ready')
-      .and('have.attr', 'data-tooltip', 'album-cover.png preview')
-      .trigger('pointerover');
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
+      .and('have.attr', 'data-tooltip', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerover', { force: true });
     cy.get('#pipelinePreviewTooltip')
       .should('have.class', 'is-visible')
       .and('have.attr', 'aria-label', 'album-cover.png preview')
@@ -1280,7 +1284,9 @@ describe('Pipeline Mode', () => {
       });
     cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
       .should('have.attr', 'src')
-      .and('include', `data:image/png;base64,${tinyPngBase64}`);
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
 
     cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
@@ -1297,7 +1303,9 @@ describe('Pipeline Mode', () => {
       });
     cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
       .should('have.attr', 'src')
-      .and('include', `data:image/png;base64,${tinyPngBase64}`);
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
   });
 
   it('schedules regular release posts from ordered files and cycle slots', () => {

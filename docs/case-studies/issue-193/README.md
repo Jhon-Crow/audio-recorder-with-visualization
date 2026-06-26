@@ -14,6 +14,7 @@
 - Downloaded latest successful upstream CI log: `build-portable-exe-28228694701.log`
 - Downloaded owner screenshot: `pr-comment-4809428786-screenshot.png`
 - Downloaded owner tooltip screenshot: `assets/pr-comment-4809808357-tooltip-missing-image.png`
+- Downloaded latest owner tooltip screenshot: `assets/pr-comment-4812359962-tooltip-no-image.png`
 - Follow-up verification logs: `logs/npm-test-followup-tooltip-image.log`, `logs/npm-build-followup-tooltip-image.log`, `logs/cypress-pipeline-followup-tooltip-image.log`
 - Latest persistence verification logs: `logs/npm-test-cover-persistence.log`, `logs/npm-build-cover-persistence.log`, `logs/cypress-pipeline-cover-persistence.log`
 
@@ -32,6 +33,7 @@
 - 2026-06-26T12:08:56Z: konard commented: 🤖 **AI Work Session Started** Starting automated work session at 2026-06-26T12:08:54.126Z The PR has been converted to draft mode while work is in progress. _This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback....
 - 2026-06-26T12:59:32Z: Jhon-Crow commented that the tooltip appears but does not contain the required picture, with screenshot `assets/pr-comment-4809808357-tooltip-missing-image.png`.
 - 2026-06-26T15:49:32Z: Jhon-Crow commented that the latest build still did not show the selected image in the tooltip and requested that saved pipeline covers not reset after app restart.
+- 2026-06-26T18:30:37Z: Jhon-Crow confirmed that full-album inheritance and persistence work, but the selected image still does not appear inside the tooltip.
 - 2026-06-26T09:11:30Z: upstream workflow Build Portable EXE for 799adae completed with success.
 - 2026-06-26T09:04:15Z: upstream workflow Build Portable EXE for f053a7f completed with success.
 - 2026-06-26T08:51:07Z: upstream workflow Build Portable EXE for aed180b completed with success.
@@ -68,6 +70,7 @@ References:
 - Added persisted cover metadata (`name`, `type`, `dataUrl`) to pipeline stages so saved pipelines can restore the preview image after reload.
 - Updated cover tooltip resolution so full-album stages inherit stored cover previews from their source album stage when no manual full-album cover is set.
 - Added Cypress coverage for selecting a cover, saving a pipeline, reloading the app, restoring the saved pipeline, and verifying both album and full-album tooltip previews contain the selected `data:image/png` image.
+- Rendered the floating preview tooltip with a real `<img>` element backed by `data-preview-src`, while keeping the existing CSS background variable. This makes the selected cover visible even if the CSS custom-property `url(data:...)` path fails or is not painted as expected.
 
 ## Possible Alternatives
 
@@ -91,3 +94,4 @@ References:
 - Latest `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` ran with 26 passing and 2 unrelated existing failures. The new saved-pipeline cover persistence test passed. Remaining failures are the known navigator active-state assertion at `cypress/e2e/pipeline-mode.cy.js:257` and the relative publish-date assertion at `cypress/e2e/pipeline-mode.cy.js:397`.
 - After merging upstream `main`, `npm test -- --runInBand`, `npm run build`, and `node --check examples/pipeline.js` passed. `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` ran with 32 passing and 4 unrelated failures; `keeps saved album cover previews after reload and pipeline restore` passed.
 - The latest downloaded upstream CI run before this follow-up was successful: workflow `Build Portable EXE`, run `28228694701`, commit `799adae`.
+- Latest follow-up checks after adding the real tooltip image element: `node --check examples/pipeline.js`, `npm test -- --runInBand`, and `npm run build` passed. `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` ran with 37 passing and 5 failures; `keeps saved album cover previews after reload and pipeline restore` passed, while the remaining failures were existing full-spec issues plus a Cypress assertion cleanup in the broader full-album scenario.
