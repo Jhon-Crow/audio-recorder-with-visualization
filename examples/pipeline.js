@@ -603,6 +603,29 @@
     localStorage.setItem(SAVED_PIPELINES_KEY, JSON.stringify(savedPipelines));
   }
 
+  function capturePipelineThumbnail() {
+    const canvas = app && app.canvas;
+    try {
+      const thumbnailCanvas = document.createElement('canvas');
+      const size = 96;
+      const ctx = thumbnailCanvas.getContext('2d');
+      if (!ctx || !canvas || !canvas.width || !canvas.height) {
+        return null;
+      }
+
+      thumbnailCanvas.width = size;
+      thumbnailCanvas.height = size;
+      const sourceSize = Math.min(canvas.width, canvas.height);
+      const sourceX = Math.max(0, (canvas.width - sourceSize) / 2);
+      const sourceY = Math.max(0, (canvas.height - sourceSize) / 2);
+      ctx.drawImage(canvas, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+      return thumbnailCanvas.toDataURL('image/png');
+    } catch (error) {
+      console.warn('Failed to capture pipeline thumbnail:', error);
+      return null;
+    }
+  }
+
   function loadResetOptions() {
     try {
       return {
@@ -3561,6 +3584,7 @@
       timezone: pipelineTimezone,
       uploadOrder: pipelineUploadOrder,
       stages: stages.map(sanitizeStage),
+      thumbnail: capturePipelineThumbnail(),
     };
     savedPipelines = [...savedPipelines, pipeline];
     activePipelineId = pipeline.id;
@@ -3670,11 +3694,18 @@
       button.className = 'preset-icon-btn pipeline-load-btn';
       button.dataset.pipelineId = pipeline.id;
       button.draggable = true;
+      if (pipeline.thumbnail) {
+        button.classList.add('has-thumbnail');
+        button.style.setProperty('--saved-item-thumbnail', `url("${pipeline.thumbnail}")`);
+      }
       if (pipeline.id === activePipelineId) {
         button.classList.add('is-active');
         button.setAttribute('aria-current', 'true');
       }
-      button.textContent = pipeline.name || String(index + 1);
+      const label = document.createElement('span');
+      label.className = 'saved-item-label';
+      label.textContent = pipeline.name || String(index + 1);
+      button.appendChild(label);
       button.setAttribute('aria-label', `Load pipeline ${pipeline.name || index + 1}`);
       button.addEventListener('click', () => loadPipeline(pipeline.id));
       button.addEventListener('contextmenu', event => {

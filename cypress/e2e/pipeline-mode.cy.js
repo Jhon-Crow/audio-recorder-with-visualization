@@ -1309,10 +1309,11 @@ describe('Pipeline Mode', () => {
   });
 
   it('renames, deletes, and reorders saved pipelines from the sidebar', () => {
+    const thumbnail = 'data:image/png;base64,iVBORw0KGgo=';
     cy.window().then((win) => {
       win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
         { id: 'pipe-a', name: 'Alpha', timezone: '', uploadOrder: 'chronological', stages: [] },
-        { id: 'pipe-b', name: 'Beta', timezone: '', uploadOrder: 'chronological', stages: [] },
+        { id: 'pipe-b', name: 'Beta', timezone: '', uploadOrder: 'chronological', stages: [], thumbnail },
         { id: 'pipe-c', name: 'Gamma', timezone: '', uploadOrder: 'chronological', stages: [] },
       ]));
     });
@@ -1324,6 +1325,12 @@ describe('Pipeline Mode', () => {
     cy.contains('.tab', 'Pipeline').click();
 
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 3);
+    cy.get('#pipelineList .pipeline-load-btn').eq(1)
+      .should('have.class', 'has-thumbnail')
+      .and('have.css', 'background-image')
+      .and('include', 'data:image/png;base64');
+    cy.get('#pipelineList .pipeline-load-btn').eq(1).find('.saved-item-label')
+      .should('have.text', 'Beta');
 
     cy.get('#pipelineList .pipeline-load-btn').eq(1).rightclick();
     cy.get('#pipelineContextMenu').should('be.visible');
@@ -1361,6 +1368,23 @@ describe('Pipeline Mode', () => {
     cy.window().then((win) => {
       const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
       expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
+    });
+  });
+
+  it('stores a square visualization thumbnail when saving a pipeline', () => {
+    cy.get('#pipelineSidebar').trigger('pointerenter').should('be.visible');
+    cy.get('#savePipelineBtn').should('be.visible');
+    cy.get('#savePipelineBtn').click();
+
+    cy.get('#pipelineList .pipeline-load-btn').first()
+      .should('have.class', 'has-thumbnail')
+      .find('.saved-item-label')
+      .should('contain.text', 'Pipeline 1');
+
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+      expect(pipelines[0].thumbnail).to.match(/^data:image\/png;base64,/);
     });
   });
 });
