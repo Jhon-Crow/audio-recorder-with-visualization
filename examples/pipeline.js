@@ -1173,6 +1173,17 @@
     return `${labelPrefix}: ${dimensions.width}x${dimensions.height}, ${getPresetLabel(stage.presetId)}`;
   }
 
+  function getStageCover(stage) {
+    if (isFullAlbumStage(stage)) {
+      const ownCover = selectedCoversByStageId.get(stage.id);
+      if (ownCover) {
+        return ownCover;
+      }
+      return selectedCoversByStageId.get(stage.derivedFromStageId) || null;
+    }
+    return selectedCoversByStageId.get(stage.id) || null;
+  }
+
   function getVisualizerClass(visualizerName) {
     const library = window.AudioRecorderVisualization || {};
     const visualizerExports = {
@@ -1441,6 +1452,41 @@
       })
       .catch(error => {
         console.warn('Failed to render pipeline preview:', error);
+        if (element.isConnected) {
+          element.dataset.previewState = 'error';
+        }
+      });
+  }
+
+  function readImageAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result));
+      reader.addEventListener('error', () => reject(reader.error || new Error('Failed to read image.')));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function applyCoverPreviewTooltip(element, stage) {
+    const cover = getStageCover(stage);
+    if (!cover) {
+      return;
+    }
+
+    element.classList.add('pipeline-preview-trigger');
+    element.dataset.tooltip = `${stage.sharedImageName || cover.name || 'Selected cover'} preview`;
+    element.dataset.previewState = 'loading';
+    element.title = element.dataset.tooltip;
+    element.style.setProperty('--pipeline-preview-aspect', '16 / 9');
+
+    readImageAsDataUrl(cover)
+      .then(dataUrl => {
+        if (!element.isConnected) return;
+        element.style.setProperty('--pipeline-preview-image', `url("${dataUrl}")`);
+        element.dataset.previewState = 'ready';
+      })
+      .catch(error => {
+        console.warn('Failed to render cover preview:', error);
         if (element.isConnected) {
           element.dataset.previewState = 'error';
         }
@@ -2331,7 +2377,7 @@
 
     return youtube.uploadDirect({
       video,
-      thumbnail: selectedCoversByStageId.get(task.stage.id),
+      thumbnail: getStageCover(task.stage),
       metadata: collectTaskMetadata(task),
       notifySubscribers: Boolean(task.stage.notifySubscribers),
       onProgress: progress => {
@@ -2538,6 +2584,7 @@
     button.textContent = selected.length
       ? selected.map(file => file.name).join(', ')
       : 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ';
+    applyCoverPreviewTooltip(button, stage);
 
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
