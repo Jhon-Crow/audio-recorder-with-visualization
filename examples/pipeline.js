@@ -41,6 +41,9 @@
   const pipelineContextMenu = document.getElementById('pipelineContextMenu');
   const pipelineRenameBtn = document.getElementById('pipelineRenameBtn');
   const pipelineDeleteSavedBtn = document.getElementById('pipelineDeleteSavedBtn');
+  const pipelineStageContextMenu = document.getElementById('pipelineStageContextMenu');
+  const pipelineStageRenameBtn = document.getElementById('pipelineStageRenameBtn');
+  const pipelineStageDeleteBtn = document.getElementById('pipelineStageDeleteBtn');
   const pipelineRenameModal = document.getElementById('pipelineRenameModal');
   const pipelineRenameInput = document.getElementById('pipelineRenameInput');
   const pipelineCancelRenameBtn = document.getElementById('pipelineCancelRenameBtn');
@@ -89,6 +92,7 @@
     addStageBtn, clearPipelineBtn, runPipelineBtn, resetPipelineFieldsBtn, pipelineTimezoneBtn,
     validationStatus, stagesContainer, pipelineTab, pipelineSidebar, savePipelineBtn, pipelineList,
     pipelineSettingsBtn, pipelineContextMenu, pipelineRenameBtn, pipelineDeleteSavedBtn,
+    pipelineStageContextMenu, pipelineStageRenameBtn, pipelineStageDeleteBtn,
     pipelineRenameModal, pipelineRenameInput, pipelineCancelRenameBtn, pipelineConfirmRenameBtn,
     deleteModal, deleteMessage, cancelDeleteBtn, cancelDeleteXBtn,
     confirmDeleteBtn, resetModal, cancelResetBtn, cancelResetXBtn, confirmResetHoldBtn,
@@ -143,6 +147,7 @@
   const pipelinePreviewCache = new Map();
   const renderedPipelineVideos = new Map();
   let activePipelineMenuId = null;
+  let activePipelineStageMenuId = null;
   let pipelineRenameTargetId = null;
   let draggedPipelineId = null;
   let pendingUploadReview = null;
@@ -2040,6 +2045,35 @@
     window.scrollTo({ top: elementTop - stickyOffset, behavior });
   }
 
+  function hidePipelineStageContextMenu() {
+    pipelineStageContextMenu.classList.remove('active');
+    pipelineStageContextMenu.setAttribute('aria-hidden', 'true');
+    activePipelineStageMenuId = null;
+  }
+
+  function showPipelineStageContextMenu(stageId, x, y) {
+    if (!stages.some(stage => stage.id === stageId)) {
+      return;
+    }
+    activePipelineStageMenuId = stageId;
+    pipelineStageContextMenu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
+    pipelineStageContextMenu.style.top = `${Math.min(y, window.innerHeight - 88)}px`;
+    pipelineStageContextMenu.classList.add('active');
+    pipelineStageContextMenu.setAttribute('aria-hidden', 'false');
+  }
+
+  function focusPipelineStageName(stageId) {
+    scrollToStage(stageId);
+    requestAnimationFrame(() => {
+      const stageElement = stagesContainer.querySelector(`[data-stage-id="${stageId}"]`);
+      const nameInput = stageElement && stageElement.querySelector('.pipeline-stage-name');
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+      }
+    });
+  }
+
   function renderStageNav() {
     if (!stageNav) {
       return;
@@ -2060,6 +2094,10 @@
       button.dataset.stageId = stage.id;
       button.setAttribute('aria-label', `Go to stage ${index + 1}: ${stage.name || 'Untitled stage'}`);
       button.addEventListener('click', () => scrollToStage(stage.id));
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        showPipelineStageContextMenu(stage.id, event.clientX, event.clientY);
+      });
 
       const number = document.createElement('span');
       number.className = 'pipeline-stage-nav-number';
@@ -4175,6 +4213,18 @@
     hidePipelineContextMenu();
     deleteSavedPipeline(pipelineId);
   });
+  pipelineStageRenameBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    const stageId = activePipelineStageMenuId;
+    hidePipelineStageContextMenu();
+    focusPipelineStageName(stageId);
+  });
+  pipelineStageDeleteBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    const stageId = activePipelineStageMenuId;
+    hidePipelineStageContextMenu();
+    showDeleteModal(stageId);
+  });
   pipelineCancelRenameBtn.addEventListener('click', closePipelineRenameDialog);
   pipelineConfirmRenameBtn.addEventListener('click', confirmPipelineRename);
   pipelineRenameInput.addEventListener('keydown', event => {
@@ -4194,10 +4244,14 @@
     if (!pipelineContextMenu.contains(event.target)) {
       hidePipelineContextMenu();
     }
+    if (!pipelineStageContextMenu.contains(event.target)) {
+      hidePipelineStageContextMenu();
+    }
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       hidePipelineContextMenu();
+      hidePipelineStageContextMenu();
       if (pipelineRenameModal.classList.contains('active')) {
         closePipelineRenameDialog();
       }

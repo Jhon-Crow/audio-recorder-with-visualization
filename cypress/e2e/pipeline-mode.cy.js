@@ -305,6 +305,33 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('opens stage rename and delete actions from the stage navigator context menu', () => {
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1).rightclick();
+    cy.get('#pipelineStageContextMenu')
+      .should('have.class', 'active')
+      .and('have.attr', 'aria-hidden', 'false');
+
+    cy.get('#pipelineStageRenameBtn').click();
+    cy.get('#pipelineStageContextMenu').should('not.have.class', 'active');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-name')
+      .should('be.focused')
+      .clear()
+      .type('Renamed from nav');
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1)
+      .should('contain.text', 'Renamed from nav');
+
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn').eq(1).rightclick();
+    cy.get('#pipelineStageDeleteBtn').click();
+    cy.get('#pipelineDeleteModal').should('be.visible');
+    cy.get('#pipelineDeleteMessage').should('contain.text', 'Renamed from nav');
+    cy.get('#confirmPipelineDeleteBtn').click();
+
+    cy.get('.pipeline-stage').should('have.length', 2);
+    cy.get('#pipelineStageNav .pipeline-stage-nav-btn')
+      .should('have.length', 2)
+      .and('not.contain.text', 'Renamed from nav');
+  });
+
   it('requires files before running and resets selected fields with a hold action', () => {
     selectFilesForEveryStage();
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
