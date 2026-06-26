@@ -1325,6 +1325,11 @@ describe('Pipeline Mode', () => {
     cy.contains('.tab', 'Pipeline').click();
 
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 3);
+    cy.get('#pipelineList .pipeline-load-btn').eq(0)
+      .should('have.class', 'has-generated-thumbnail')
+      .and('not.have.class', 'has-thumbnail')
+      .and('have.css', 'background-image')
+      .and('include', 'radial-gradient');
     cy.get('#pipelineList .pipeline-load-btn').eq(1)
       .should('have.class', 'has-thumbnail')
       .and('have.css', 'background-image')

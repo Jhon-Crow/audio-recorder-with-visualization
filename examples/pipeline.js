@@ -3697,6 +3697,8 @@
       if (pipeline.thumbnail) {
         button.classList.add('has-thumbnail');
         button.style.setProperty('--saved-item-thumbnail', `url("${pipeline.thumbnail}")`);
+      } else {
+        button.classList.add('has-generated-thumbnail');
       }
       if (pipeline.id === activePipelineId) {
         button.classList.add('is-active');

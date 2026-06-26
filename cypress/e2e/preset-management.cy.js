@@ -65,6 +65,26 @@ describe('Preset Management', () => {
       .should('have.text', 'Thumb');
   });
 
+  it('gives legacy presets without stored thumbnails a generated visual background', () => {
+    visitWithPresets([
+      {
+        id: 'legacy-preset',
+        name: 'Legacy',
+        createdAt: '2026-06-25T00:00:00.000Z',
+        settings: {},
+      },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first()
+      .should('have.class', 'has-generated-thumbnail')
+      .and('not.have.class', 'has-thumbnail')
+      .and('have.css', 'background-image')
+      .and('include', 'radial-gradient');
+    cy.get('#presetList .preset-load-btn .saved-item-label').first()
+      .should('have.text', 'Legacy');
+  });
+
   it('uses skip dialog mode with numbered default names', () => {
     cy.get('#presetEdgeTrigger').trigger('pointerenter');
     cy.get('#savePresetBtn').click();

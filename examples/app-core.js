@@ -1710,6 +1710,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       if (preset.thumbnail) {
         button.classList.add('has-thumbnail');
         button.style.setProperty('--saved-item-thumbnail', `url("${preset.thumbnail}")`);
+      } else {
+        button.classList.add('has-generated-thumbnail');
       }
       button.draggable = true;
       if (isPresetCurrentlyActive(preset)) {

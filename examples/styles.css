@@ -270,7 +270,9 @@ body {
 }
 
 .preset-load-btn.has-thumbnail,
-.pipeline-load-btn.has-thumbnail {
+.pipeline-load-btn.has-thumbnail,
+.preset-load-btn.has-generated-thumbnail,
+.pipeline-load-btn.has-generated-thumbnail {
   background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.7)), var(--saved-item-thumbnail);
   background-position: center;
   background-size: cover;
@@ -278,8 +280,18 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.88);
 }
 
+.preset-load-btn.has-generated-thumbnail,
+.pipeline-load-btn.has-generated-thumbnail {
+  --saved-item-thumbnail:
+    radial-gradient(circle at 28% 24%, rgba(0, 255, 136, 0.82), transparent 28%),
+    radial-gradient(circle at 72% 34%, rgba(0, 136, 255, 0.78), transparent 30%),
+    linear-gradient(135deg, #162032, #3b1f5f 52%, #102f28);
+}
+
 .preset-load-btn.has-thumbnail::after,
-.pipeline-load-btn.has-thumbnail::after {
+.pipeline-load-btn.has-thumbnail::after,
+.preset-load-btn.has-generated-thumbnail::after,
+.pipeline-load-btn.has-generated-thumbnail::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -328,8 +340,6 @@ body {
 }
 
 .preset-load-btn.is-active {
-  background: rgba(0, 255, 136, 0.2);
-  color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-glow);
 }
 
