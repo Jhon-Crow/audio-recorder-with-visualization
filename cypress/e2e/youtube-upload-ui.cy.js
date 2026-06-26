@@ -928,4 +928,37 @@ describe('YouTube Upload UI', () => {
     cy.wait('@loadYouTubeChannelDefaults');
     cy.get('#youtubeTags').should('have.value', 'ambient, visual album, cypress');
   });
+
+  it('fills upload tags from channel defaults when saved upload state has blank tags', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+          tokenScope: combinedYouTubeScope,
+        }));
+        win.localStorage.setItem('audio-recorder-youtube-upload-form-state', JSON.stringify({
+          description: 'Saved description',
+          tags: '',
+          playlistIds: '',
+          categoryId: '10',
+          privacyStatus: 'private',
+          short: false,
+          madeForKids: false,
+          syntheticMedia: false,
+          notifySubscribers: false,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.wait('@loadYouTubeChannelDefaults');
+    cy.get('#youtubeTags').should('have.value', 'ambient, visual album, cypress');
+  });
 });

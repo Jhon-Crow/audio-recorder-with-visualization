@@ -719,10 +719,14 @@
     }
 
     try {
-      return {
+      const state = {
         ...defaults,
         ...JSON.parse(savedState),
       };
+      if (!normalizeTagsValue(state.tags)) {
+        state.tags = defaults.tags;
+      }
+      return state;
     } catch (error) {
       return defaults;
     }
@@ -890,8 +894,10 @@
     renderPlaylistSelector();
     refreshYouTubeChannelDefaults()
       .then((defaults) => {
-        const savedState = localStorage.getItem(getUploadFormStateKey());
-        if (!savedState && defaults.tags) {
+        if (!normalizeTagsValue(tagsInput.value) && defaults.tags) {
+          console.info('[YouTube channel defaults] Applying refreshed tags to empty upload tag field', {
+            tags: defaults.tags,
+          });
           tagsInput.value = defaults.tags;
         }
       })
