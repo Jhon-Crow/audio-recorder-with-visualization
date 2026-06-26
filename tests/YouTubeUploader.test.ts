@@ -5,6 +5,7 @@ import {
   buildYouTubeVideoResource,
   normalizeYouTubePlaylistIds,
   normalizeYouTubeTags,
+  parseYouTubeChannelKeywords,
   type YouTubeUploadProgress,
 } from '../src/core/YouTubeUploader';
 
@@ -42,6 +43,15 @@ describe('YouTubeUploader', () => {
         'music',
         'visualizer',
         'synth wave',
+      ]);
+    });
+
+    test('parses quoted YouTube channel keywords', () => {
+      expect(parseYouTubeChannelKeywords('audio "synth wave" visualizer "live set"')).toEqual([
+        'audio',
+        'synth wave',
+        'visualizer',
+        'live set',
       ]);
     });
 
@@ -109,6 +119,35 @@ describe('YouTubeUploader', () => {
   });
 
   describe('playlist helpers', () => {
+    test('loads channel default tags from branding settings keywords', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock.mockResolvedValueOnce(createResponse(JSON.stringify({
+        items: [
+          {
+            brandingSettings: {
+              channel: {
+                keywords: 'audio "synth wave" Visualizer audio',
+              },
+            },
+          },
+        ],
+      }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.getChannelDefaults('token-123')).resolves.toEqual({
+        tags: ['audio', 'synth wave', 'Visualizer'],
+      });
+
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/channels?part=brandingSettings&mine=true&maxResults=1',
+      );
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({
+        method: 'GET',
+        headers: { Authorization: 'Bearer token-123' },
+      });
+    });
+
     test('lists the signed-in channel playlists across pages', async () => {
       const fetchMock = createFetchMock();
       fetchMock

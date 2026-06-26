@@ -23,6 +23,7 @@
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const CHANNEL_DEFAULTS_KEY = 'audio-recorder-youtube-channel-defaults';
   const TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
@@ -91,6 +92,7 @@
   let googleIdentityPromise = null;
   let activeUploadController = null;
   let playlistRefreshPromise = null;
+  let channelDefaultsRefreshPromise = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   clientSecretInput.value = localStorage.getItem(CLIENT_SECRET_KEY) || '';
@@ -228,6 +230,87 @@
     return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
   }
 
+  function normalizeTagsValue(tags) {
+    if (!tags) {
+      return '';
+    }
+
+    const rawTags = Array.isArray(tags) ? tags : String(tags).split(',');
+    const normalized = [];
+    const seen = new Set();
+
+    rawTags.forEach(tag => {
+      const value = String(tag).replace(/\s+/g, ' ').trim();
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return;
+      normalized.push(value);
+      seen.add(key);
+    });
+
+    return normalized.join(', ');
+  }
+
+  function loadYouTubeChannelDefaults() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHANNEL_DEFAULTS_KEY) || '{}');
+      return {
+        tags: normalizeTagsValue(saved.tags),
+      };
+    } catch (error) {
+      return { tags: '' };
+    }
+  }
+
+  function saveYouTubeChannelDefaults(defaults) {
+    const normalized = {
+      tags: normalizeTagsValue(defaults && defaults.tags),
+    };
+
+    localStorage.setItem(CHANNEL_DEFAULTS_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubeChannelDefaultsChanged', {
+      detail: { defaults: normalized },
+    }));
+    return normalized;
+  }
+
+  async function refreshYouTubeChannelDefaults({ force = false } = {}) {
+    const debugState = {
+      hasValidAccessToken: hasValidAccessToken(),
+      hasGetChannelDefaults: typeof uploader.getChannelDefaults === 'function',
+      accessTokenLength: accessToken ? accessToken.length : 0,
+      accessTokenExpiresAt,
+      now: Date.now(),
+    };
+
+    console.info('[YouTube channel defaults] refreshYouTubeChannelDefaults called', { force, ...debugState });
+
+    if (!hasValidAccessToken() || typeof uploader.getChannelDefaults !== 'function') {
+      console.info('[YouTube channel defaults] Skipping refresh', debugState);
+      return loadYouTubeChannelDefaults();
+    }
+
+    if (channelDefaultsRefreshPromise && !force) {
+      console.info('[YouTube channel defaults] Returning in-flight promise (use force:true to override)');
+      return channelDefaultsRefreshPromise;
+    }
+
+    console.info('[YouTube channel defaults] Calling channels.list?part=brandingSettings&mine=true');
+    channelDefaultsRefreshPromise = uploader.getChannelDefaults(accessToken)
+      .then((defaults) => {
+        console.info('[YouTube channel defaults] API response received', { tags: defaults && defaults.tags });
+        return saveYouTubeChannelDefaults(defaults);
+      })
+      .catch((error) => {
+        console.warn('[YouTube channel defaults] API call failed', error);
+        throw error;
+      })
+      .finally(() => {
+        channelDefaultsRefreshPromise = null;
+      });
+
+    return channelDefaultsRefreshPromise;
+  }
+
   function setPlaylistIds(ids) {
     playlistIdsInput.value = getPlaylistIds(ids).join(', ');
     renderPlaylistSelector();
@@ -336,26 +419,35 @@
   }
 
   async function refreshYouTubePlaylists({ force = false } = {}) {
-    if (playlistRefreshPromise && !force) {
-      return playlistRefreshPromise;
-    }
+    const debugState = {
+      hasValidAccessToken: hasValidAccessToken(),
+      hasPlaylistScope: hasPlaylistScope(),
+      hasListPlaylists: typeof uploader.listPlaylists === 'function',
+    };
 
-    if ((!hasValidAccessToken() || !hasPlaylistScope()) && force) {
-      await restoreElectronYouTubeAuthorization();
-      if (!hasValidAccessToken()) {
-        throw new Error('Sign in to YouTube again before refreshing playlists.');
-      }
-    }
+    console.info('[YouTube playlists] refreshYouTubePlaylists called', { force, ...debugState });
 
     if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
+      console.info('[YouTube playlists] Skipping refresh, returning cached playlists', debugState);
       return loadSavedYouTubePlaylists();
     }
 
+    if (playlistRefreshPromise && !force) {
+      console.info('[YouTube playlists] Returning in-flight promise (use force:true to override)');
+      return playlistRefreshPromise;
+    }
+
+    console.info('[YouTube playlists] Calling playlists.list?mine=true');
     playlistRefreshPromise = uploader.listPlaylists(accessToken)
       .then(playlists => {
+        console.info('[YouTube playlists] API response received', { count: playlists.length, playlists });
         const refreshed = saveYouTubePlaylists(playlists);
         renderPlaylistSelector();
         return refreshed;
+      })
+      .catch((error) => {
+        console.warn('[YouTube playlists] API call failed', error);
+        throw error;
       })
       .finally(() => {
         playlistRefreshPromise = null;
@@ -413,11 +505,8 @@
   }
 
   async function restoreElectronYouTubeAuthorization() {
-    if (hasValidAccessToken()) {
+    if (hasValidAccessToken() || !isElectronYouTubeOAuthAvailable()) {
       return hasValidAccessToken();
-    }
-    if (!isElectronYouTubeOAuthAvailable()) {
-      return false;
     }
 
     const savedClientId = clientIdInput.value.trim();
@@ -468,6 +557,7 @@
     try {
       const saved = localStorage.getItem(TOKEN_STATE_KEY);
       if (!saved) {
+        console.info('[YouTube auth] No stored token state found in localStorage');
         return;
       }
       const state = JSON.parse(saved);
@@ -479,6 +569,15 @@
           : typeof state.scope === 'string'
             ? state.scope
             : '';
+        const msUntilExpiry = accessTokenExpiresAt - Date.now();
+        console.info('[YouTube auth] Restored stored token state', {
+          tokenLength: accessToken.length,
+          expiresInMs: msUntilExpiry,
+          isValid: msUntilExpiry > 60000,
+          scope: tokenScope,
+        });
+      } else {
+        console.info('[YouTube auth] Stored token state is invalid or incomplete', state);
       }
     } catch (error) {
       console.warn('Failed to load YouTube token state:', error);
@@ -599,9 +698,11 @@
   }
 
   function getDefaultUploadFormState() {
+    const channelDefaults = loadYouTubeChannelDefaults();
+
     return {
       description: '',
-      tags: 'audio, visualizer',
+      tags: channelDefaults.tags || 'audio, visualizer',
       playlistIds: '',
       categoryId: '10',
       privacyStatus: 'private',
@@ -621,10 +722,14 @@
     }
 
     try {
-      return {
+      const state = {
         ...defaults,
         ...JSON.parse(savedState),
       };
+      if (!normalizeTagsValue(state.tags)) {
+        state.tags = defaults.tags;
+      }
+      return state;
     } catch (error) {
       return defaults;
     }
@@ -790,6 +895,18 @@
     tagsInput.value = savedState.tags;
     playlistIdsInput.value = savedState.playlistIds || '';
     renderPlaylistSelector();
+    refreshYouTubeChannelDefaults()
+      .then((defaults) => {
+        if (!normalizeTagsValue(tagsInput.value) && defaults.tags) {
+          console.info('[YouTube channel defaults] Applying refreshed tags to empty upload tag field', {
+            tags: defaults.tags,
+          });
+          tagsInput.value = defaults.tags;
+        }
+      })
+      .catch((error) => {
+        console.warn('Failed to refresh YouTube channel defaults:', error);
+      });
     refreshYouTubePlaylists()
       .then(() => renderPlaylistSelector())
       .catch((error) => {
@@ -939,6 +1056,7 @@
 
     try {
       await requestAccessToken(clientId);
+      await refreshYouTubeChannelDefaults({ force: true });
       closeAuthModal();
       openUploadModal();
     } catch (error) {
@@ -1068,10 +1186,31 @@
     uploadDirect,
   };
 
-  if (hasValidAccessToken() && hasPlaylistScope()) {
-    refreshYouTubePlaylists().catch((error) => {
-      console.warn('Failed to refresh YouTube playlists:', error);
+  const startupTokenState = {
+    hasValidAccessToken: hasValidAccessToken(),
+    hasPlaylistScope: hasPlaylistScope(),
+    accessTokenLength: accessToken ? accessToken.length : 0,
+    accessTokenExpiresAt,
+    msUntilExpiry: accessTokenExpiresAt ? accessTokenExpiresAt - Date.now() : null,
+  };
+  console.info('[YouTube startup] Token state at startup', startupTokenState);
+
+  if (hasValidAccessToken()) {
+    console.info('[YouTube startup] Token is valid, starting startup refresh for channel defaults');
+    refreshYouTubeChannelDefaults().catch((error) => {
+      console.warn('[YouTube startup] Failed to refresh YouTube channel defaults:', error);
     });
+
+    if (hasPlaylistScope()) {
+      console.info('[YouTube startup] Playlist scope granted, starting startup refresh for playlists');
+      refreshYouTubePlaylists().catch((error) => {
+        console.warn('[YouTube startup] Failed to refresh YouTube playlists:', error);
+      });
+    } else {
+      console.info('[YouTube startup] Playlist scope not granted, skipping playlist refresh', { tokenScope });
+    }
+  } else {
+    console.info('[YouTube startup] No valid token at startup, skipping API refresh', startupTokenState);
   }
 
   window.addEventListener('audioRecorderYouTubeUploadRequested', (event) => {

@@ -13,6 +13,7 @@
   const PIPELINE_REVIEW_BEFORE_UPLOAD_KEY = 'audio-recorder-pipeline-review-before-upload';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const CHANNEL_DEFAULTS_KEY = 'audio-recorder-youtube-channel-defaults';
   const PIPELINE_FILE_DB_NAME = 'audio-recorder-pipeline-files';
   const PIPELINE_FILE_DB_VERSION = 1;
   const PIPELINE_FILE_STORE_NAME = 'stage-files';
@@ -25,7 +26,6 @@
   const PREVIEW_TOOLTIP_GAP = 12;
   const DEFAULT_REGULAR_CYCLE_DAYS = 7;
   const MAX_REGULAR_CYCLE_DAYS = 366;
-  const PIPELINE_DEBUG_PREFIX = '[Pipeline YouTube playlists]';
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -109,10 +109,6 @@
   if (requiredElements.some(element => !element)) {
     console.warn('Pipeline UI is incomplete.');
     return;
-  }
-
-  function logPipelineYouTubeDebug(message, details = {}) {
-    console.info(PIPELINE_DEBUG_PREFIX, message, details);
   }
 
   const defaultResetOptions = {
@@ -308,6 +304,35 @@
     };
   }
 
+  function normalizeTagsValue(tags) {
+    if (!tags) {
+      return '';
+    }
+
+    const rawTags = Array.isArray(tags) ? tags : String(tags).split(',');
+    const normalized = [];
+    const seen = new Set();
+
+    rawTags.forEach(tag => {
+      const value = String(tag).replace(/\s+/g, ' ').trim();
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return;
+      normalized.push(value);
+      seen.add(key);
+    });
+
+    return normalized.join(', ');
+  }
+
+  function getDefaultYouTubeTags(fallback = 'audio, visualizer') {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHANNEL_DEFAULTS_KEY) || '{}');
+      return normalizeTagsValue(saved.tags) || fallback;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
   function getDefaultPresetId() {
     const firstPreset = loadSavedVisualizationPresets()[0];
     return firstPreset ? `preset:${firstPreset.id}` : '';
@@ -357,7 +382,7 @@
         ...createRelativeOffsetFields(-2 * 24 * 60, 'next'),
         publishAtLocal: defaultPublishAt(0),
         short: true,
-        tags: 'shorts, pre-save, audio',
+        tags: getDefaultYouTubeTags('shorts, pre-save, audio'),
       },
       release: {
         name: 'Release',
@@ -368,7 +393,7 @@
         ...createRelativeOffsetFields(0, 'previous'),
         publishAtLocal: defaultPublishAt(1),
         short: false,
-        tags: 'release, audio, visualizer',
+        tags: getDefaultYouTubeTags('release, audio, visualizer'),
         releaseType: 'album',
         tracks: [createTrack('Track 01', 0), createTrack('Track 02', 1)],
         regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
@@ -383,7 +408,7 @@
         ...createRelativeOffsetFields(24 * 60, 'previous'),
         publishAtLocal: defaultPublishAt(2),
         short: true,
-        tags: 'shorts, album, audio',
+        tags: getDefaultYouTubeTags('shorts, album, audio'),
       },
       fullalbum: {
         name: 'Full album',
@@ -394,7 +419,7 @@
         ...createRelativeOffsetFields(30, 'previous'),
         publishAtLocal: defaultPublishAt(index),
         short: false,
-        tags: 'album, full album, visualizer',
+        tags: getDefaultYouTubeTags('album, full album, visualizer'),
         derivedFromStageId: '',
       },
       custom: {
@@ -406,7 +431,7 @@
         ...createRelativeOffsetFields(DEFAULT_RELATIVE_OFFSET_MINUTES, index > 0 ? 'previous' : 'next'),
         publishAtLocal: defaultPublishAt(index),
         short: false,
-        tags: 'audio, visualizer',
+        tags: getDefaultYouTubeTags('audio, visualizer'),
       },
     };
 
@@ -549,7 +574,7 @@
       relativeOffsetMinutes: DEFAULT_RELATIVE_OFFSET_MINUTES,
       privacyStatus: 'private',
       description: '',
-      tags: 'audio, visualizer',
+      tags: getDefaultYouTubeTags('audio, visualizer'),
       playlistIds: '',
       short: false,
       madeForKids: false,
@@ -3746,44 +3771,21 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = disabled;
+    refreshButton.disabled = disabled || !initialYouTube ||
+      typeof initialYouTube.refreshPlaylists !== 'function' ||
+      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
+      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
     refreshButton.addEventListener('click', async () => {
       const youtube = window.AudioRecorderYouTube;
-      const debugDetails = {
-        stageId: stage.id,
-        stageName: stage.name || '',
-        selectedPlaylistIds: getPlaylistIds(hidden.value),
-        disabled,
-        hasYouTubeHelper: Boolean(youtube),
-        hasRefreshPlaylists: Boolean(youtube && typeof youtube.refreshPlaylists === 'function'),
-        hasValidAccessToken: youtube && typeof youtube.hasValidAccessToken === 'function'
-          ? youtube.hasValidAccessToken()
-          : null,
-        hasPlaylistScope: youtube && typeof youtube.hasPlaylistScope === 'function'
-          ? youtube.hasPlaylistScope()
-          : null,
-        savedPlaylistCount: loadSavedYouTubePlaylists().length,
-      };
-      logPipelineYouTubeDebug('Refresh clicked', debugDetails);
       refreshButton.disabled = true;
       refreshButton.textContent = 'Refreshing...';
       try {
         if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
-          logPipelineYouTubeDebug('Refresh blocked: YouTube refresh helper is unavailable', debugDetails);
           throw new Error('Sign in to YouTube before loading playlists.');
         }
-        const playlists = await youtube.refreshPlaylists({ force: true });
-        logPipelineYouTubeDebug('Refresh completed', {
-          ...debugDetails,
-          returnedPlaylistCount: Array.isArray(playlists) ? playlists.length : null,
-          savedPlaylistCount: loadSavedYouTubePlaylists().length,
-        });
+        await youtube.refreshPlaylists({ force: true });
         renderStages();
       } catch (error) {
-        logPipelineYouTubeDebug('Refresh failed', {
-          ...debugDetails,
-          error: error && error.message ? error.message : String(error),
-        });
         updateAppStatus(error.message || 'Unable to load YouTube playlists.', 'error');
       } finally {
         refreshButton.disabled = false;
@@ -4182,10 +4184,8 @@
     pipelineRenameInput.value = pipeline.name || '';
     pipelineRenameModal.classList.add('active');
     pipelineRenameModal.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(() => {
-      pipelineRenameInput.focus();
-      pipelineRenameInput.select();
-    });
+    pipelineRenameInput.focus();
+    pipelineRenameInput.select();
   }
 
   function closePipelineRenameDialog() {
@@ -4611,6 +4611,9 @@
     refreshStagePresetSelections();
   });
   window.addEventListener('audioRecorderYouTubePlaylistsChanged', () => {
+    renderStages();
+  });
+  window.addEventListener('audioRecorderYouTubeChannelDefaultsChanged', () => {
     renderStages();
   });
 

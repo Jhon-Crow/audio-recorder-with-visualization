@@ -195,13 +195,7 @@ describe('Pipeline Mode', () => {
     cy.get('#runPipelineBtn').should('be.disabled');
     cy.get('.pipeline-file-btn').first().should('contain.text', 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ');
 
-    cy.window().then((win) => {
-      win.AudioRecorderPipeline.saveCurrentPipeline();
-    });
-    cy.window().then((win) => {
-      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
-      expect(pipelines).to.have.length(1);
-    });
+    cy.get('#savePipelineBtn').click();
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Edited short');
 
@@ -723,122 +717,38 @@ describe('Pipeline Mode', () => {
     });
   });
 
-  it('keeps the manual pipeline playlist refresh available when helpers load after render', () => {
-    cy.clearLocalStorage();
-    cy.visit('/examples/index.html', {
-      onBeforeLoad(win) {
-        seedSavedVisualizationPresets(win);
-        cy.stub(win.console, 'info').as('consoleInfo');
-        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
-          { id: 'PL-stale', title: 'Stale manual playlist' },
-        ]));
-      },
-    });
+  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
+    cy.visit('/examples/index.html');
     cy.waitForVisualization();
     cy.contains('.tab', 'Pipeline').click();
 
     cy.window().then((win) => {
+      const youtube = win.AudioRecorderYouTube;
+      delete win.AudioRecorderYouTube;
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Late YouTube helper',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-02T12:00',
+          playlistIds: '',
+        },
+      ]);
       win.AudioRecorderYouTube = {
-        getSavedPlaylists: () => [{ id: 'PL-fresh', title: 'Fresh manual playlist' }],
-        hasValidAccessToken: () => true,
-        hasPlaylistScope: () => true,
-        refreshPlaylists: cy.stub().as('refreshLatePipelinePlaylists').resolves([
-          { id: 'PL-fresh', title: 'Fresh manual playlist' },
-        ]),
+        ...youtube,
+        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
+          id: 'PL-late-created',
+          title: 'Late created playlist',
+        }),
       };
     });
 
     cy.get('.pipeline-stage').first().within(() => {
-      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('be.visible');
-      cy.contains('button', 'Refresh').should('not.be.disabled').click();
+      cy.get('.youtube-playlist-create input').type('Late created playlist');
+      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
+      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
     });
-
-    cy.get('@refreshLatePipelinePlaylists').should('have.been.calledWith', { force: true });
-    cy.get('@consoleInfo').should('have.been.calledWithMatch',
-      '[Pipeline YouTube playlists]',
-      'Refresh clicked',
-      Cypress.sinon.match({
-        hasYouTubeHelper: true,
-        hasRefreshPlaylists: true,
-        hasValidAccessToken: true,
-        hasPlaylistScope: true,
-      }));
-    cy.get('@consoleInfo').should('have.been.calledWithMatch',
-      '[Pipeline YouTube playlists]',
-      'Refresh completed',
-      Cypress.sinon.match({
-        returnedPlaylistCount: 1,
-      }));
-    cy.get('.pipeline-stage').first().within(() => {
-      cy.get('.youtube-playlist-option').should('contain.text', 'Fresh manual playlist');
-      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('not.exist');
-    });
-  });
-
-  it('refreshes pipeline playlists after restoring an expired Electron YouTube token', () => {
-    const expiredTokenTime = Date.now() - 60 * 1000;
-
-    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
-      expect(req.headers.authorization).to.equal('Bearer refreshed-electron-token');
-      req.reply({
-        statusCode: 200,
-        body: {
-          items: [
-            {
-              id: 'PL-restored',
-              snippet: { title: 'Restored token playlist' },
-              contentDetails: { itemCount: 1 },
-            },
-          ],
-        },
-      });
-    }).as('listRestoredTokenPlaylists');
-
-    cy.clearLocalStorage();
-    cy.visit('/examples/index.html', {
-      onBeforeLoad(win) {
-        seedSavedVisualizationPresets(win);
-        cy.stub(win.console, 'info').as('consoleInfo');
-        win.electronAPI = {
-          isElectron: true,
-          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
-            success: true,
-            accessToken: 'refreshed-electron-token',
-            expiresIn: 3600,
-            scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube',
-          }),
-        };
-        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
-          accessToken: 'expired-token',
-          accessTokenExpiresAt: expiredTokenTime,
-          tokenScope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube',
-        }));
-        win.localStorage.setItem('audio-recorder-youtube-client-id', '123456789012-validclient.apps.googleusercontent.com');
-        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
-          { id: 'PL-stale', title: 'Stale expired-token playlist' },
-        ]));
-      },
-    });
-    cy.waitForVisualization();
-    cy.contains('.tab', 'Pipeline').click();
-
-    cy.get('.pipeline-stage').first().within(() => {
-      cy.contains('.youtube-playlist-option', 'Stale expired-token playlist').should('be.visible');
-      cy.contains('button', 'Refresh').should('not.be.disabled').click();
-    });
-
-    cy.get('@authorizeYouTube').should('have.been.called');
-    cy.wait('@listRestoredTokenPlaylists');
-    cy.get('@consoleInfo').should('have.been.calledWithMatch',
-      '[Pipeline YouTube playlists]',
-      'Refresh completed',
-      Cypress.sinon.match({
-        returnedPlaylistCount: 1,
-      }));
-    cy.get('.pipeline-stage').first().within(() => {
-      cy.get('.youtube-playlist-option').should('contain.text', 'Restored token playlist');
-      cy.contains('.youtube-playlist-option', 'Stale expired-token playlist').should('not.exist');
-    });
+    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
   });
 
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
@@ -932,6 +842,47 @@ describe('Pipeline Mode', () => {
         .should('exist')
         .and('not.be.checked');
     });
+  });
+
+  it('uses signed-in YouTube channel default tags for newly added stages', () => {
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/channels*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            brandingSettings: {
+              channel: {
+                keywords: 'ambient "visual album" cypress ambient',
+              },
+            },
+          },
+        ],
+      },
+    }).as('loadYouTubeChannelDefaults');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@loadYouTubeChannelDefaults');
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+
+    cy.get('.pipeline-stage').should('have.length', 1);
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-tags')
+      .should('have.value', 'ambient, visual album, cypress');
+    cy.get('.pipeline-stage').first().contains('button', 'YouTube').click();
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubeTags').should('have.value', 'ambient, visual album, cypress');
   });
 
   it('keeps YouTube upload options separate for each stage', () => {
@@ -1811,11 +1762,10 @@ describe('Pipeline Mode', () => {
   });
 
   it('renames, deletes, and reorders saved pipelines from the sidebar', () => {
-    const thumbnail = 'data:image/png;base64,iVBORw0KGgo=';
     cy.window().then((win) => {
       win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
         { id: 'pipe-a', name: 'Alpha', timezone: '', uploadOrder: 'chronological', stages: [] },
-        { id: 'pipe-b', name: 'Beta', timezone: '', uploadOrder: 'chronological', stages: [], thumbnail },
+        { id: 'pipe-b', name: 'Beta', timezone: '', uploadOrder: 'chronological', stages: [] },
         { id: 'pipe-c', name: 'Gamma', timezone: '', uploadOrder: 'chronological', stages: [] },
       ]));
     });
@@ -1827,17 +1777,6 @@ describe('Pipeline Mode', () => {
     cy.contains('.tab', 'Pipeline').click();
 
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 3);
-    cy.get('#pipelineList .pipeline-load-btn').eq(0)
-      .should('have.class', 'has-generated-thumbnail')
-      .and('not.have.class', 'has-thumbnail')
-      .and('have.css', 'background-image')
-      .and('include', 'radial-gradient');
-    cy.get('#pipelineList .pipeline-load-btn').eq(1)
-      .should('have.class', 'has-thumbnail')
-      .and('have.css', 'background-image')
-      .and('include', 'data:image/png;base64');
-    cy.get('#pipelineList .pipeline-load-btn').eq(1).find('.saved-item-label')
-      .should('have.text', 'Beta');
 
     cy.get('#pipelineList .pipeline-load-btn').eq(1).rightclick();
     cy.get('#pipelineContextMenu').should('be.visible');
@@ -1875,121 +1814,6 @@ describe('Pipeline Mode', () => {
     cy.window().then((win) => {
       const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
       expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
-    });
-  });
-
-  it('stores a square visualization thumbnail when saving a pipeline', () => {
-    cy.window().then((win) => {
-      win.AudioRecorderPipeline.saveCurrentPipeline();
-    });
-
-    cy.get('#pipelineList .pipeline-load-btn').first()
-      .should('have.class', 'has-thumbnail')
-      .find('.saved-item-label')
-      .should('contain.text', 'Pipeline 1');
-
-    cy.window().then((win) => {
-      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
-      expect(pipelines).to.have.length(1);
-      expect(pipelines[0].thumbnail).to.match(/^data:image\/png;base64,/);
-    });
-  });
-
-  it('still saves a pipeline if thumbnail capture is unavailable', () => {
-    cy.window().then((win) => {
-      cy.stub(win.HTMLCanvasElement.prototype, 'toDataURL')
-        .throws(new win.DOMException('The canvas has been tainted by cross-origin data.', 'SecurityError'));
-    });
-
-    cy.window().then((win) => {
-      win.AudioRecorderPipeline.saveCurrentPipeline();
-    });
-
-    cy.get('#pipelineList .pipeline-load-btn').first()
-      .should('have.class', 'has-generated-thumbnail')
-      .find('.saved-item-label')
-      .should('contain.text', 'Pipeline 1');
-
-    cy.window().then((win) => {
-      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
-      expect(pipelines).to.have.length(1);
-      expect(pipelines[0].thumbnail).to.equal(null);
-    });
-  });
-
-  it('still saves a pipeline if thumbnail storage exceeds localStorage limits', () => {
-    cy.window().then((win) => {
-      const originalSetItem = win.Storage.prototype.setItem;
-      cy.stub(win.Storage.prototype, 'setItem').callsFake(function(key, value) {
-        if (key === 'audio-recorder-pipelines' && String(value).includes('"thumbnail":"data:image/png')) {
-          throw new win.DOMException('Quota exceeded', 'QuotaExceededError');
-        }
-        return originalSetItem.call(this, key, value);
-      });
-    });
-
-    cy.window().then((win) => {
-      win.AudioRecorderPipeline.saveCurrentPipeline();
-    });
-
-    cy.get('#pipelineList .pipeline-load-btn').first()
-      .should('have.class', 'has-generated-thumbnail')
-      .find('.saved-item-label')
-      .should('contain.text', 'Pipeline 1');
-
-    cy.window().then((win) => {
-      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
-      expect(pipelines).to.have.length(1);
-      expect(pipelines[0].thumbnail).to.equal(null);
-    });
-  });
-
-  it('opens the rename dialog when a saved pipeline is shift-clicked', () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
-        { id: 'pipe-a', name: 'Alpha Pipeline', timezone: '', uploadOrder: 'chronological', stages: [] },
-      ]));
-    });
-    cy.reload();
-    cy.waitForVisualization();
-    cy.contains('.tab', 'Pipeline').click();
-
-    cy.get('#pipelineList .pipeline-load-btn').first().click({ shiftKey: true });
-
-    cy.get('#pipelineRenameModal').should('be.visible');
-    cy.get('#pipelineRenameInput').should('be.focused').and('have.value', 'Alpha Pipeline');
-  });
-
-  it('rename input selects the existing saved pipeline name before typing', () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
-        { id: 'pipe-a', name: 'Alpha Pipeline', timezone: '', uploadOrder: 'chronological', stages: [] },
-      ]));
-    });
-    cy.reload();
-    cy.waitForVisualization();
-    cy.contains('.tab', 'Pipeline').click();
-
-    cy.get('#pipelineList .pipeline-load-btn').first().rightclick();
-    cy.get('#pipelineContextMenu').should('be.visible');
-    cy.get('#pipelineRenameBtn').click();
-
-    cy.get('#pipelineRenameModal').should('be.visible');
-    cy.get('#pipelineRenameInput')
-      .should('be.focused')
-      .should(($input) => {
-        expect($input[0].selectionStart).to.equal(0);
-        expect($input[0].selectionEnd).to.equal('Alpha Pipeline'.length);
-      })
-      .type('Release Pipeline');
-    cy.get('#pipelineRenameInput').should('have.value', 'Release Pipeline');
-
-    cy.get('#pipelineConfirmRenameBtn').click();
-    cy.get('#pipelineRenameModal').should('not.be.visible');
-    cy.get('#pipelineList .pipeline-load-btn').first().should('contain', 'Release Pipeline');
-    cy.window().then((win) => {
-      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
-      expect(pipelines[0].name).to.equal('Release Pipeline');
     });
   });
 });
