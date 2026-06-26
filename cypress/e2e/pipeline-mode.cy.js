@@ -1027,10 +1027,14 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelinePreviewTooltip')
       .should('have.class', 'is-visible')
       .and('have.attr', 'aria-hidden', 'false')
+      .and('have.attr', 'data-preview-src')
       .should(($tooltip) => {
         const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
         expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
       });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .and('include', `data:image/png;base64,${tinyPngBase64}`);
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
       .should('not.be.checked')
@@ -1218,10 +1222,14 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelinePreviewTooltip')
       .should('have.class', 'is-visible')
       .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
       .should(($tooltip) => {
         const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
         expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
       });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .and('include', `data:image/png;base64,${tinyPngBase64}`);
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
 
     cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
@@ -1231,10 +1239,14 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelinePreviewTooltip')
       .should('have.class', 'is-visible')
       .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
       .should(($tooltip) => {
         const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
         expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
       });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .and('include', `data:image/png;base64,${tinyPngBase64}`);
   });
 
   it('schedules regular release posts from ordered files and cycle slots', () => {

@@ -1601,6 +1601,7 @@
 
   function setPreviewImageStyle(element, dataUrl) {
     element.style.setProperty('--pipeline-preview-image', `url(${JSON.stringify(dataUrl)})`);
+    element.dataset.previewSrc = dataUrl;
   }
 
   function applyCoverPreviewTooltip(element, stage) {
@@ -1648,6 +1649,12 @@
     tooltip.id = 'pipelinePreviewTooltip';
     tooltip.className = 'pipeline-preview-tooltip';
     tooltip.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.className = 'pipeline-preview-tooltip-image';
+    image.alt = '';
+    image.decoding = 'async';
+    image.draggable = false;
+    tooltip.appendChild(image);
     document.body.appendChild(tooltip);
     return tooltip;
   }
@@ -1682,9 +1689,17 @@
     activePreviewTooltipTrigger = trigger;
     const tooltip = getPipelinePreviewTooltip();
     tooltip.style.setProperty('--pipeline-preview-aspect', trigger.style.getPropertyValue('--pipeline-preview-aspect') || '16 / 9');
-    tooltip.style.setProperty('--pipeline-preview-image', trigger.style.getPropertyValue('--pipeline-preview-image') || 'none');
+    const previewImage = trigger.style.getPropertyValue('--pipeline-preview-image') || 'none';
+    const previewSrc = trigger.dataset.previewSrc || '';
+    tooltip.style.setProperty('--pipeline-preview-image', previewImage);
+    tooltip.dataset.previewSrc = previewSrc;
     tooltip.dataset.previewState = trigger.dataset.previewState || '';
     tooltip.setAttribute('aria-label', trigger.dataset.tooltip || '');
+    const image = tooltip.querySelector('.pipeline-preview-tooltip-image');
+    if (image) {
+      image.src = previewSrc;
+      image.alt = trigger.dataset.tooltip || '';
+    }
     tooltip.classList.add('is-visible');
     tooltip.setAttribute('aria-hidden', 'false');
     positionPipelinePreviewTooltip(trigger, tooltip);
@@ -1702,6 +1717,12 @@
     }
     tooltip.classList.remove('is-visible');
     tooltip.setAttribute('aria-hidden', 'true');
+    tooltip.dataset.previewSrc = '';
+    const image = tooltip.querySelector('.pipeline-preview-tooltip-image');
+    if (image) {
+      image.removeAttribute('src');
+      image.alt = '';
+    }
   }
 
   function updatePipelinePreviewTooltip() {
