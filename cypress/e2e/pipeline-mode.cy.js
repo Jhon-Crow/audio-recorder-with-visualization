@@ -194,7 +194,13 @@ describe('Pipeline Mode', () => {
     cy.get('#runPipelineBtn').should('be.disabled');
     cy.get('.pipeline-file-btn').first().should('contain.text', 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ');
 
-    cy.get('#savePipelineBtn').click();
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.saveCurrentPipeline();
+    });
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+    });
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Edited short');
 
@@ -1377,9 +1383,9 @@ describe('Pipeline Mode', () => {
   });
 
   it('stores a square visualization thumbnail when saving a pipeline', () => {
-    cy.get('#pipelineSidebar').trigger('pointerenter').should('be.visible');
-    cy.get('#savePipelineBtn').should('be.visible');
-    cy.get('#savePipelineBtn').click();
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.saveCurrentPipeline();
+    });
 
     cy.get('#pipelineList .pipeline-load-btn').first()
       .should('have.class', 'has-thumbnail')
@@ -1391,5 +1397,70 @@ describe('Pipeline Mode', () => {
       expect(pipelines).to.have.length(1);
       expect(pipelines[0].thumbnail).to.match(/^data:image\/png;base64,/);
     });
+  });
+
+  it('still saves a pipeline if thumbnail capture is unavailable', () => {
+    cy.window().then((win) => {
+      cy.stub(win.HTMLCanvasElement.prototype, 'toDataURL')
+        .throws(new win.DOMException('The canvas has been tainted by cross-origin data.', 'SecurityError'));
+    });
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.saveCurrentPipeline();
+    });
+
+    cy.get('#pipelineList .pipeline-load-btn').first()
+      .should('have.class', 'has-generated-thumbnail')
+      .find('.saved-item-label')
+      .should('contain.text', 'Pipeline 1');
+
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+      expect(pipelines[0].thumbnail).to.equal(null);
+    });
+  });
+
+  it('still saves a pipeline if thumbnail storage exceeds localStorage limits', () => {
+    cy.window().then((win) => {
+      const originalSetItem = win.Storage.prototype.setItem;
+      cy.stub(win.Storage.prototype, 'setItem').callsFake(function(key, value) {
+        if (key === 'audio-recorder-pipelines' && String(value).includes('"thumbnail":"data:image/png')) {
+          throw new win.DOMException('Quota exceeded', 'QuotaExceededError');
+        }
+        return originalSetItem.call(this, key, value);
+      });
+    });
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.saveCurrentPipeline();
+    });
+
+    cy.get('#pipelineList .pipeline-load-btn').first()
+      .should('have.class', 'has-generated-thumbnail')
+      .find('.saved-item-label')
+      .should('contain.text', 'Pipeline 1');
+
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+      expect(pipelines[0].thumbnail).to.equal(null);
+    });
+  });
+
+  it('opens the rename dialog when a saved pipeline is shift-clicked', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
+        { id: 'pipe-a', name: 'Alpha Pipeline', timezone: '', uploadOrder: 'chronological', stages: [] },
+      ]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#pipelineList .pipeline-load-btn').first().click({ shiftKey: true });
+
+    cy.get('#pipelineRenameModal').should('be.visible');
+    cy.get('#pipelineRenameInput').should('be.focused').and('have.value', 'Alpha Pipeline');
   });
 });

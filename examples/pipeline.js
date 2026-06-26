@@ -600,10 +600,21 @@
   }
 
   function saveSavedPipelines() {
-    localStorage.setItem(SAVED_PIPELINES_KEY, JSON.stringify(savedPipelines));
+    try {
+      localStorage.setItem(SAVED_PIPELINES_KEY, JSON.stringify(savedPipelines));
+    } catch (error) {
+      console.warn('Failed to save pipeline thumbnails; retrying without thumbnails:', error);
+      const pipelinesWithoutThumbnails = savedPipelines.map(pipeline => ({
+        ...pipeline,
+        thumbnail: null,
+      }));
+      localStorage.setItem(SAVED_PIPELINES_KEY, JSON.stringify(pipelinesWithoutThumbnails));
+      savedPipelines = pipelinesWithoutThumbnails;
+    }
   }
 
   function capturePipelineThumbnail() {
+    const app = window.AudioRecorderApp;
     const canvas = app && app.canvas;
     try {
       const thumbnailCanvas = document.createElement('canvas');
@@ -3577,6 +3588,7 @@
   }
 
   function saveCurrentPipeline() {
+    const thumbnail = capturePipelineThumbnail();
     const pipeline = {
       id: createId('pipeline'),
       name: getNextPipelineName(),
@@ -3584,7 +3596,7 @@
       timezone: pipelineTimezone,
       uploadOrder: pipelineUploadOrder,
       stages: stages.map(sanitizeStage),
-      thumbnail: capturePipelineThumbnail(),
+      thumbnail,
     };
     savedPipelines = [...savedPipelines, pipeline];
     activePipelineId = pipeline.id;
@@ -3709,7 +3721,14 @@
       label.textContent = pipeline.name || String(index + 1);
       button.appendChild(label);
       button.setAttribute('aria-label', `Load pipeline ${pipeline.name || index + 1}`);
-      button.addEventListener('click', () => loadPipeline(pipeline.id));
+      button.addEventListener('click', event => {
+        if (event.shiftKey) {
+          event.preventDefault();
+          openPipelineRenameDialog(pipeline.id);
+          return;
+        }
+        loadPipeline(pipeline.id);
+      });
       button.addEventListener('contextmenu', event => {
         event.preventDefault();
         showPipelineContextMenu(pipeline.id, event.clientX, event.clientY);
