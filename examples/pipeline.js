@@ -13,6 +13,9 @@
   const PIPELINE_REVIEW_BEFORE_UPLOAD_KEY = 'audio-recorder-pipeline-review-before-upload';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const PIPELINE_FILE_DB_NAME = 'audio-recorder-pipeline-files';
+  const PIPELINE_FILE_DB_VERSION = 1;
+  const PIPELINE_FILE_STORE_NAME = 'stage-files';
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
@@ -151,6 +154,127 @@
   let pipelineRenameTargetId = null;
   let draggedPipelineId = null;
   let pendingUploadReview = null;
+
+  function openPipelineFileDb() {
+    if (!window.indexedDB) {
+      return Promise.reject(new Error('IndexedDB is not available.'));
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(PIPELINE_FILE_DB_NAME, PIPELINE_FILE_DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(PIPELINE_FILE_STORE_NAME)) {
+          db.createObjectStore(PIPELINE_FILE_STORE_NAME, { keyPath: 'stageId' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Failed to open pipeline file storage.'));
+    });
+  }
+
+  async function withPipelineFileStore(mode, callback) {
+    const db = await openPipelineFileDb();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(PIPELINE_FILE_STORE_NAME, mode);
+      const store = transaction.objectStore(PIPELINE_FILE_STORE_NAME);
+      let result;
+      transaction.oncomplete = () => {
+        Promise.resolve(result).then(value => {
+          db.close();
+          resolve(value);
+        }, error => {
+          db.close();
+          reject(error);
+        });
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error || new Error('Pipeline file storage transaction failed.'));
+      };
+      transaction.onabort = () => {
+        db.close();
+        reject(transaction.error || new Error('Pipeline file storage transaction aborted.'));
+      };
+      try {
+        result = callback(store);
+      } catch (error) {
+        db.close();
+        reject(error);
+      }
+    });
+  }
+
+  function cloneFile(file) {
+    return new File([file], file.name, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+  }
+
+  async function persistStageFiles(stageId, files) {
+    try {
+      const storedFiles = files.map(cloneFile);
+      await withPipelineFileStore('readwrite', store => {
+        if (storedFiles.length) {
+          store.put({ stageId, files: storedFiles });
+        } else {
+          store.delete(stageId);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to persist pipeline files:', error);
+    }
+  }
+
+  async function removePersistedStageFiles(stageIds) {
+    const ids = Array.isArray(stageIds) ? stageIds : [stageIds];
+    const validIds = ids.filter(Boolean);
+    if (!validIds.length) {
+      return;
+    }
+
+    try {
+      await withPipelineFileStore('readwrite', store => {
+        validIds.forEach(stageId => store.delete(stageId));
+      });
+    } catch (error) {
+      console.warn('Failed to remove persisted pipeline files:', error);
+    }
+  }
+
+  async function loadPersistedStageFiles(stageId) {
+    try {
+      const record = await withPipelineFileStore('readonly', store => new Promise((resolve, reject) => {
+        const request = store.get(stageId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Pipeline file storage request failed.'));
+      }));
+      return record && Array.isArray(record.files) ? record.files : [];
+    } catch (error) {
+      console.warn('Failed to restore persisted pipeline files:', error);
+      return [];
+    }
+  }
+
+  async function hydratePersistedPipelineFiles() {
+    let restoredAny = false;
+    await Promise.all(stages.map(async (stage) => {
+      if (!stage.fileNames.length || selectedFilesByStageId.has(stage.id)) {
+        return;
+      }
+      const files = await loadPersistedStageFiles(stage.id);
+      const matchingFiles = files.filter((file, index) => file && file.name === stage.fileNames[index]);
+      if (matchingFiles.length === stage.fileNames.length) {
+        selectedFilesByStageId.set(stage.id, matchingFiles);
+        restoredAny = true;
+        updateSelectedFileDurations(stage.id, matchingFiles);
+      }
+    }));
+    if (restoredAny) {
+      renderStages();
+    }
+  }
 
   function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1068,6 +1192,7 @@
     selectedFilesByStageId.delete(pendingDeleteStageId);
     selectedFileDurationsByStageId.delete(pendingDeleteStageId);
     selectedCoversByStageId.delete(pendingDeleteStageId);
+    removePersistedStageFiles(pendingDeleteStageId);
     stages = stages.filter(stage => stage.id !== pendingDeleteStageId);
     saveStages();
     renderStages();
@@ -2772,8 +2897,10 @@
       if (previousStageWithFiles) {
         selectedFilesByStageId.delete(previousStageWithFiles.id);
         selectedFileDurationsByStageId.delete(previousStageWithFiles.id);
+        removePersistedStageFiles(previousStageWithFiles.id);
       }
       selectedFilesByStageId.set(stage.id, files);
+      persistStageFiles(stage.id, files);
       updateSelectedFileDurations(stage.id, files);
       const changes = { fileNames: files.map(file => file.name) };
       if ((isAlbumStage(stage) || isRegularPostsStage(stage)) && files.length) {
@@ -2800,6 +2927,7 @@
     reset.addEventListener('click', () => {
       selectedFilesByStageId.delete(stage.id);
       selectedFileDurationsByStageId.delete(stage.id);
+      removePersistedStageFiles(stage.id);
       if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
         updateStage(stage.id, { fileNames: [], tracks: [] }, true);
       } else {
@@ -2972,6 +3100,7 @@
       const existingFiles = selectedFilesByStageId.get(stage.id) || [];
       const nextFiles = [...existingFiles, ...files];
       selectedFilesByStageId.set(stage.id, nextFiles);
+      persistStageFiles(stage.id, nextFiles);
       updateSelectedFileDurations(stage.id, nextFiles);
       updateStage(stage.id, {
         fileNames: nextFiles.map(file => file.name),
@@ -3239,6 +3368,7 @@
         const existingFiles = selectedFilesByStageId.get(stage.id) || [];
         const nextFiles = [...existingFiles, ...files];
         selectedFilesByStageId.set(stage.id, nextFiles);
+        persistStageFiles(stage.id, nextFiles);
         updateSelectedFileDurations(stage.id, nextFiles);
         updateStage(stage.id, {
           fileNames: nextFiles.map(file => file.name),
@@ -3824,6 +3954,7 @@
     const pipeline = savedPipelines.find(item => item.id === pipelineId);
     if (!pipeline) return;
     selectedFilesByStageId.clear();
+    selectedFileDurationsByStageId.clear();
     selectedCoversByStageId.clear();
     stages = Array.isArray(pipeline.stages) ? pipeline.stages.map(normalizeStage) : [];
     pipelineTimezone = pipeline.timezone || pipelineTimezone;
@@ -3840,6 +3971,7 @@
     updateTimezoneButton();
     renderStages();
     renderPipelineList();
+    hydratePersistedPipelineFiles();
   }
 
   function hidePipelineContextMenu() {
@@ -4021,6 +4153,7 @@
         selectedFilesByStageId.delete(stage.id);
         selectedFileDurationsByStageId.delete(stage.id);
         selectedCoversByStageId.delete(stage.id);
+        removePersistedStageFiles(stage.id);
         changes.fileNames = [];
       }
       if (options.descriptions) {
@@ -4137,6 +4270,7 @@
   });
 
   clearPipelineBtn.addEventListener('click', () => {
+    removePersistedStageFiles(stages.map(stage => stage.id));
     selectedFilesByStageId.clear();
     selectedFileDurationsByStageId.clear();
     selectedCoversByStageId.clear();
@@ -4299,6 +4433,7 @@
       renderStages();
     },
     replaceStages(nextStages) {
+      removePersistedStageFiles(stages.map(stage => stage.id));
       selectedFilesByStageId.clear();
       selectedFileDurationsByStageId.clear();
       selectedCoversByStageId.clear();
@@ -4320,5 +4455,6 @@
   updateTimezoneButton();
   renderPipelineList();
   renderStages();
+  hydratePersistedPipelineFiles();
   syncPipelineSidebar();
 })();
