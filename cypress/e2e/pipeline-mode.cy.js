@@ -637,6 +637,162 @@ describe('Pipeline Mode', () => {
       .should('have.value', 'PL-existing, PL-created');
   });
 
+  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
+    cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-current',
+            snippet: { title: 'Current pipeline playlist' },
+            contentDetails: { itemCount: 5 },
+          },
+        ],
+      },
+    }).as('refreshPipelinePlaylists');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale pipeline playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@refreshPipelinePlaylists');
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
+      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
+    });
+  });
+
+  it('keeps the manual pipeline playlist refresh available when helpers load after render', () => {
+    cy.clearLocalStorage();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        cy.stub(win.console, 'info').as('consoleInfo');
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale manual playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderYouTube = {
+        getSavedPlaylists: () => [{ id: 'PL-fresh', title: 'Fresh manual playlist' }],
+        hasValidAccessToken: () => true,
+        hasPlaylistScope: () => true,
+        refreshPlaylists: cy.stub().as('refreshLatePipelinePlaylists').resolves([
+          { id: 'PL-fresh', title: 'Fresh manual playlist' },
+        ]),
+      };
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('be.visible');
+      cy.contains('button', 'Refresh').should('not.be.disabled').click();
+    });
+
+    cy.get('@refreshLatePipelinePlaylists').should('have.been.calledWith', { force: true });
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[Pipeline YouTube playlists]',
+      'Refresh clicked',
+      Cypress.sinon.match({
+        hasYouTubeHelper: true,
+        hasRefreshPlaylists: true,
+        hasValidAccessToken: true,
+        hasPlaylistScope: true,
+      }));
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[Pipeline YouTube playlists]',
+      'Refresh completed',
+      Cypress.sinon.match({
+        returnedPlaylistCount: 1,
+      }));
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-option').should('contain.text', 'Fresh manual playlist');
+      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('not.exist');
+    });
+  });
+
+  it('refreshes pipeline playlists after restoring an expired Electron YouTube token', () => {
+    const expiredTokenTime = Date.now() - 60 * 1000;
+
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', (req) => {
+      expect(req.headers.authorization).to.equal('Bearer refreshed-electron-token');
+      req.reply({
+        statusCode: 200,
+        body: {
+          items: [
+            {
+              id: 'PL-restored',
+              snippet: { title: 'Restored token playlist' },
+              contentDetails: { itemCount: 1 },
+            },
+          ],
+        },
+      });
+    }).as('listRestoredTokenPlaylists');
+
+    cy.clearLocalStorage();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        cy.stub(win.console, 'info').as('consoleInfo');
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            success: true,
+            accessToken: 'refreshed-electron-token',
+            expiresIn: 3600,
+            scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube',
+          }),
+        };
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'expired-token',
+          accessTokenExpiresAt: expiredTokenTime,
+          tokenScope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube',
+        }));
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123456789012-validclient.apps.googleusercontent.com');
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale expired-token playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('.youtube-playlist-option', 'Stale expired-token playlist').should('be.visible');
+      cy.contains('button', 'Refresh').should('not.be.disabled').click();
+    });
+
+    cy.get('@authorizeYouTube').should('have.been.called');
+    cy.wait('@listRestoredTokenPlaylists');
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[Pipeline YouTube playlists]',
+      'Refresh completed',
+      Cypress.sinon.match({
+        returnedPlaylistCount: 1,
+      }));
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-option').should('contain.text', 'Restored token playlist');
+      cy.contains('.youtube-playlist-option', 'Stale expired-token playlist').should('not.exist');
+    });
+  });
+
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([

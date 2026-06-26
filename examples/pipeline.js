@@ -21,6 +21,7 @@
   const PREVIEW_TOOLTIP_GAP = 12;
   const DEFAULT_REGULAR_CYCLE_DAYS = 7;
   const MAX_REGULAR_CYCLE_DAYS = 366;
+  const PIPELINE_DEBUG_PREFIX = '[Pipeline YouTube playlists]';
 
   const addStageBtn = document.getElementById('addPipelineStageBtn');
   const clearPipelineBtn = document.getElementById('clearPipelineBtn');
@@ -94,6 +95,10 @@
   if (requiredElements.some(element => !element)) {
     console.warn('Pipeline UI is incomplete.');
     return;
+  }
+
+  function logPipelineYouTubeDebug(message, details = {}) {
+    console.info(PIPELINE_DEBUG_PREFIX, message, details);
   }
 
   const defaultResetOptions = {
@@ -3147,9 +3152,9 @@
 
   function renderPlaylistChooser(stage, onChange, disabled = false) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
-    const youtube = window.AudioRecorderYouTube;
-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
-      ? youtube.getSavedPlaylists()
+    const initialYouTube = window.AudioRecorderYouTube;
+    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
+      ? initialYouTube.getSavedPlaylists()
       : loadSavedYouTubePlaylists();
     selectedIds.forEach(id => {
       if (!known.some(item => item.id === id)) {
@@ -3197,7 +3202,7 @@
     if (!known.length) {
       const empty = document.createElement('div');
       empty.className = 'youtube-playlist-empty';
-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
+      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
         ? 'No playlists loaded yet'
         : 'Sign in to load YouTube playlists';
       list.appendChild(empty);
@@ -3209,17 +3214,44 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = disabled || !youtube ||
-      typeof youtube.refreshPlaylists !== 'function' ||
-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
+    refreshButton.disabled = disabled;
     refreshButton.addEventListener('click', async () => {
+      const youtube = window.AudioRecorderYouTube;
+      const debugDetails = {
+        stageId: stage.id,
+        stageName: stage.name || '',
+        selectedPlaylistIds: getPlaylistIds(hidden.value),
+        disabled,
+        hasYouTubeHelper: Boolean(youtube),
+        hasRefreshPlaylists: Boolean(youtube && typeof youtube.refreshPlaylists === 'function'),
+        hasValidAccessToken: youtube && typeof youtube.hasValidAccessToken === 'function'
+          ? youtube.hasValidAccessToken()
+          : null,
+        hasPlaylistScope: youtube && typeof youtube.hasPlaylistScope === 'function'
+          ? youtube.hasPlaylistScope()
+          : null,
+        savedPlaylistCount: loadSavedYouTubePlaylists().length,
+      };
+      logPipelineYouTubeDebug('Refresh clicked', debugDetails);
       refreshButton.disabled = true;
       refreshButton.textContent = 'Refreshing...';
       try {
-        await youtube.refreshPlaylists({ force: true });
+        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
+          logPipelineYouTubeDebug('Refresh blocked: YouTube refresh helper is unavailable', debugDetails);
+          throw new Error('Sign in to YouTube before loading playlists.');
+        }
+        const playlists = await youtube.refreshPlaylists({ force: true });
+        logPipelineYouTubeDebug('Refresh completed', {
+          ...debugDetails,
+          returnedPlaylistCount: Array.isArray(playlists) ? playlists.length : null,
+          savedPlaylistCount: loadSavedYouTubePlaylists().length,
+        });
         renderStages();
       } catch (error) {
+        logPipelineYouTubeDebug('Refresh failed', {
+          ...debugDetails,
+          error: error && error.message ? error.message : String(error),
+        });
         updateAppStatus(error.message || 'Unable to load YouTube playlists.', 'error');
       } finally {
         refreshButton.disabled = false;
@@ -3241,6 +3273,7 @@
     button.textContent = 'Create new';
     button.disabled = disabled;
     button.addEventListener('click', async () => {
+      const youtube = window.AudioRecorderYouTube;
       const title = input.value.trim();
       if (!title) {
         input.focus();

@@ -1,0 +1,102 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 0874212..ad38cb7 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
+       .should('have.value', 'PL-existing, PL-created');
+   });
+ 
++  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
++    cy.visit('/examples/index.html');
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.window().then((win) => {
++      const youtube = win.AudioRecorderYouTube;
++      delete win.AudioRecorderYouTube;
++      win.AudioRecorderPipeline.replaceStages([
++        {
++          name: 'Late YouTube helper',
++          action: 'upload-youtube',
++          scheduleMode: 'absolute',
++          publishAtLocal: '2026-07-02T12:00',
++          playlistIds: '',
++        },
++      ]);
++      win.AudioRecorderYouTube = {
++        ...youtube,
++        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
++          id: 'PL-late-created',
++          title: 'Late created playlist',
++        }),
++      };
++    });
++
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.get('.youtube-playlist-create input').type('Late created playlist');
++      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
++      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
++    });
++    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
++  });
++
+   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 12f9af9..0eb493c 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -3147,9 +3147,9 @@
+ 
+   function renderPlaylistChooser(stage, onChange, disabled = false) {
+     const selectedIds = getPlaylistIds(stage.playlistIds);
+-    const youtube = window.AudioRecorderYouTube;
+-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
+-      ? youtube.getSavedPlaylists()
++    const initialYouTube = window.AudioRecorderYouTube;
++    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
++      ? initialYouTube.getSavedPlaylists()
+       : loadSavedYouTubePlaylists();
+     selectedIds.forEach(id => {
+       if (!known.some(item => item.id === id)) {
+@@ -3197,7 +3197,7 @@
+     if (!known.length) {
+       const empty = document.createElement('div');
+       empty.className = 'youtube-playlist-empty';
+-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
++      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
+         ? 'No playlists loaded yet'
+         : 'Sign in to load YouTube playlists';
+       list.appendChild(empty);
+@@ -3209,14 +3209,18 @@
+     refreshButton.type = 'button';
+     refreshButton.className = 'btn-secondary compact-btn';
+     refreshButton.textContent = 'Refresh';
+-    refreshButton.disabled = disabled || !youtube ||
+-      typeof youtube.refreshPlaylists !== 'function' ||
+-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
+-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
++    refreshButton.disabled = disabled || !initialYouTube ||
++      typeof initialYouTube.refreshPlaylists !== 'function' ||
++      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
++      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
+     refreshButton.addEventListener('click', async () => {
++      const youtube = window.AudioRecorderYouTube;
+       refreshButton.disabled = true;
+       refreshButton.textContent = 'Refreshing...';
+       try {
++        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
++          throw new Error('Sign in to YouTube before loading playlists.');
++        }
+         await youtube.refreshPlaylists({ force: true });
+         renderStages();
+       } catch (error) {
+@@ -3241,6 +3245,7 @@
+     button.textContent = 'Create new';
+     button.disabled = disabled;
+     button.addEventListener('click', async () => {
++      const youtube = window.AudioRecorderYouTube;
+       const title = input.value.trim();
+       if (!title) {
+         input.focus();

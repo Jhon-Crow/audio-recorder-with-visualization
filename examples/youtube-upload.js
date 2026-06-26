@@ -225,10 +225,7 @@
   function saveYouTubePlaylist(playlist) {
     const id = String(playlist.id || '').trim();
     if (!id) return;
-    return saveYouTubePlaylists([
-      ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
-      { id, title: String(playlist.title || id).trim() || id },
-    ]);
+    return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
   }
 
   function setPlaylistIds(ids) {
@@ -339,16 +336,27 @@
   }
 
   async function refreshYouTubePlaylists({ force = false } = {}) {
-    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
-      return loadSavedYouTubePlaylists();
-    }
-
     if (playlistRefreshPromise && !force) {
       return playlistRefreshPromise;
     }
 
+    if ((!hasValidAccessToken() || !hasPlaylistScope()) && force) {
+      await restoreElectronYouTubeAuthorization();
+      if (!hasValidAccessToken()) {
+        throw new Error('Sign in to YouTube again before refreshing playlists.');
+      }
+    }
+
+    if (!hasValidAccessToken() || !hasPlaylistScope() || typeof uploader.listPlaylists !== 'function') {
+      return loadSavedYouTubePlaylists();
+    }
+
     playlistRefreshPromise = uploader.listPlaylists(accessToken)
-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+      .then(playlists => {
+        const refreshed = saveYouTubePlaylists(playlists);
+        renderPlaylistSelector();
+        return refreshed;
+      })
       .finally(() => {
         playlistRefreshPromise = null;
       });
@@ -405,8 +413,11 @@
   }
 
   async function restoreElectronYouTubeAuthorization() {
-    if (hasValidAccessToken() || !isElectronYouTubeOAuthAvailable()) {
+    if (hasValidAccessToken()) {
       return hasValidAccessToken();
+    }
+    if (!isElectronYouTubeOAuthAvailable()) {
+      return false;
     }
 
     const savedClientId = clientIdInput.value.trim();
