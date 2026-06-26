@@ -1489,6 +1489,9 @@
         if (!element.isConnected) return;
         element.style.setProperty('--pipeline-preview-image', `url("${dataUrl}")`);
         element.dataset.previewState = 'ready';
+        if (activePreviewTooltipTrigger === element) {
+          showPipelinePreviewTooltip(element);
+        }
       })
       .catch(error => {
         console.warn('Failed to render cover preview:', error);

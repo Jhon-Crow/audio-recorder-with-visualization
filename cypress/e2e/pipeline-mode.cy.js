@@ -861,6 +861,15 @@ describe('Pipeline Mode', () => {
       .and('have.class', 'pipeline-preview-trigger')
       .and('have.attr', 'aria-label')
       .and('contain', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerover');
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-hidden', 'false')
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
+      });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
       .should('not.be.checked')
       .check();
