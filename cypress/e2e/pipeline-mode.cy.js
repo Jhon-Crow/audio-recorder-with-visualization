@@ -637,6 +637,44 @@ describe('Pipeline Mode', () => {
       .should('have.value', 'PL-existing, PL-created');
   });
 
+  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
+    cy.clearLocalStorage();
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-current',
+            snippet: { title: 'Current pipeline playlist' },
+            contentDetails: { itemCount: 5 },
+          },
+        ],
+      },
+    }).as('refreshPipelinePlaylists');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale pipeline playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@refreshPipelinePlaylists');
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
+      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
+    });
+  });
+
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([

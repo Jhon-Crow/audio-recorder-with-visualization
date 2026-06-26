@@ -225,10 +225,7 @@
   function saveYouTubePlaylist(playlist) {
     const id = String(playlist.id || '').trim();
     if (!id) return;
-    return saveYouTubePlaylists([
-      ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
-      { id, title: String(playlist.title || id).trim() || id },
-    ]);
+    return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
   }
 
   function setPlaylistIds(ids) {
@@ -348,7 +345,11 @@
     }
 
     playlistRefreshPromise = uploader.listPlaylists(accessToken)
-      .then(playlists => saveYouTubePlaylists(playlists))
+      .then(playlists => {
+        const refreshed = saveYouTubePlaylists(playlists);
+        renderPlaylistSelector();
+        return refreshed;
+      })
       .finally(() => {
         playlistRefreshPromise = null;
       });
