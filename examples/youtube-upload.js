@@ -348,7 +348,7 @@
     }
 
     playlistRefreshPromise = uploader.listPlaylists(accessToken)
-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+      .then(playlists => saveYouTubePlaylists(playlists))
       .finally(() => {
         playlistRefreshPromise = null;
       });
