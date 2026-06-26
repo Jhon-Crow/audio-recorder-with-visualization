@@ -9,6 +9,7 @@ export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtub
 export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
 export const YOUTUBE_PLAYLISTS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlists';
 export const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlistItems';
+export const YOUTUBE_CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels';
 export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
 const DEFAULT_CATEGORY_ID = '10';
@@ -37,6 +38,10 @@ export interface YouTubePlaylistSummary {
   title: string;
   description?: string;
   itemCount?: number;
+}
+
+export interface YouTubeChannelDefaults {
+  tags: string[];
 }
 
 export interface YouTubeCreatePlaylistOptions {
@@ -106,6 +111,7 @@ export interface YouTubeUploaderConfig {
   thumbnailUploadEndpoint?: string;
   playlistsEndpoint?: string;
   playlistItemsEndpoint?: string;
+  channelsEndpoint?: string;
 }
 
 export class YouTubeUploadError extends Error {
@@ -149,6 +155,41 @@ export function normalizeYouTubeTags(tags?: string[] | string): string[] {
   });
 
   return normalized;
+}
+
+export function parseYouTubeChannelKeywords(keywords?: string): string[] {
+  if (!keywords) {
+    return [];
+  }
+
+  const parsed: string[] = [];
+  let current = '';
+  let quoted = false;
+
+  for (let index = 0; index < keywords.length; index += 1) {
+    const character = keywords[index];
+
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (/\s/.test(character) && !quoted) {
+      if (current.trim()) {
+        parsed.push(current.trim());
+        current = '';
+      }
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (current.trim()) {
+    parsed.push(current.trim());
+  }
+
+  return parsed;
 }
 
 export function normalizeYouTubePlaylistIds(playlistIds?: string[] | string): string[] {
@@ -242,6 +283,7 @@ export class YouTubeUploader {
   private readonly thumbnailUploadEndpoint: string;
   private readonly playlistsEndpoint: string;
   private readonly playlistItemsEndpoint: string;
+  private readonly channelsEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
@@ -249,6 +291,43 @@ export class YouTubeUploader {
     this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
     this.playlistsEndpoint = config.playlistsEndpoint || YOUTUBE_PLAYLISTS_ENDPOINT;
     this.playlistItemsEndpoint = config.playlistItemsEndpoint || YOUTUBE_PLAYLIST_ITEMS_ENDPOINT;
+    this.channelsEndpoint = config.channelsEndpoint || YOUTUBE_CHANNELS_ENDPOINT;
+  }
+
+  async getChannelDefaults(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubeChannelDefaults> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const fetchImpl = this.getFetch();
+    const url = new URL(this.channelsEndpoint);
+    url.searchParams.set('part', 'brandingSettings');
+    url.searchParams.set('mine', 'true');
+    url.searchParams.set('maxResults', '1');
+
+    const response = await fetchImpl(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to load YouTube channel defaults');
+    }
+
+    const data = await readResponseBody(response);
+    const firstChannel = isRecord(data) && Array.isArray(data.items) ? data.items[0] : undefined;
+    const brandingSettings = isRecord(firstChannel) && isRecord(firstChannel.brandingSettings)
+      ? firstChannel.brandingSettings
+      : {};
+    const channel = isRecord(brandingSettings.channel) ? brandingSettings.channel : {};
+    const keywords = typeof channel.keywords === 'string' ? channel.keywords : '';
+
+    return {
+      tags: normalizeYouTubeTags(parseYouTubeChannelKeywords(keywords)),
+    };
   }
 
   async listPlaylists(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubePlaylistSummary[]> {

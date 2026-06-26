@@ -16,6 +16,20 @@ describe('YouTube Upload UI', () => {
       statusCode: 200,
       body: { items: [] },
     });
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/channels*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            brandingSettings: {
+              channel: {
+                keywords: 'ambient "visual album" cypress ambient',
+              },
+            },
+          },
+        ],
+      },
+    }).as('loadYouTubeChannelDefaults');
   });
 
   it('shows an upload button beside the generated recording download action', () => {
@@ -787,5 +801,27 @@ describe('YouTube Upload UI', () => {
 
     cy.get('#youtubeUploadModal').should('be.visible');
     cy.get('#youtubeTimezone').should('have.value', 'Europe/Moscow');
+  });
+
+  it('fills upload tags from the signed-in YouTube channel defaults', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.wait('@loadYouTubeChannelDefaults');
+    cy.get('#youtubeTags').should('have.value', 'ambient, visual album, cypress');
   });
 });

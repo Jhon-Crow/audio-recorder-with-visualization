@@ -23,6 +23,7 @@
   const UPLOAD_FORM_STATE_KEY = 'audio-recorder-youtube-upload-form-state';
   const TOKEN_STATE_KEY = 'audio-recorder-youtube-token-state';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
+  const CHANNEL_DEFAULTS_KEY = 'audio-recorder-youtube-channel-defaults';
   const TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const TOKEN_EXPIRY_SKEW_MS = 60000;
   const LOCALHOST_EXAMPLE_ORIGIN = 'http://localhost:8080';
@@ -91,6 +92,7 @@
   let googleIdentityPromise = null;
   let activeUploadController = null;
   let playlistRefreshPromise = null;
+  let channelDefaultsRefreshPromise = null;
 
   clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   clientSecretInput.value = localStorage.getItem(CLIENT_SECRET_KEY) || '';
@@ -229,6 +231,64 @@
       ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
       { id, title: String(playlist.title || id).trim() || id },
     ]);
+  }
+
+  function normalizeTagsValue(tags) {
+    if (!tags) {
+      return '';
+    }
+
+    const rawTags = Array.isArray(tags) ? tags : String(tags).split(',');
+    const normalized = [];
+    const seen = new Set();
+
+    rawTags.forEach(tag => {
+      const value = String(tag).replace(/\s+/g, ' ').trim();
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return;
+      normalized.push(value);
+      seen.add(key);
+    });
+
+    return normalized.join(', ');
+  }
+
+  function loadYouTubeChannelDefaults() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHANNEL_DEFAULTS_KEY) || '{}');
+      return {
+        tags: normalizeTagsValue(saved.tags),
+      };
+    } catch (error) {
+      return { tags: '' };
+    }
+  }
+
+  function saveYouTubeChannelDefaults(defaults) {
+    const normalized = {
+      tags: normalizeTagsValue(defaults && defaults.tags),
+    };
+
+    localStorage.setItem(CHANNEL_DEFAULTS_KEY, JSON.stringify(normalized));
+    return normalized;
+  }
+
+  async function refreshYouTubeChannelDefaults({ force = false } = {}) {
+    if (!hasValidAccessToken() || typeof uploader.getChannelDefaults !== 'function') {
+      return loadYouTubeChannelDefaults();
+    }
+
+    if (channelDefaultsRefreshPromise && !force) {
+      return channelDefaultsRefreshPromise;
+    }
+
+    channelDefaultsRefreshPromise = uploader.getChannelDefaults(accessToken)
+      .then(saveYouTubeChannelDefaults)
+      .finally(() => {
+        channelDefaultsRefreshPromise = null;
+      });
+
+    return channelDefaultsRefreshPromise;
   }
 
   function setPlaylistIds(ids) {
@@ -588,9 +648,11 @@
   }
 
   function getDefaultUploadFormState() {
+    const channelDefaults = loadYouTubeChannelDefaults();
+
     return {
       description: '',
-      tags: 'audio, visualizer',
+      tags: channelDefaults.tags || 'audio, visualizer',
       playlistIds: '',
       categoryId: '10',
       privacyStatus: 'private',
@@ -779,6 +841,16 @@
     tagsInput.value = savedState.tags;
     playlistIdsInput.value = savedState.playlistIds || '';
     renderPlaylistSelector();
+    refreshYouTubeChannelDefaults()
+      .then((defaults) => {
+        const savedState = localStorage.getItem(getUploadFormStateKey());
+        if (!savedState && defaults.tags) {
+          tagsInput.value = defaults.tags;
+        }
+      })
+      .catch((error) => {
+        console.warn('Failed to refresh YouTube channel defaults:', error);
+      });
     refreshYouTubePlaylists()
       .then(() => renderPlaylistSelector())
       .catch((error) => {
@@ -928,6 +1000,7 @@
 
     try {
       await requestAccessToken(clientId);
+      await refreshYouTubeChannelDefaults({ force: true });
       closeAuthModal();
       openUploadModal();
     } catch (error) {
