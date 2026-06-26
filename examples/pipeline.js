@@ -3610,8 +3610,10 @@
     pipelineRenameInput.value = pipeline.name || '';
     pipelineRenameModal.classList.add('active');
     pipelineRenameModal.setAttribute('aria-hidden', 'false');
-    pipelineRenameInput.focus();
-    pipelineRenameInput.select();
+    requestAnimationFrame(() => {
+      pipelineRenameInput.focus();
+      pipelineRenameInput.select();
+    });
   }
 
   function closePipelineRenameDialog() {
