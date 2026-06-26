@@ -964,6 +964,10 @@
             <option value="manual">Allow manual order</option>
           </select>
         </label>
+        <label class="pipeline-modal-field pipeline-modal-checkbox" data-tooltip="When enabled, rendered visualization uploads pause so you can preview, download, upload, or skip them.">
+          <input type="checkbox" id="pipelineReviewBeforeUpload" checked aria-label="Review rendered videos before YouTube upload">
+          Review rendered videos before YouTube upload
+        </label>
       </div>
       <div class="modal-footer">
         <button id="cancelPipelineTimezoneBtn" type="button" class="btn">Cancel</button>
@@ -980,9 +984,12 @@
       </div>
       <div class="modal-body">
         <p id="pipelineReportSummary"></p>
+        <div id="pipelineReviewList" class="pipeline-review-list" style="display: none;"></div>
         <ol id="pipelineReportList" class="pipeline-report-list"></ol>
       </div>
       <div class="modal-footer">
+        <button id="skipPipelineUploadsBtn" type="button" class="btn" style="display: none;">Skip YouTube upload</button>
+        <button id="confirmPipelineUploadsBtn" type="button" class="btn btn-primary" style="display: none;">Upload to YouTube</button>
         <button id="closePipelineReportBtn" type="button" class="btn btn-primary">Done</button>
       </div>
     </div>

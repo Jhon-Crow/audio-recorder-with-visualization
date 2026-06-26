@@ -837,6 +837,16 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('keeps upload review enabled by default and can disable it from settings', () => {
+    cy.get('#pipelineSettingsBtn').click();
+    cy.get('#pipelineReviewBeforeUpload').should('be.checked').uncheck();
+    cy.get('#confirmPipelineTimezoneBtn').click();
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('audio-recorder-pipeline-review-before-upload')).to.equal('false');
+    });
+  });
+
   it('deletes a stage only after confirmation', () => {
     cy.get('#clearPipelineBtn').click();
     cy.get('#addPipelineStageBtn').click();
@@ -1342,6 +1352,166 @@ describe('Pipeline Mode', () => {
     cy.get('#recordingsList').should('contain.text', 'render-me.webm');
     cy.get('#status').should('contain.text', 'Pipeline complete: 1 task finished');
     cy.get('#resetPipelineFieldsBtn').should('be.visible');
+  });
+
+  it('reviews rendered visualization uploads before YouTube upload and can skip them', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Review before upload',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'review-me.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'should-not-upload',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      }).as('pipelineConvertForReview');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@pipelineConvertForReview').should('have.been.calledOnce');
+    cy.get('#pipelineReportModal').should('be.visible');
+    cy.get('#pipelineReviewList').should('be.visible').and('contain.text', 'Review before upload');
+    cy.get('@pipelineUploadDirect').should('not.have.been.called');
+    cy.get('#pipelineReviewList video').should('have.attr', 'src').and('match', /^blob:/);
+    cy.get('#confirmPipelineUploadsBtn').should('be.visible');
+    cy.get('#skipPipelineUploadsBtn').should('be.visible').click();
+
+    cy.get('@pipelineUploadDirect').should('not.have.been.called');
+    cy.get('#pipelineReviewList').should('not.be.visible');
+    cy.get('#pipelineReportSummary').should('contain.text', 'Pipeline complete: 1 task finished');
+    cy.get('#status').should('contain.text', 'YouTube upload skipped');
+  });
+
+  it('uploads reviewed visualization results only after confirmation', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Confirmed upload',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-description').type('Reviewed description');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'confirm-me.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'reviewed-video-id',
+        url: 'https://www.youtube.com/watch?v=reviewed-video-id',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    cy.get('#pipelineReportModal').should('be.visible');
+    cy.get('#pipelineReviewList').should('be.visible').and('contain.text', 'Confirmed upload');
+    cy.get('@pipelineUploadDirect').should('not.have.been.called');
+    cy.get('#confirmPipelineUploadsBtn').click();
+
+    cy.get('@pipelineUploadDirect').should('have.been.calledOnce');
+    cy.window().then((win) => {
+      cy.get('@pipelineUploadDirect').then((uploadDirect) => {
+        const call = uploadDirect.getCall(0).args[0];
+        expect(call.video).to.be.instanceOf(win.Blob);
+        expect(call.metadata.title).to.equal('Confirmed upload');
+        expect(call.metadata.description).to.equal('Reviewed description');
+      });
+    });
+    cy.get('#pipelineReviewList').should('not.be.visible');
+    cy.get('#pipelineReportList').should('contain.text', 'Confirmed upload');
+    cy.get('#pipelineReportList').should('contain.text', 'reviewed-video-id');
+  });
+
+  it('uploads rendered visualization results immediately when review is disabled', () => {
+    cy.get('#pipelineSettingsBtn').click();
+    cy.get('#pipelineReviewBeforeUpload').uncheck();
+    cy.get('#confirmPipelineTimezoneBtn').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Immediate upload',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'immediate-upload.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'immediate-video-id',
+        url: 'https://www.youtube.com/watch?v=immediate-video-id',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@pipelineUploadDirect').should('have.been.calledOnce');
+    cy.get('#pipelineReportModal').should('be.visible');
+    cy.get('#pipelineReviewList').should('not.be.visible');
+    cy.get('#pipelineReportList').should('contain.text', 'Immediate upload');
+    cy.get('#pipelineReportList').should('contain.text', 'immediate-video-id');
   });
 
   it('uploads direct YouTube stages with stage metadata when already signed in', () => {

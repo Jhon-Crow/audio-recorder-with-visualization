@@ -10,6 +10,7 @@
   const ACTIVE_PIPELINE_KEY = 'audio-recorder-active-pipeline-id';
   const PIPELINE_TIMEZONE_KEY = 'audio-recorder-pipeline-timezone';
   const PIPELINE_UPLOAD_ORDER_KEY = 'audio-recorder-pipeline-upload-order';
+  const PIPELINE_REVIEW_BEFORE_UPLOAD_KEY = 'audio-recorder-pipeline-review-before-upload';
   const RESET_OPTIONS_KEY = 'audio-recorder-pipeline-reset-options';
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const HOLD_TO_RESET_MS = 600;
@@ -70,15 +71,19 @@
   const timezoneModal = document.getElementById('pipelineTimezoneModal');
   const timezoneSelect = document.getElementById('pipelineTimezoneSelect');
   const uploadOrderSelect = document.getElementById('pipelineUploadOrderSelect');
+  const reviewBeforeUploadCheckbox = document.getElementById('pipelineReviewBeforeUpload');
   const cancelTimezoneBtn = document.getElementById('cancelPipelineTimezoneBtn');
   const cancelTimezoneXBtn = document.getElementById('cancelPipelineTimezoneXBtn');
   const confirmTimezoneBtn = document.getElementById('confirmPipelineTimezoneBtn');
 
   const reportModal = document.getElementById('pipelineReportModal');
   const reportSummary = document.getElementById('pipelineReportSummary');
+  const reviewList = document.getElementById('pipelineReviewList');
   const reportList = document.getElementById('pipelineReportList');
   const closeReportBtn = document.getElementById('closePipelineReportBtn');
   const closeReportXBtn = document.getElementById('closePipelineReportXBtn');
+  const skipUploadsBtn = document.getElementById('skipPipelineUploadsBtn');
+  const confirmUploadsBtn = document.getElementById('confirmPipelineUploadsBtn');
 
   const requiredElements = [
     addStageBtn, clearPipelineBtn, runPipelineBtn, resetPipelineFieldsBtn, pipelineTimezoneBtn,
@@ -87,8 +92,10 @@
     pipelineRenameModal, pipelineRenameInput, pipelineCancelRenameBtn, pipelineConfirmRenameBtn,
     deleteModal, deleteMessage, cancelDeleteBtn, cancelDeleteXBtn,
     confirmDeleteBtn, resetModal, cancelResetBtn, cancelResetXBtn, confirmResetHoldBtn,
-    timezoneModal, timezoneSelect, uploadOrderSelect, cancelTimezoneBtn, cancelTimezoneXBtn, confirmTimezoneBtn,
-    reportModal, reportSummary, reportList, closeReportBtn, closeReportXBtn,
+    timezoneModal, timezoneSelect, uploadOrderSelect, reviewBeforeUploadCheckbox,
+    cancelTimezoneBtn, cancelTimezoneXBtn, confirmTimezoneBtn,
+    reportModal, reportSummary, reviewList, reportList, closeReportBtn, closeReportXBtn,
+    skipUploadsBtn, confirmUploadsBtn,
     ...Object.values(resetCheckboxes),
   ];
 
@@ -123,6 +130,7 @@
   let pipelineUploadOrder = localStorage.getItem(PIPELINE_UPLOAD_ORDER_KEY) === 'manual'
     ? 'manual'
     : 'chronological';
+  let pipelineReviewBeforeUpload = localStorage.getItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY) !== 'false';
   let pendingDeleteStageId = '';
   let hasPipelineRun = false;
   let isPipelineRunning = false;
@@ -137,6 +145,7 @@
   let activePipelineMenuId = null;
   let pipelineRenameTargetId = null;
   let draggedPipelineId = null;
+  let pendingUploadReview = null;
 
   function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -2383,6 +2392,23 @@
     });
   }
 
+  function createObjectUrl(blob) {
+    return window.URL && typeof window.URL.createObjectURL === 'function'
+      ? window.URL.createObjectURL(blob)
+      : '';
+  }
+
+  function revokeReviewUrls(items = []) {
+    if (!window.URL || typeof window.URL.revokeObjectURL !== 'function') {
+      return;
+    }
+    items.forEach(item => {
+      if (item.previewUrl) {
+        window.URL.revokeObjectURL(item.previewUrl);
+      }
+    });
+  }
+
   function assertUploadReady(tasks) {
     if (!tasks.some(task => actionIncludesUpload(task.stage.action))) {
       return;
@@ -2400,15 +2426,26 @@
   async function executePipelineTask(task, taskIndex, totalTasks) {
     if (task.stage.action === 'upload-youtube') {
       const result = await uploadTask(task, task.file, taskIndex, totalTasks);
-      return createUploadReport(task, result);
+      return { type: 'uploaded', report: createUploadReport(task, result) };
     }
 
     const rendered = await renderTask(task, taskIndex, totalTasks);
     if (task.stage.action === 'visualize-upload') {
-      const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
-      return createUploadReport(task, result);
+      if (!pipelineReviewBeforeUpload) {
+        const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
+        return { type: 'uploaded', report: createUploadReport(task, result) };
+      }
+      return {
+        type: 'review',
+        item: {
+          task,
+          video: rendered.blob,
+          format: rendered.format || getRequestedVideoFormat(getPipelineApp()),
+          previewUrl: createObjectUrl(rendered.blob),
+        },
+      };
     }
-    return null;
+    return { type: 'rendered' };
   }
 
   function createUploadReport(task, result = {}) {
@@ -2453,10 +2490,60 @@
   }
 
   function hidePipelineReport() {
+    if (pendingUploadReview) {
+      revokeReviewUrls(pendingUploadReview.items);
+      pendingUploadReview = null;
+    }
     reportModal.style.display = 'none';
   }
 
+  function setReportMode(mode) {
+    const isReview = mode === 'review';
+    reviewList.style.display = isReview ? '' : 'none';
+    reportList.style.display = isReview ? 'none' : '';
+    skipUploadsBtn.style.display = isReview ? '' : 'none';
+    confirmUploadsBtn.style.display = isReview ? '' : 'none';
+    closeReportBtn.style.display = isReview ? 'none' : '';
+  }
+
+  function showPipelineReview(reviewItems, existingReports, totalTasks) {
+    pendingUploadReview = { items: reviewItems, reports: existingReports, totalTasks };
+    setReportMode('review');
+    reportSummary.textContent = `${reviewItems.length} rendered video${reviewItems.length === 1 ? '' : 's'} ready for review before YouTube upload.`;
+    reviewList.innerHTML = '';
+    reviewItems.forEach(({ task, previewUrl, format }, index) => {
+      const item = document.createElement('article');
+      item.className = 'pipeline-review-item';
+
+      const video = document.createElement('video');
+      video.className = 'pipeline-review-video';
+      video.controls = true;
+      video.src = previewUrl;
+
+      const details = document.createElement('div');
+      details.className = 'pipeline-review-details';
+      const title = document.createElement('strong');
+      title.textContent = task.title || `Rendered video ${index + 1}`;
+      const meta = document.createElement('span');
+      meta.textContent = `${format || 'video'} · Publish date: ${formatReportDate(task.publishAt)}`;
+      const download = document.createElement('a');
+      download.href = previewUrl;
+      download.download = `${(task.title || `pipeline-video-${index + 1}`).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || `pipeline-video-${index + 1}`}.${format || 'webm'}`;
+      download.textContent = 'Download';
+      details.appendChild(title);
+      details.appendChild(meta);
+      details.appendChild(download);
+
+      item.appendChild(video);
+      item.appendChild(details);
+      reviewList.appendChild(item);
+    });
+    reportModal.style.display = 'flex';
+    confirmUploadsBtn.focus();
+  }
+
   function showPipelineReport(uploadReports = [], totalTasks = 0) {
+    setReportMode('report');
     reportSummary.textContent = uploadReports.length
       ? `Pipeline complete: ${totalTasks} task${totalTasks === 1 ? '' : 's'} finished, ${uploadReports.length} YouTube upload${uploadReports.length === 1 ? '' : 's'} scheduled.`
       : `Pipeline complete: ${totalTasks} task${totalTasks === 1 ? '' : 's'} finished.`;
@@ -2514,6 +2601,55 @@
     reportModal.style.display = 'flex';
   }
 
+  async function confirmReviewedUploads() {
+    if (!pendingUploadReview || isPipelineRunning) {
+      return;
+    }
+
+    const review = pendingUploadReview;
+    pendingUploadReview = null;
+    isPipelineRunning = true;
+    updateRunState();
+    setReportMode('report');
+    reportSummary.textContent = 'Uploading reviewed videos to YouTube...';
+    try {
+      const uploadReports = [...review.reports];
+      for (let index = 0; index < review.items.length; index++) {
+        const item = review.items[index];
+        const result = await uploadTask(item.task, item.video, index, review.items.length);
+        uploadReports.push(createUploadReport(item.task, result));
+      }
+      revokeReviewUrls(review.items);
+      updateAppStatus(
+        `Pipeline complete: ${review.totalTasks} task${review.totalTasks === 1 ? '' : 's'} finished`,
+        'ready'
+      );
+      showPipelineReport(uploadReports, review.totalTasks);
+    } catch (error) {
+      pendingUploadReview = review;
+      setReportMode('review');
+      updateAppStatus(`Pipeline upload failed: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+      isPipelineRunning = false;
+      updateRunState();
+    }
+  }
+
+  function skipReviewedUploads() {
+    if (!pendingUploadReview) {
+      return;
+    }
+
+    const review = pendingUploadReview;
+    revokeReviewUrls(review.items);
+    pendingUploadReview = null;
+    updateAppStatus(
+      `Pipeline complete: ${review.totalTasks} task${review.totalTasks === 1 ? '' : 's'} finished, YouTube upload skipped`,
+      'ready'
+    );
+    showPipelineReport(review.reports, review.totalTasks);
+  }
+
   async function runPipeline() {
     if (isPipelineRunning) return;
 
@@ -2540,11 +2676,14 @@
     try {
       assertUploadReady(tasks);
       const uploadReports = [];
+      const reviewItems = [];
 
       for (let index = 0; index < tasks.length; index++) {
-        const report = await executePipelineTask(tasks[index], index, tasks.length);
-        if (report) {
-          uploadReports.push(report);
+        const result = await executePipelineTask(tasks[index], index, tasks.length);
+        if (result?.type === 'uploaded') {
+          uploadReports.push(result.report);
+        } else if (result?.type === 'review') {
+          reviewItems.push(result.item);
         }
       }
 
@@ -2552,7 +2691,11 @@
         `Pipeline complete: ${tasks.length} task${tasks.length === 1 ? '' : 's'} finished`,
         'ready'
       );
-      showPipelineReport(uploadReports, tasks.length);
+      if (reviewItems.length) {
+        showPipelineReview(reviewItems, uploadReports, tasks.length);
+      } else {
+        showPipelineReport(uploadReports, tasks.length);
+      }
     } catch (error) {
       console.error('Pipeline failed:', error);
       updateAppStatus(`Pipeline failed: ${error.message || 'Unknown error'}`, 'error');
@@ -3628,6 +3771,7 @@
       createdAt: new Date().toISOString(),
       timezone: pipelineTimezone,
       uploadOrder: pipelineUploadOrder,
+      reviewBeforeUpload: pipelineReviewBeforeUpload,
       stages: stages.map(sanitizeStage),
       thumbnail,
     };
@@ -3646,12 +3790,14 @@
     stages = Array.isArray(pipeline.stages) ? pipeline.stages.map(normalizeStage) : [];
     pipelineTimezone = pipeline.timezone || pipelineTimezone;
     pipelineUploadOrder = pipeline.uploadOrder === 'manual' ? 'manual' : 'chronological';
+    pipelineReviewBeforeUpload = pipeline.reviewBeforeUpload !== false;
     activePipelineId = pipeline.id;
     localStorage.setItem(ACTIVE_PIPELINE_KEY, activePipelineId);
     if (pipelineTimezone) {
       localStorage.setItem(PIPELINE_TIMEZONE_KEY, pipelineTimezone);
     }
     localStorage.setItem(PIPELINE_UPLOAD_ORDER_KEY, pipelineUploadOrder);
+    localStorage.setItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY, String(pipelineReviewBeforeUpload));
     saveStages();
     updateTimezoneButton();
     renderStages();
@@ -3920,6 +4066,7 @@
     }
     timezoneSelect.value = currentTimezone;
     uploadOrderSelect.value = pipelineUploadOrder;
+    reviewBeforeUploadCheckbox.checked = pipelineReviewBeforeUpload;
     timezoneModal.style.display = 'flex';
   }
 
@@ -3936,8 +4083,10 @@
   function saveTimezone() {
     pipelineTimezone = timezoneSelect.value || getBrowserTimezone();
     pipelineUploadOrder = uploadOrderSelect.value === 'manual' ? 'manual' : 'chronological';
+    pipelineReviewBeforeUpload = reviewBeforeUploadCheckbox.checked;
     localStorage.setItem(PIPELINE_TIMEZONE_KEY, pipelineTimezone);
     localStorage.setItem(PIPELINE_UPLOAD_ORDER_KEY, pipelineUploadOrder);
+    localStorage.setItem(PIPELINE_REVIEW_BEFORE_UPLOAD_KEY, String(pipelineReviewBeforeUpload));
     updateTimezoneButton();
     closeTimezoneModal();
     updateRunState();
@@ -4009,6 +4158,8 @@
   confirmTimezoneBtn.addEventListener('click', saveTimezone);
   closeReportBtn.addEventListener('click', hidePipelineReport);
   closeReportXBtn.addEventListener('click', hidePipelineReport);
+  skipUploadsBtn.addEventListener('click', skipReviewedUploads);
+  confirmUploadsBtn.addEventListener('click', confirmReviewedUploads);
 
   savePipelineBtn.addEventListener('click', saveCurrentPipeline);
 
