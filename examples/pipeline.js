@@ -3209,10 +3209,7 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = disabled || !initialYouTube ||
-      typeof initialYouTube.refreshPlaylists !== 'function' ||
-      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
-      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
+    refreshButton.disabled = disabled;
     refreshButton.addEventListener('click', async () => {
       const youtube = window.AudioRecorderYouTube;
       refreshButton.disabled = true;

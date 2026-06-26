@@ -1,0 +1,453 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 0874212..510385a 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -637,6 +637,44 @@ describe('Pipeline Mode', () => {
+       .should('have.value', 'PL-existing, PL-created');
+   });
+ 
++  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
++    cy.clearLocalStorage();
++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++      statusCode: 200,
++      body: {
++        items: [
++          {
++            id: 'PL-current',
++            snippet: { title: 'Current pipeline playlist' },
++            contentDetails: { itemCount: 5 },
++          },
++        ],
++      },
++    }).as('refreshPipelinePlaylists');
++
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++          accessToken: 'stored-token',
++          accessTokenExpiresAt: Date.now() + 3600 * 1000,
++          tokenScope: combinedYouTubeScope,
++        }));
++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++          { id: 'PL-stale', title: 'Stale pipeline playlist' },
++        ]));
++      },
++    });
++    cy.waitForVisualization();
++    cy.wait('@refreshPipelinePlaylists');
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
++      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
++    });
++  });
++
+   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
+diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
+index 45cd15e..1b82892 100644
+--- a/cypress/e2e/youtube-upload-ui.cy.js
++++ b/cypress/e2e/youtube-upload-ui.cy.js
+@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
+     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+   });
+ 
++  it('refreshes cached YouTube playlists from the API on app startup', () => {
++    const futureExpiry = Date.now() + 3600 * 1000;
++
++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++      statusCode: 200,
++      body: {
++        items: [
++          {
++            id: 'PL-new',
++            snippet: { title: 'New playlist from YouTube' },
++            contentDetails: { itemCount: 1 },
++          },
++        ],
++      },
++    }).as('listYouTubePlaylists');
++
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++          accessToken: 'stored-token',
++          accessTokenExpiresAt: futureExpiry,
++          tokenScope: combinedYouTubeScope,
++        }));
++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++          { id: 'PL-stale', title: 'Stale cached playlist' },
++        ]));
++      },
++    });
++    cy.waitForVisualization();
++    cy.wait('@listYouTubePlaylists');
++
++    cy.window().then((win) => {
++      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
++        { id: 'PL-new', title: 'New playlist from YouTube' },
++      ]);
++    });
++
++    addSyntheticRecording();
++    cy.contains('button', 'Upload to YouTube').click();
++
++    cy.get('#youtubeUploadModal').should('be.visible');
++    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
++    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
++  });
++
+   it('loads existing YouTube playlists and creates a new playlist by title', () => {
+     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+       statusCode: 200,
+diff --git a/docs/case-studies/issue-181/analysis.md b/docs/case-studies/issue-181/analysis.md
+new file mode 100644
+index 0000000..bf0c711
+--- /dev/null
++++ b/docs/case-studies/issue-181/analysis.md
+@@ -0,0 +1,52 @@
++# Issue 181 Case Study: Stale YouTube Playlists After Restart
++
++## Problem
++
++Issue 181 reports that YouTube playlist data remains stale after restarting the app. The affected UI stores playlist summaries in `localStorage` under `audio-recorder-youtube-playlists`, then uses that cache in the upload modal and pipeline playlist chooser.
++
++The first PR change made API refresh replace the cache instead of merging it. Reviewer feedback on PR 183 confirmed stale data could still be seen after restart, so the remaining problem is not only cache replacement semantics; rendered consumers also need to refresh from the authoritative cache after startup.
++
++## Collected Data
++
++- Issue metadata: `logs/issue-181.json`
++- PR 183 metadata and discussion: `logs/pr-183.json`
++- PR 183 diff: `logs/pr-183.diff`
++- Related PR 185 diff: `logs/pr-185.diff`
++- CI run list for the branch: `logs/ci-runs.json`
++
++PR 185 is relevant because it fixes a related YouTube helper readiness problem in the pipeline selector. Its useful pattern is to read `window.AudioRecorderYouTube` at action time, not only at render time.
++
++## External Reference
++
++YouTube Data API `playlists.list` with `mine=true` returns playlists owned by the authenticated channel. For this app, that API response is the authoritative playlist set during refresh. Local cache should be a startup/display cache only, not a source that preserves removed or renamed playlists after a successful refresh.
++
++Reference: https://developers.google.com/youtube/v3/docs/playlists/list
++
++## Root Cause
++
++The local playlist cache had two failure modes:
++
++1. Refresh previously merged API results into cached results, preserving stale playlists that no longer came back from YouTube.
++2. Startup refresh could update `localStorage` while already-rendered selectors still showed the earlier cached list until a later manual render.
++
++The pipeline selector also captured `window.AudioRecorderYouTube` at render time, so controls could stay tied to a missing or old helper if the YouTube module became available later.
++
++## Solution
++
++- Treat successful playlist refresh as replacement with the latest YouTube API response.
++- Keep playlist creation additive because a newly created playlist is an immediate local mutation.
++- Re-render the upload playlist selector after refresh resolves so visible UI cannot keep stale startup markup.
++- Apply the PR 185 late-helper pattern to pipeline playlist refresh/create actions.
++- Add Cypress regressions for upload and pipeline startup refresh replacing stale cached playlists.
++
++## Alternatives Considered
++
++- Clearing the playlist cache on every restart: avoids stale data but creates a worse signed-in startup experience when the network is unavailable.
++- Disabling cached playlists entirely: removes useful offline/context display and makes saved selected playlist IDs harder to present.
++- Adding cache timestamps only: useful later, but insufficient because the app already has an authenticated API refresh that should replace stale data when it succeeds.
++
++## Verification Strategy
++
++- Unit tests cover playlist API normalization and upload behavior.
++- Cypress upload regression seeds stale `localStorage`, returns a different API playlist, then verifies the modal only shows the refreshed playlist.
++- Cypress pipeline regression seeds the same stale cache, waits for startup refresh, then verifies pipeline stages only show the refreshed playlist.
+diff --git a/docs/case-studies/issue-181/logs/ci-runs.json b/docs/case-studies/issue-181/logs/ci-runs.json
+new file mode 100644
+index 0000000..35392b7
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/ci-runs.json
+@@ -0,0 +1 @@
++[{"conclusion":"","createdAt":"2026-06-26T12:02:50Z","databaseId":28236770983,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553","status":"in_progress","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T09:04:50Z","databaseId":28228370693,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553","status":"completed","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T08:57:29Z","databaseId":28228007268,"headSha":"dac74090f360e3ddfeadf6efb8d5508810773631","status":"completed","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T08:45:49Z","databaseId":28227447446,"headSha":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d","status":"completed","workflowName":"Build Portable EXE"}]
+diff --git a/docs/case-studies/issue-181/logs/issue-181.json b/docs/case-studies/issue-181/logs/issue-181.json
+new file mode 100644
+index 0000000..b700e31
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/issue-181.json
+@@ -0,0 +1 @@
++{"author":{"id":"U_kgDOB_qn0g","is_bot":false,"login":"Jhon-Crow","name":"Jhon-Crow"},"body":"при заходе в приложение должны обновляться данные от ютуба (сейчас не подгрузились созданные вчера плейлисты)\n","createdAt":"2026-06-26T08:44:20Z","number":181,"state":"OPEN","title":"update взаимодействие с ютуб апи","updatedAt":"2026-06-26T08:44:20Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181"}
+diff --git a/docs/case-studies/issue-181/logs/pr-183.diff b/docs/case-studies/issue-181/logs/pr-183.diff
+new file mode 100644
+index 0000000..84a9040
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-183.diff
+@@ -0,0 +1,69 @@
++diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
++index 45cd15e..1b82892 100644
++--- a/cypress/e2e/youtube-upload-ui.cy.js
+++++ b/cypress/e2e/youtube-upload-ui.cy.js
++@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
++     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
++   });
++ 
+++  it('refreshes cached YouTube playlists from the API on app startup', () => {
+++    const futureExpiry = Date.now() + 3600 * 1000;
+++
+++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+++      statusCode: 200,
+++      body: {
+++        items: [
+++          {
+++            id: 'PL-new',
+++            snippet: { title: 'New playlist from YouTube' },
+++            contentDetails: { itemCount: 1 },
+++          },
+++        ],
+++      },
+++    }).as('listYouTubePlaylists');
+++
+++    cy.visit('/examples/index.html', {
+++      onBeforeLoad(win) {
+++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+++          accessToken: 'stored-token',
+++          accessTokenExpiresAt: futureExpiry,
+++          tokenScope: combinedYouTubeScope,
+++        }));
+++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+++          { id: 'PL-stale', title: 'Stale cached playlist' },
+++        ]));
+++      },
+++    });
+++    cy.waitForVisualization();
+++    cy.wait('@listYouTubePlaylists');
+++
+++    cy.window().then((win) => {
+++      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
+++        { id: 'PL-new', title: 'New playlist from YouTube' },
+++      ]);
+++    });
+++
+++    addSyntheticRecording();
+++    cy.contains('button', 'Upload to YouTube').click();
+++
+++    cy.get('#youtubeUploadModal').should('be.visible');
+++    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
+++    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
+++  });
+++
++   it('loads existing YouTube playlists and creates a new playlist by title', () => {
++     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++       statusCode: 200,
++diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
++index 4c9006a..9f58882 100644
++--- a/examples/youtube-upload.js
+++++ b/examples/youtube-upload.js
++@@ -348,7 +348,7 @@
++     }
++ 
++     playlistRefreshPromise = uploader.listPlaylists(accessToken)
++-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+++      .then(playlists => saveYouTubePlaylists(playlists))
++       .finally(() => {
++         playlistRefreshPromise = null;
++       });
+diff --git a/docs/case-studies/issue-181/logs/pr-183.json b/docs/case-studies/issue-181/logs/pr-183.json
+new file mode 100644
+index 0000000..b0289e3
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-183.json
+@@ -0,0 +1 @@
++{"author":{"id":"MDQ6VXNlcjE0MzE5MDQ=","is_bot":false,"login":"konard","name":"Konstantin Diachenko"},"baseRefName":"main","body":"## Summary\\n- Replace cached YouTube playlists with the latest YouTube API response during refresh instead of merging stale entries\\n- Keep created playlists saved immediately through the existing create flow\\n- Add Cypress coverage for startup refresh replacing a stale cached playlist with the API result\\n\\nFixes Jhon-Crow/audio-recorder-with-visualization#181\\n\\n## Testing\\n- npm test -- --runInBand tests/YouTubeUploader.test.ts\\n- npm run typecheck\\n- npx cypress run --spec cypress/e2e/youtube-upload-ui.cy.js (focused local run for \"refreshes cached YouTube playlists from the API on app startup\")\\n\\n## Notes\\n- A full local youtube-upload-ui Cypress spec run still shows unrelated existing settings-sidebar failures where #presetSettingsBtn inherits pointer-events: none; the new playlist refresh test passes when focused.\n\n\nFixes Jhon-Crow/audio-recorder-with-visualization#181","comments":[{"id":"IC_kwDOQyCEds8AAAABHpVLdQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the fix to PR #183: https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nChanged `examples/youtube-upload.js` so YouTube playlist refresh replaces the cached playlist list with the latest API response instead of merging stale cached entries. Added Cypress coverage proving startup refresh removes a stale cached playlist and shows the newly returned YouTube playlist.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- Focused Cypress test passed for `refreshes cached YouTube playlists from the API on app startup`\n\nNotes:\n- Full local `youtube-upload-ui.cy.js` still has unrelated existing failures around `#presetSettingsBtn` inheriting `pointer-events: none`.\n- No GitHub Actions runs were listed yet for the fork branch after push.\n- Working tree is clean, PR is marked ready for review.\n\n---\n*This summary was automatically extracted from the AI working session output.*","createdAt":"2026-06-26T08:57:58Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808067957","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpVQPA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.108850\n\n### 📊 **Context and tokens usage:**\n- 143.7K / 200K (72%) input tokens, 8.1K / 128K (6%) output tokens\n\nTotal: (143.7K + 2.3M cached) input tokens, 8.1K output tokens, $4.108850 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1300KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/30dc915eb8eb31a4ce43f7bb44772656/raw/868e47020974f26644560d8b5007e8ceb1c7bb74/tmp-solution-draft-log-pr-1782464283946.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","createdAt":"2026-06-26T08:58:10Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808069180","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpYETA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","createdAt":"2026-06-26T09:04:43Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808115276","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqmbSQ","author":{"login":"Jhon-Crow"},"authorAssociation":"OWNER","body":"всё ещё старая информация после рестарта\r\nтак же проверь и прими если релевантны наработки из https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/185\r\n \r\nPlease collect data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), and propose possible solutions  (including known existing components/libraries, that solve similar problem or can help in solutions).\r\nи реализуй","createdAt":"2026-06-26T12:03:41Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809399113","viewerDidAuthor":false},{"id":"IC_kwDOQyCEds8AAAABHqm2LQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:04:37.396Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","createdAt":"2026-06-26T12:04:40Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809405997","viewerDidAuthor":true}],"commits":[{"authoredDate":"2026-06-26T08:45:38Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:45:38Z","messageBody":"Adding .gitkeep for PR creation (default mode).\nThis file will be removed when the task is complete.\n\nIssue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181","messageHeadline":"Initial commit with task details","oid":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d"},{"authoredDate":"2026-06-26T08:57:18Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:57:18Z","messageBody":"","messageHeadline":"Refresh YouTube playlists on app startup","oid":"dac74090f360e3ddfeadf6efb8d5508810773631"},{"authoredDate":"2026-06-26T09:04:44Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T09:04:44Z","messageBody":"This reverts commit 7702534fe575a4fbafbe292e1ca1a0d60e23a21d.","messageHeadline":"Revert \"Initial commit with task details\"","oid":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553"}],"createdAt":"2026-06-26T08:45:45Z","headRefName":"issue-181-0b636e7c0712","isDraft":true,"mergeStateStatus":"UNSTABLE","number":183,"state":"OPEN","title":"Refresh YouTube playlists on app startup","updatedAt":"2026-06-26T12:04:40Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183"}
+diff --git a/docs/case-studies/issue-181/logs/pr-185.diff b/docs/case-studies/issue-181/logs/pr-185.diff
+new file mode 100644
+index 0000000..86aa83b
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-185.diff
+@@ -0,0 +1,102 @@
++diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
++index 0874212..ad38cb7 100644
++--- a/cypress/e2e/pipeline-mode.cy.js
+++++ b/cypress/e2e/pipeline-mode.cy.js
++@@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
++       .should('have.value', 'PL-existing, PL-created');
++   });
++ 
+++  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
+++    cy.visit('/examples/index.html');
+++    cy.waitForVisualization();
+++    cy.contains('.tab', 'Pipeline').click();
+++
+++    cy.window().then((win) => {
+++      const youtube = win.AudioRecorderYouTube;
+++      delete win.AudioRecorderYouTube;
+++      win.AudioRecorderPipeline.replaceStages([
+++        {
+++          name: 'Late YouTube helper',
+++          action: 'upload-youtube',
+++          scheduleMode: 'absolute',
+++          publishAtLocal: '2026-07-02T12:00',
+++          playlistIds: '',
+++        },
+++      ]);
+++      win.AudioRecorderYouTube = {
+++        ...youtube,
+++        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
+++          id: 'PL-late-created',
+++          title: 'Late created playlist',
+++        }),
+++      };
+++    });
+++
+++    cy.get('.pipeline-stage').first().within(() => {
+++      cy.get('.youtube-playlist-create input').type('Late created playlist');
+++      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
+++      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
+++    });
+++    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
+++  });
+++
++   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
++     cy.window().then((win) => {
++       win.AudioRecorderPipeline.replaceStages([
++diff --git a/examples/pipeline.js b/examples/pipeline.js
++index 12f9af9..0eb493c 100644
++--- a/examples/pipeline.js
+++++ b/examples/pipeline.js
++@@ -3147,9 +3147,9 @@
++ 
++   function renderPlaylistChooser(stage, onChange, disabled = false) {
++     const selectedIds = getPlaylistIds(stage.playlistIds);
++-    const youtube = window.AudioRecorderYouTube;
++-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
++-      ? youtube.getSavedPlaylists()
+++    const initialYouTube = window.AudioRecorderYouTube;
+++    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
+++      ? initialYouTube.getSavedPlaylists()
++       : loadSavedYouTubePlaylists();
++     selectedIds.forEach(id => {
++       if (!known.some(item => item.id === id)) {
++@@ -3197,7 +3197,7 @@
++     if (!known.length) {
++       const empty = document.createElement('div');
++       empty.className = 'youtube-playlist-empty';
++-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
+++      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
++         ? 'No playlists loaded yet'
++         : 'Sign in to load YouTube playlists';
++       list.appendChild(empty);
++@@ -3209,14 +3209,18 @@
++     refreshButton.type = 'button';
++     refreshButton.className = 'btn-secondary compact-btn';
++     refreshButton.textContent = 'Refresh';
++-    refreshButton.disabled = disabled || !youtube ||
++-      typeof youtube.refreshPlaylists !== 'function' ||
++-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
++-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
+++    refreshButton.disabled = disabled || !initialYouTube ||
+++      typeof initialYouTube.refreshPlaylists !== 'function' ||
+++      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
+++      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
++     refreshButton.addEventListener('click', async () => {
+++      const youtube = window.AudioRecorderYouTube;
++       refreshButton.disabled = true;
++       refreshButton.textContent = 'Refreshing...';
++       try {
+++        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
+++          throw new Error('Sign in to YouTube before loading playlists.');
+++        }
++         await youtube.refreshPlaylists({ force: true });
++         renderStages();
++       } catch (error) {
++@@ -3241,6 +3245,7 @@
++     button.textContent = 'Create new';
++     button.disabled = disabled;
++     button.addEventListener('click', async () => {
+++      const youtube = window.AudioRecorderYouTube;
++       const title = input.value.trim();
++       if (!title) {
++         input.focus();
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 12f9af9..0eb493c 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -3147,9 +3147,9 @@
+ 
+   function renderPlaylistChooser(stage, onChange, disabled = false) {
+     const selectedIds = getPlaylistIds(stage.playlistIds);
+-    const youtube = window.AudioRecorderYouTube;
+-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
+-      ? youtube.getSavedPlaylists()
++    const initialYouTube = window.AudioRecorderYouTube;
++    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
++      ? initialYouTube.getSavedPlaylists()
+       : loadSavedYouTubePlaylists();
+     selectedIds.forEach(id => {
+       if (!known.some(item => item.id === id)) {
+@@ -3197,7 +3197,7 @@
+     if (!known.length) {
+       const empty = document.createElement('div');
+       empty.className = 'youtube-playlist-empty';
+-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
++      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
+         ? 'No playlists loaded yet'
+         : 'Sign in to load YouTube playlists';
+       list.appendChild(empty);
+@@ -3209,14 +3209,18 @@
+     refreshButton.type = 'button';
+     refreshButton.className = 'btn-secondary compact-btn';
+     refreshButton.textContent = 'Refresh';
+-    refreshButton.disabled = disabled || !youtube ||
+-      typeof youtube.refreshPlaylists !== 'function' ||
+-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
+-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
++    refreshButton.disabled = disabled || !initialYouTube ||
++      typeof initialYouTube.refreshPlaylists !== 'function' ||
++      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
++      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
+     refreshButton.addEventListener('click', async () => {
++      const youtube = window.AudioRecorderYouTube;
+       refreshButton.disabled = true;
+       refreshButton.textContent = 'Refreshing...';
+       try {
++        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
++          throw new Error('Sign in to YouTube before loading playlists.');
++        }
+         await youtube.refreshPlaylists({ force: true });
+         renderStages();
+       } catch (error) {
+@@ -3241,6 +3245,7 @@
+     button.textContent = 'Create new';
+     button.disabled = disabled;
+     button.addEventListener('click', async () => {
++      const youtube = window.AudioRecorderYouTube;
+       const title = input.value.trim();
+       if (!title) {
+         input.focus();
+diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+index 4c9006a..59fb367 100644
+--- a/examples/youtube-upload.js
++++ b/examples/youtube-upload.js
+@@ -225,10 +225,7 @@
+   function saveYouTubePlaylist(playlist) {
+     const id = String(playlist.id || '').trim();
+     if (!id) return;
+-    return saveYouTubePlaylists([
+-      ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
+-      { id, title: String(playlist.title || id).trim() || id },
+-    ]);
++    return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
+   }
+ 
+   function setPlaylistIds(ids) {
+@@ -348,7 +345,11 @@
+     }
+ 
+     playlistRefreshPromise = uploader.listPlaylists(accessToken)
+-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
++      .then(playlists => {
++        const refreshed = saveYouTubePlaylists(playlists);
++        renderPlaylistSelector();
++        return refreshed;
++      })
+       .finally(() => {
+         playlistRefreshPromise = null;
+       });

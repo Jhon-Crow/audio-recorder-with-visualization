@@ -675,6 +675,42 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('keeps the manual pipeline playlist refresh available when helpers load after render', () => {
+    cy.clearLocalStorage();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale manual playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderYouTube = {
+        getSavedPlaylists: () => [{ id: 'PL-fresh', title: 'Fresh manual playlist' }],
+        hasValidAccessToken: () => true,
+        hasPlaylistScope: () => true,
+        refreshPlaylists: cy.stub().as('refreshLatePipelinePlaylists').resolves([
+          { id: 'PL-fresh', title: 'Fresh manual playlist' },
+        ]),
+      };
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('be.visible');
+      cy.contains('button', 'Refresh').should('not.be.disabled').click();
+    });
+
+    cy.get('@refreshLatePipelinePlaylists').should('have.been.calledWith', { force: true });
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.youtube-playlist-option').should('contain.text', 'Fresh manual playlist');
+      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('not.exist');
+    });
+  });
+
   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
     cy.window().then((win) => {
       win.AudioRecorderPipeline.replaceStages([
