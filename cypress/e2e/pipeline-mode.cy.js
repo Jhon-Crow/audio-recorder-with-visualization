@@ -211,6 +211,20 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineList .pipeline-load-btn').should('have.length', 1).and('contain.text', 'Pipeline 1');
   });
 
+  it('restores selected pipeline files after reload so the pipeline can run', () => {
+    selectFilesForEveryStage();
+    cy.get('#runPipelineBtn').should('not.be.disabled');
+    cy.get('.pipeline-file-btn').first().should('contain.text', 'track-1.mp3');
+
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-file-btn').first().should('contain.text', 'track-1.mp3');
+    cy.get('#pipelineValidationStatus').should('have.text', '');
+    cy.get('#runPipelineBtn').should('not.be.disabled');
+  });
+
   it('shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards', () => {
     cy.get('#pipelineStageNav')
       .should('have.class', 'is-open')
