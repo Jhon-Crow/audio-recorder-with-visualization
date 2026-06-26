@@ -1002,6 +1002,79 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').should('have.value', '45');
   });
 
+  it('keeps saved album cover previews after reload and pipeline restore', () => {
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-file-input').selectFile([
+      {
+        contents: Cypress.Buffer.from('track-one'),
+        fileName: 'track-one.mp3',
+        mimeType: 'audio/mpeg',
+      },
+      {
+        contents: Cypress.Buffer.from('track-two'),
+        fileName: 'track-two.mp3',
+        mimeType: 'audio/mpeg',
+      },
+    ], { force: true });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').find('input[type="file"]').selectFile({
+      contents: Cypress.Buffer.from(tinyPngBase64, 'base64'),
+      fileName: 'album-cover.png',
+      mimeType: 'image/png',
+    }, { force: true });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video').check();
+    cy.window().then((win) => win.AudioRecorderPipeline.saveCurrentPipeline());
+
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+      expect(pipelines[0].stages[1].storedCover).to.include({
+        name: 'album-cover.png',
+        type: 'image/png',
+      });
+      expect(pipelines[0].stages[1].storedCover.dataUrl).to.match(/^data:image\/png;base64,/);
+    });
+
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+    cy.get('#pipelineList .pipeline-load-btn').first().click();
+
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip', 'album-cover.png preview')
+      .trigger('pointerover');
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
+
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip', 'album-cover.png preview')
+      .trigger('pointerover', { force: true });
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+  });
+
   it('schedules regular release posts from ordered files and cycle slots', () => {
     const publishAtValues = [];
     const uploadTitles = [];
