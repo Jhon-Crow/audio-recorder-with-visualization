@@ -1,6 +1,7 @@
 describe('Pipeline Mode', () => {
   const verticalPreviewBackground = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 192"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="0" y2="1"%3E%3Cstop stop-color="%2307202f"/%3E%3Cstop offset="1" stop-color="%230abf53"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="108" height="192" fill="url(%23g)"/%3E%3Ccircle cx="54" cy="78" r="31" fill="%23ffffff" fill-opacity=".18"/%3E%3C/svg%3E';
   const landscapePreviewBackground = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 108"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="1" y2="0"%3E%3Cstop stop-color="%23120427"/%3E%3Cstop offset="1" stop-color="%23ff5a5a"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="192" height="108" fill="url(%23g)"/%3E%3Cpath d="M0 77 C44 42 82 102 126 56 S180 47 192 36" stroke="%23ffdd57" stroke-width="7" fill="none" stroke-linecap="round"/%3E%3C/svg%3E';
+  const tinyPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR42mP8z8Dwn4GBgYGJAQgwMABKbgQG6gz8ZAAAAABJRU5ErkJggg==';
   const savedVisualizationPresets = [
     {
       id: 'preset-cypress-bars',
@@ -1059,6 +1060,36 @@ describe('Pipeline Mode', () => {
       },
     ], { force: true });
     cy.get('.pipeline-stage').eq(1).find('.pipeline-album-track').should('have.length', 2);
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').find('input[type="file"]').selectFile({
+      contents: Cypress.Buffer.from(tinyPngBase64, 'base64'),
+      fileName: 'album-cover.png',
+      mimeType: 'image/png',
+    }, { force: true });
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-file-btn')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip')
+      .and('contain', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-preview-src')
+      .and('have.class', 'pipeline-preview-trigger')
+      .and('have.attr', 'aria-label')
+      .and('contain', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerover');
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-hidden', 'false')
+      .and('have.attr', 'data-preview-src')
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
+      });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
       .should('not.be.checked')
       .check();
@@ -1081,6 +1112,17 @@ describe('Pipeline Mode', () => {
       .and('be.disabled');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name')
       .should('have.value', 'Album premiere - full album');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
+      .should('contain.text', 'track-one.mp3')
+      .and('contain.text', 'track-two.mp3')
+      .and('not.contain.text', 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ')
+      .and('be.disabled');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-names')
+      .should('contain.text', '2 selected');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip')
+      .and('contain', 'album-cover.png preview');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').clear();
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').type('Complete album visual');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-description')
@@ -1159,6 +1201,7 @@ describe('Pipeline Mode', () => {
     cy.get('@pipelineUpload').then((upload) => {
       const fullAlbumUpload = upload.getCalls().find(call => call.args[0].metadata.title === 'Complete album visual');
       expect(fullAlbumUpload.args[0].video).to.have.property('size', 'track-one.mp3track-two.mp3'.length);
+      expect(fullAlbumUpload.args[0].thumbnail).to.have.property('name', 'album-cover.png');
     });
     cy.window().its('__pipelineProgressWidths').should((widths) => {
       expect(widths.some(width => parseFloat(width) > 0)).to.equal(true);
@@ -1177,6 +1220,92 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video').should('be.checked');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-stage-name').should('have.value', 'Complete album visual');
     cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').should('have.value', '45');
+  });
+
+  it('keeps saved album cover previews after reload and pipeline restore', () => {
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-file-input').selectFile([
+      {
+        contents: Cypress.Buffer.from('track-one'),
+        fileName: 'track-one.mp3',
+        mimeType: 'audio/mpeg',
+      },
+      {
+        contents: Cypress.Buffer.from('track-two'),
+        fileName: 'track-two.mp3',
+        mimeType: 'audio/mpeg',
+      },
+    ], { force: true });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').find('input[type="file"]').selectFile({
+      contents: Cypress.Buffer.from(tinyPngBase64, 'base64'),
+      fileName: 'album-cover.png',
+      mimeType: 'image/png',
+    }, { force: true });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready');
+    cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video').check();
+    cy.window().then((win) => win.AudioRecorderPipeline.saveCurrentPipeline());
+
+    cy.window().then((win) => {
+      const pipelines = JSON.parse(win.localStorage.getItem('audio-recorder-pipelines'));
+      expect(pipelines).to.have.length(1);
+      expect(pipelines[0].stages[1].storedCover).to.include({
+        name: 'album-cover.png',
+        type: 'image/png',
+      });
+      expect(pipelines[0].stages[1].storedCover.dataUrl).to.match(/^data:image\/png;base64,/);
+    });
+
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+    cy.get('#pipelineList .pipeline-load-btn').first().click();
+
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
+      .and('have.attr', 'data-tooltip', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerover', { force: true });
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerout');
+
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-file-btn')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.attr', 'data-tooltip', 'album-cover.png preview')
+      .trigger('pointerover', { force: true });
+    cy.get('#pipelinePreviewTooltip')
+      .should('have.class', 'is-visible')
+      .and('have.attr', 'aria-label', 'album-cover.png preview')
+      .and('have.attr', 'data-preview-src', `data:image/png;base64,${tinyPngBase64}`)
+      .should(($tooltip) => {
+        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+        expect(previewImage).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
+    cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
+      .should('have.attr', 'src')
+      .then(src => {
+        expect(src).to.include(`data:image/png;base64,${tinyPngBase64}`);
+      });
   });
 
   it('schedules regular release posts from ordered files and cycle slots', () => {

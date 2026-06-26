@@ -5,7 +5,7 @@ index 0874212..ad38cb7 100644
 @@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
        .should('have.value', 'PL-existing, PL-created');
    });
- 
+
 +  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
 +    cy.visit('/examples/index.html');
 +    cy.waitForVisualization();
@@ -48,7 +48,7 @@ index 12f9af9..0eb493c 100644
 --- a/examples/pipeline.js
 +++ b/examples/pipeline.js
 @@ -3147,9 +3147,9 @@
- 
+
    function renderPlaylistChooser(stage, onChange, disabled = false) {
      const selectedIds = getPlaylistIds(stage.playlistIds);
 -    const youtube = window.AudioRecorderYouTube;

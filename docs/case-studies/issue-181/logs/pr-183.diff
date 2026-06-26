@@ -5,7 +5,7 @@ index 45cd15e..1b82892 100644
 @@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
      cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
    });
- 
+
 +  it('refreshes cached YouTube playlists from the API on app startup', () => {
 +    const futureExpiry = Date.now() + 3600 * 1000;
 +
@@ -60,7 +60,7 @@ index 4c9006a..9f58882 100644
 +++ b/examples/youtube-upload.js
 @@ -348,7 +348,7 @@
      }
- 
+
      playlistRefreshPromise = uploader.listPlaylists(accessToken)
 -      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
 +      .then(playlists => saveYouTubePlaylists(playlists))

@@ -562,6 +562,7 @@
       regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
       regularPostSlots: null,
       sharedImageName: '',
+      storedCover: null,
       fileNames: [],
     };
     const normalized = { ...fallback, ...(stage || {}) };
@@ -579,6 +580,7 @@
     normalized.derivedFromStageId = typeof normalized.derivedFromStageId === 'string'
       ? normalized.derivedFromStageId
       : '';
+    normalized.storedCover = normalizeStoredCover(normalized.storedCover);
     normalized.regularCycleDays = normalizePositiveInteger(
       normalized.regularCycleDays,
       DEFAULT_REGULAR_CYCLE_DAYS,
@@ -669,6 +671,33 @@
     const clone = { ...stage };
     delete clone.files;
     return clone;
+  }
+
+  function normalizeStoredCover(cover) {
+    if (!cover || typeof cover !== 'object') {
+      return null;
+    }
+    const dataUrl = typeof cover.dataUrl === 'string' ? cover.dataUrl : '';
+    if (!dataUrl.startsWith('data:image/')) {
+      return null;
+    }
+    return {
+      name: typeof cover.name === 'string' && cover.name ? cover.name : 'selected-cover',
+      type: typeof cover.type === 'string' && cover.type ? cover.type : 'image/png',
+      dataUrl,
+    };
+  }
+
+  function getStageStoredCover(stage) {
+    if (isFullAlbumStage(stage)) {
+      const ownCover = normalizeStoredCover(stage.storedCover);
+      if (ownCover) {
+        return ownCover;
+      }
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return albumStage ? normalizeStoredCover(albumStage.storedCover) : null;
+    }
+    return normalizeStoredCover(stage.storedCover);
   }
 
   function loadStages() {
@@ -778,6 +807,47 @@
       console.warn('Failed to capture pipeline thumbnail:', error);
       return null;
     }
+  }
+
+  async function createStoredCover(file) {
+    if (!file) {
+      return null;
+    }
+    const dataUrl = await readImageAsDataUrl(file);
+    return normalizeStoredCover({
+      name: file.name || 'selected-cover',
+      type: file.type || 'image/png',
+      dataUrl,
+    });
+  }
+
+  async function sanitizeStageForPipelineSave(stage) {
+    const clone = sanitizeStage(stage);
+    const selectedCover = selectedCoversByStageId.get(stage.id);
+    if (selectedCover) {
+      clone.storedCover = await createStoredCover(selectedCover);
+      clone.sharedImageName = selectedCover.name || clone.sharedImageName || '';
+    } else {
+      clone.storedCover = normalizeStoredCover(stage.storedCover);
+    }
+    return clone;
+  }
+
+  function persistSelectedCover(stageId, file) {
+    createStoredCover(file)
+      .then(storedCover => {
+        updateStage(stageId, {
+          sharedImageName: storedCover ? storedCover.name : '',
+          storedCover,
+        }, true);
+      })
+      .catch(error => {
+        console.warn('Failed to persist pipeline cover:', error);
+        updateStage(stageId, {
+          sharedImageName: file?.name || '',
+          storedCover: null,
+        }, true);
+      });
   }
 
   function loadResetOptions() {
@@ -1351,6 +1421,37 @@
     return `${labelPrefix}: ${dimensions.width}x${dimensions.height}, ${getPresetLabel(stage.presetId)}`;
   }
 
+  function getStageCover(stage) {
+    if (isFullAlbumStage(stage)) {
+      const ownCover = selectedCoversByStageId.get(stage.id);
+      if (ownCover) {
+        return ownCover;
+      }
+      return selectedCoversByStageId.get(stage.derivedFromStageId) || null;
+    }
+    return selectedCoversByStageId.get(stage.id) || null;
+  }
+
+  function getStageCoverPreview(stage) {
+    const selectedCover = getStageCover(stage);
+    if (selectedCover) {
+      return {
+        name: selectedCover.name || stage.sharedImageName || 'Selected cover',
+        source: selectedCover,
+        dataUrl: '',
+      };
+    }
+    const storedCover = getStageStoredCover(stage);
+    if (storedCover) {
+      return {
+        name: stage.sharedImageName || storedCover.name || 'Selected cover',
+        source: null,
+        dataUrl: storedCover.dataUrl,
+      };
+    }
+    return null;
+  }
+
   function getVisualizerClass(visualizerName) {
     const library = window.AudioRecorderVisualization || {};
     const visualizerExports = {
@@ -1616,9 +1717,61 @@
         if (!element.isConnected) return;
         element.style.setProperty('--pipeline-preview-image', `url("${dataUrl}")`);
         element.dataset.previewState = 'ready';
+        if (activePreviewTooltipTrigger === element) {
+          showPipelinePreviewTooltip(element);
+        }
       })
       .catch(error => {
         console.warn('Failed to render pipeline preview:', error);
+        if (element.isConnected) {
+          element.dataset.previewState = 'error';
+        }
+      });
+  }
+
+  function readImageAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result));
+      reader.addEventListener('error', () => reject(reader.error || new Error('Failed to read image.')));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setPreviewImageStyle(element, dataUrl) {
+    element.style.setProperty('--pipeline-preview-image', `url(${JSON.stringify(dataUrl)})`);
+    element.dataset.previewSrc = dataUrl;
+  }
+
+  function applyCoverPreviewTooltip(element, stage) {
+    const coverPreview = getStageCoverPreview(stage);
+    if (!coverPreview) {
+      return;
+    }
+
+    element.classList.add('pipeline-preview-trigger');
+    element.dataset.tooltip = `${coverPreview.name || 'Selected cover'} preview`;
+    element.dataset.previewState = 'loading';
+    element.title = element.dataset.tooltip;
+    element.tabIndex = 0;
+    element.style.setProperty('--pipeline-preview-aspect', '16 / 9');
+    element.setAttribute('aria-label', element.dataset.tooltip);
+
+    const previewPromise = coverPreview.dataUrl
+      ? Promise.resolve(coverPreview.dataUrl)
+      : readImageAsDataUrl(coverPreview.source);
+
+    previewPromise
+      .then(dataUrl => {
+        if (!element.isConnected) return;
+        setPreviewImageStyle(element, dataUrl);
+        element.dataset.previewState = 'ready';
+        if (activePreviewTooltipTrigger === element) {
+          showPipelinePreviewTooltip(element);
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to render cover preview:', error);
         if (element.isConnected) {
           element.dataset.previewState = 'error';
         }
@@ -1635,6 +1788,12 @@
     tooltip.id = 'pipelinePreviewTooltip';
     tooltip.className = 'pipeline-preview-tooltip';
     tooltip.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.className = 'pipeline-preview-tooltip-image';
+    image.alt = '';
+    image.decoding = 'async';
+    image.draggable = false;
+    tooltip.appendChild(image);
     document.body.appendChild(tooltip);
     return tooltip;
   }
@@ -1669,9 +1828,17 @@
     activePreviewTooltipTrigger = trigger;
     const tooltip = getPipelinePreviewTooltip();
     tooltip.style.setProperty('--pipeline-preview-aspect', trigger.style.getPropertyValue('--pipeline-preview-aspect') || '16 / 9');
-    tooltip.style.setProperty('--pipeline-preview-image', trigger.style.getPropertyValue('--pipeline-preview-image') || 'none');
+    const previewImage = trigger.style.getPropertyValue('--pipeline-preview-image') || 'none';
+    const previewSrc = trigger.dataset.previewSrc || '';
+    tooltip.style.setProperty('--pipeline-preview-image', previewImage);
+    tooltip.dataset.previewSrc = previewSrc;
     tooltip.dataset.previewState = trigger.dataset.previewState || '';
     tooltip.setAttribute('aria-label', trigger.dataset.tooltip || '');
+    const image = tooltip.querySelector('.pipeline-preview-tooltip-image');
+    if (image) {
+      image.src = previewSrc;
+      image.alt = trigger.dataset.tooltip || '';
+    }
     tooltip.classList.add('is-visible');
     tooltip.setAttribute('aria-hidden', 'false');
     positionPipelinePreviewTooltip(trigger, tooltip);
@@ -1689,6 +1856,12 @@
     }
     tooltip.classList.remove('is-visible');
     tooltip.setAttribute('aria-hidden', 'true');
+    tooltip.dataset.previewSrc = '';
+    const image = tooltip.querySelector('.pipeline-preview-tooltip-image');
+    if (image) {
+      image.removeAttribute('src');
+      image.alt = '';
+    }
   }
 
   function updatePipelinePreviewTooltip() {
@@ -1876,6 +2049,15 @@
       return albumStage ? getStageFiles(albumStage) : [];
     }
     return selectedFilesByStageId.get(stage.id) || [];
+  }
+
+  function getStageFileNames(stage) {
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return albumStage ? getStageFileNames(albumStage) : [];
+    }
+    const selected = selectedFilesByStageId.get(stage.id) || [];
+    return selected.length ? selected.map(file => file.name) : stage.fileNames;
   }
 
   function readAudioDuration(file) {
@@ -2542,7 +2724,7 @@
 
     return youtube.uploadDirect({
       video,
-      thumbnail: selectedCoversByStageId.get(task.stage.id),
+      thumbnail: getStageCover(task.stage),
       metadata: collectTaskMetadata(task),
       notifySubscribers: Boolean(task.stage.notifySubscribers),
       onProgress: progress => {
@@ -2879,10 +3061,12 @@
     button.dataset.tooltip = 'Select one or more source files for this pipeline stage.';
     button.title = button.dataset.tooltip;
     const selected = getStageFiles(stage);
+    const fileNames = getStageFileNames(stage);
     button.disabled = isFullAlbumStage(stage);
-    button.textContent = selected.length
-      ? selected.map(file => file.name).join(', ')
+    button.textContent = fileNames.length
+      ? fileNames.join(', ')
       : 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ';
+    applyCoverPreviewTooltip(button, stage);
 
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -2915,13 +3099,13 @@
     names.className = 'pipeline-file-names';
     names.textContent = selected.length
       ? `${selected.length} selected`
-      : stage.fileNames.length ? `Last: ${stage.fileNames.join(', ')}` : '';
+      : fileNames.length ? `Last: ${fileNames.join(', ')}` : '';
 
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'btn-secondary compact-btn pipeline-reset-files-btn';
     reset.textContent = 'Сбросить файлы';
-    reset.disabled = isFullAlbumStage(stage) || (!selected.length && !stage.fileNames.length);
+    reset.disabled = isFullAlbumStage(stage) || (!selected.length && !fileNames.length);
     reset.dataset.tooltip = 'Clear files added to this stage.';
     reset.title = reset.dataset.tooltip;
     reset.addEventListener('click', () => {
@@ -3243,12 +3427,15 @@
       const image = imageInput.files && imageInput.files[0];
       if (image) {
         selectedCoversByStageId.set(stage.id, image);
+        updateStage(stage.id, { sharedImageName: image.name, storedCover: null }, true);
+        persistSelectedCover(stage.id, image);
       } else {
         selectedCoversByStageId.delete(stage.id);
+        updateStage(stage.id, { sharedImageName: '', storedCover: null }, true);
       }
-      updateStage(stage.id, { sharedImageName: image ? image.name : '' }, true);
     });
     imageField.appendChild(imageInput);
+    applyCoverPreviewTooltip(imageField, stage);
     wrapper.appendChild(imageField);
 
     const presetField = createField('Release preset', 'span-4', 'Visualizer preset used for release render tasks.');
@@ -3931,7 +4118,7 @@
     return `Pipeline ${index}`;
   }
 
-  function saveCurrentPipeline() {
+  async function saveCurrentPipeline() {
     const thumbnail = capturePipelineThumbnail();
     const pipeline = {
       id: createId('pipeline'),
@@ -3940,7 +4127,7 @@
       timezone: pipelineTimezone,
       uploadOrder: pipelineUploadOrder,
       reviewBeforeUpload: pipelineReviewBeforeUpload,
-      stages: stages.map(sanitizeStage),
+      stages: await Promise.all(stages.map(sanitizeStageForPipelineSave)),
       thumbnail,
     };
     savedPipelines = [...savedPipelines, pipeline];
@@ -4195,6 +4382,7 @@
         changes.regularCycleDays = template.regularCycleDays;
         changes.regularPostSlots = template.regularPostSlots;
         changes.sharedImageName = template.sharedImageName;
+        changes.storedCover = template.storedCover;
       }
       return normalizeStage({ ...stage, ...changes }, index);
     });
