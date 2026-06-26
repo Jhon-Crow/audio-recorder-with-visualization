@@ -109,6 +109,7 @@
   };
 
   const selectedFilesByStageId = new Map();
+  const selectedFileDurationsByStageId = new Map();
   const selectedCoversByStageId = new Map();
   let stages = loadStages();
   let savedPipelines = loadSavedPipelines();
@@ -127,6 +128,7 @@
   let activeStageId = '';
   let stageObserver = null;
   const pipelinePreviewCache = new Map();
+  const renderedPipelineVideos = new Map();
   let activePipelineMenuId = null;
   let pipelineRenameTargetId = null;
   let draggedPipelineId = null;
@@ -240,6 +242,18 @@
         short: true,
         tags: 'shorts, album, audio',
       },
+      fullalbum: {
+        name: 'Full album',
+        action: 'visualize-upload',
+        resolution: '1920x1080',
+        presetId: defaultPresetId,
+        scheduleMode: 'relative',
+        ...createRelativeOffsetFields(30, 'previous'),
+        publishAtLocal: defaultPublishAt(index),
+        short: false,
+        tags: 'album, full album, visualizer',
+        derivedFromStageId: '',
+      },
       custom: {
         name: `Stage ${index + 1}`,
         action: 'visualize-upload',
@@ -276,6 +290,20 @@
       createDefaultStage('release', 1),
       createDefaultStage('postalbum', 2),
     ];
+  }
+
+  function createAddedStage(index = stages.length) {
+    const base = createDefaultStage('custom', index);
+    return normalizeStage({
+      ...base,
+      kind: 'release',
+      releaseType: 'album',
+      fullAlbumVideo: false,
+      tracks: [],
+      regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
+      regularPostSlots: [createRegularPostSlot(1, getDefaultRegularPostTime(base))],
+      sharedImageName: '',
+    }, index);
   }
 
   function normalizeTrack(track, index) {
@@ -385,6 +413,8 @@
       syntheticMedia: false,
       notifySubscribers: false,
       releaseType: 'single',
+      fullAlbumVideo: false,
+      derivedFromStageId: '',
       tracks: [],
       regularCycleDays: DEFAULT_REGULAR_CYCLE_DAYS,
       regularPostSlots: null,
@@ -402,6 +432,10 @@
     normalized.releaseType = ['album', 'single', 'regular-posts'].includes(normalized.releaseType)
       ? normalized.releaseType
       : (normalized.kind === 'release' ? 'album' : 'single');
+    normalized.fullAlbumVideo = Boolean(normalized.fullAlbumVideo);
+    normalized.derivedFromStageId = typeof normalized.derivedFromStageId === 'string'
+      ? normalized.derivedFromStageId
+      : '';
     normalized.regularCycleDays = normalizePositiveInteger(
       normalized.regularCycleDays,
       DEFAULT_REGULAR_CYCLE_DAYS,
@@ -437,6 +471,57 @@
     return normalized;
   }
 
+  function isFullAlbumStage(stage) {
+    return stage.kind === 'fullalbum';
+  }
+
+  function createFullAlbumStage(albumStage, index) {
+    return normalizeStage({
+      ...createDefaultStage('fullalbum', index),
+      name: `${albumStage.name || 'Album'} - full album`,
+      description: albumStage.description || '',
+      presetId: albumStage.presetId,
+      privacyStatus: albumStage.privacyStatus,
+      playlistIds: albumStage.playlistIds,
+      madeForKids: albumStage.madeForKids,
+      syntheticMedia: albumStage.syntheticMedia,
+      notifySubscribers: albumStage.notifySubscribers,
+      derivedFromStageId: albumStage.id,
+    }, index);
+  }
+
+  function ensureFullAlbumDerivedStages(stageList) {
+    const next = [];
+    stageList.forEach((stage) => {
+      if (isFullAlbumStage(stage)) {
+        return;
+      }
+      const normalized = normalizeStage(stage, next.length);
+      const hasExistingFullAlbum = stageList.some(candidate => (
+        isFullAlbumStage(candidate) && candidate.derivedFromStageId === normalized.id
+      ));
+      const shouldHaveFullAlbum = isAlbumStage(normalized) && normalized.fullAlbumVideo;
+      next.push({ ...normalized, fullAlbumVideo: shouldHaveFullAlbum });
+
+      if (!shouldHaveFullAlbum) {
+        return;
+      }
+
+      const existingIndex = stageList.findIndex(candidate => (
+        isFullAlbumStage(candidate) && candidate.derivedFromStageId === normalized.id
+      ));
+      const existing = existingIndex >= 0
+        ? normalizeStage({ ...stageList[existingIndex], releaseType: 'album' }, next.length)
+        : createFullAlbumStage(normalized, next.length);
+      next.push({ ...existing, derivedFromStageId: normalized.id });
+    });
+
+    return next.filter((stage, index, list) => (
+      !isFullAlbumStage(stage) ||
+      list.some(candidate => isAlbumStage(candidate) && candidate.id === stage.derivedFromStageId)
+    )).map(normalizeStage);
+  }
+
   function sanitizeStage(stage) {
     const clone = { ...stage };
     delete clone.files;
@@ -448,7 +533,7 @@
       const saved = localStorage.getItem(PIPELINE_STAGES_KEY);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed.map(normalizeStage) : [];
+        return Array.isArray(parsed) ? ensureFullAlbumDerivedStages(parsed.map(normalizeStage)) : [];
       }
     } catch (error) {
       console.warn('Failed to load pipeline stages:', error);
@@ -560,19 +645,14 @@
 
   function updateStage(stageId, changes, shouldRender = false) {
     const affectsSchedule = [
-      'publishAtLocal',
       'publishImmediately',
       'scheduleMode',
       'relativeReference',
       'relativeOffsetDirection',
-      'relativeOffsetMonths',
-      'relativeOffsetDays',
-      'relativeOffsetHours',
-      'relativeOffsetUnitMinutes',
     ].some(key => Object.prototype.hasOwnProperty.call(changes, key));
-    stages = stages.map((stage, index) => (
-      stage.id === stageId ? normalizeStage({ ...stage, ...changes }, index) : stage
-    ));
+    stages = ensureFullAlbumDerivedStages(stages.map((stage, index) => (
+      stage.id === stageId ? { ...normalizeStage(stage, index), ...changes } : normalizeStage(stage, index)
+    )));
     saveStages();
     if (shouldRender || affectsSchedule) {
       renderStages();
@@ -597,7 +677,7 @@
     const regularPostSlots = stage.regularPostSlots.map(slot => (
       slot.id === slotId ? { ...slot, ...changes } : slot
     ));
-    updateStage(stageId, { regularPostSlots }, true);
+    updateStage(stageId, { regularPostSlots });
   }
 
   function moveTrack(stageId, sourceTrackId, targetTrackId) {
@@ -643,6 +723,10 @@
   }
 
   function hasStageFiles(stage) {
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return Boolean(albumStage && hasStageFiles(albumStage));
+    }
     const selected = selectedFilesByStageId.get(stage.id);
     return Boolean(selected && selected.length);
   }
@@ -689,6 +773,19 @@
     return fileNames.map((fileName, index) => createTrack(getTrackTitleFromFileName(fileName, index), index, fileName));
   }
 
+  function findStageByFileNames(fileNames = [], excludeStageId = '') {
+    const names = Array.isArray(fileNames) ? fileNames : [];
+    if (!names.length) {
+      return null;
+    }
+    return stages.find(candidate => (
+      candidate.id !== excludeStageId &&
+      Array.isArray(candidate.fileNames) &&
+      candidate.fileNames.length === names.length &&
+      candidate.fileNames.every((name, index) => name === names[index])
+    )) || null;
+  }
+
   function removeRegularPostTrack(stage, trackId) {
     const trackIndex = stage.tracks.findIndex(track => track.id === trackId);
     if (trackIndex < 0) return;
@@ -729,6 +826,15 @@
     }
     if (stage.kind === 'release' && stage.releaseType === 'album' && !stage.tracks.length) {
       return 'Album release stages need at least one track.';
+    }
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      if (!albumStage || !isAlbumStage(albumStage)) {
+        return 'Full album stages need a source album stage.';
+      }
+      if (!hasStageFiles(albumStage) || !albumStage.tracks.length) {
+        return 'Full album stages need source album tracks.';
+      }
     }
     if (isRegularPostsStage(stage)) {
       if (!stage.regularPostSlots.length) {
@@ -907,6 +1013,7 @@
     }
 
     selectedFilesByStageId.delete(pendingDeleteStageId);
+    selectedFileDurationsByStageId.delete(pendingDeleteStageId);
     selectedCoversByStageId.delete(pendingDeleteStageId);
     stages = stages.filter(stage => stage.id !== pendingDeleteStageId);
     saveStages();
@@ -932,6 +1039,25 @@
     if (window.AudioRecorderApp && typeof window.AudioRecorderApp.updateStatus === 'function') {
       window.AudioRecorderApp.updateStatus(message, type);
     }
+  }
+
+  function setPipelineProgress(percent) {
+    const progressFill = window.AudioRecorderApp?.elements?.progressFill;
+    const progressBar = progressFill?.parentElement;
+    if (!progressFill || !progressBar) {
+      return;
+    }
+
+    const normalizedPercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    progressBar.style.display = normalizedPercent > 0 && normalizedPercent < 100 ? 'block' : 'none';
+    progressBar.setAttribute('aria-valuenow', String(normalizedPercent));
+    progressFill.style.width = `${normalizedPercent}%`;
+  }
+
+  function updateTaskProgress(taskIndex, totalTasks, taskProgress = 0) {
+    const taskCount = Math.max(1, Number(totalTasks) || 1);
+    const normalizedTaskProgress = Math.max(0, Math.min(1, Number(taskProgress) || 0));
+    setPipelineProgress(((taskIndex + normalizedTaskProgress) / taskCount) * 100);
   }
 
   function getPipelineApp() {
@@ -1567,10 +1693,93 @@
   }
 
   function getStageFiles(stage) {
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return albumStage ? getStageFiles(albumStage) : [];
+    }
     return selectedFilesByStageId.get(stage.id) || [];
   }
 
+  function readAudioDuration(file) {
+    return new Promise(resolve => {
+      const testDurations = window.__pipelineTestDurations;
+      if (testDurations && Object.prototype.hasOwnProperty.call(testDurations, file?.name)) {
+        const duration = Number(testDurations[file.name]);
+        resolve(Number.isFinite(duration) && duration > 0 ? duration : 0);
+        return;
+      }
+      if (!file || typeof URL === 'undefined' || typeof Audio === 'undefined') {
+        resolve(0);
+        return;
+      }
+
+      const AudioConstructor = window.Audio || Audio;
+      const audio = new AudioConstructor();
+      const objectUrl = URL.createObjectURL(file);
+      const cleanup = () => {
+        audio.removeAttribute('src');
+        URL.revokeObjectURL(objectUrl);
+      };
+      audio.preload = 'metadata';
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = Number(audio.duration);
+        cleanup();
+        resolve(Number.isFinite(duration) && duration > 0 ? duration : 0);
+      }, { once: true });
+      audio.addEventListener('error', () => {
+        cleanup();
+        resolve(0);
+      }, { once: true });
+      audio.src = objectUrl;
+    });
+  }
+
+  function updateSelectedFileDurations(stageId, files = []) {
+    if (!files.length) {
+      selectedFileDurationsByStageId.delete(stageId);
+      return Promise.resolve([]);
+    }
+
+    return Promise.all(files.map(readAudioDuration)).then(durations => {
+      selectedFileDurationsByStageId.set(stageId, durations);
+      refreshAlbumTimestampFields(stageId);
+      return durations;
+    });
+  }
+
+  function refreshAlbumTimestampFields(albumStageId) {
+    stages
+      .filter(stage => isFullAlbumStage(stage) && stage.derivedFromStageId === albumStageId)
+      .forEach(stage => {
+        const field = stagesContainer.querySelector(
+          `.pipeline-stage[data-stage-id="${stage.id}"] .pipeline-album-timestamps`
+        );
+        if (field) {
+          field.value = buildAlbumTimestampDescription(stage);
+        }
+      });
+  }
+
+  function setStageFileDurationsForDebug(stageId, durations = []) {
+    selectedFileDurationsByStageId.set(stageId, durations.map(value => {
+      const duration = Number(value);
+      return Number.isFinite(duration) && duration > 0 ? duration : 0;
+    }));
+    refreshAlbumTimestampFields(stageId);
+  }
+
   function getTaskTitle(stage, file, index, totalFiles) {
+    if (isFullAlbumStage(stage)) {
+      const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+      return (albumStage?.tracks[index] && albumStage.tracks[index].title) ||
+        getTrackTitleFromFileName(file.name, index);
+    }
+    if (stage.action === 'upload-youtube' && !isRegularPostsStage(stage)) {
+      if (totalFiles > 1) {
+        return `${stage.name || 'Pipeline stage'} ${index + 1}`;
+      }
+      return stage.name || getTrackTitleFromFileName(file.name, index);
+    }
     if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
       return (stage.tracks[index] && stage.tracks[index].title) ||
         getTrackTitleFromFileName(file.name, index);
@@ -1579,6 +1788,14 @@
       return `${stage.name || 'Pipeline stage'} ${index + 1}`;
     }
     return stage.name || getTrackTitleFromFileName(file.name, index);
+  }
+
+  function getAlbumTaskTitle(stage) {
+    return stage.name || 'Album';
+  }
+
+  function getRenderedVideoCacheKey(stageId, fileIndex) {
+    return `${stageId}:${fileIndex}`;
   }
 
   function pluralRu(value, one, few, many) {
@@ -1644,6 +1861,21 @@
       const regularPostDates = isRegularPostsStage(stage)
         ? expandRegularPostSchedule(stage, stageBaseDate, files.length)
         : [];
+
+      if (isFullAlbumStage(stage)) {
+        tasks.push({
+          stage,
+          stageIndex,
+          files,
+          file: files[0],
+          fileIndex: 0,
+          totalFiles: files.length,
+          title: getAlbumTaskTitle(stage),
+          publishAt: stageBaseDate ? stageBaseDate.toISOString() : undefined,
+          fullAlbumVideo: true,
+        });
+        return;
+      }
 
       files.forEach((file, fileIndex) => {
         const publishDate = regularPostDates[fileIndex] ||
@@ -1946,6 +2178,10 @@
   }
 
   async function renderTask(task, taskIndex, totalTasks) {
+    if (task.fullAlbumVideo) {
+      return renderCombinedAlbumTask(task, taskIndex, totalTasks);
+    }
+
     const app = getPipelineApp();
     const dimensions = parseResolution(task.stage.resolution);
     const renderSettings = resolveRenderSettings(task.stage, app);
@@ -1963,7 +2199,9 @@
       videoHeight: dimensions.height,
       format: getRequestedVideoFormat(app),
       onProgress: progress => {
-        const percent = Math.round(Number(progress?.percent || 0) * 100);
+        const progressPercent = Number(progress?.percent || 0);
+        const percent = Math.round(progressPercent * 100);
+        updateTaskProgress(taskIndex, totalTasks, progressPercent);
         updateAppStatus(
           `Pipeline rendering ${taskIndex + 1} of ${totalTasks}: ${task.title} (${percent}%)`,
           'recording'
@@ -1978,14 +2216,105 @@
       });
     }
 
+    renderedPipelineVideos.set(getRenderedVideoCacheKey(task.stage.id, task.fileIndex), result);
+
     return result;
+  }
+
+  async function renderCombinedAlbumTask(task, taskIndex, totalTasks) {
+    const files = Array.isArray(task.files) ? task.files : [task.file].filter(Boolean);
+    if (!files.length) {
+      throw new Error('Album stage has no files to render.');
+    }
+
+    const renderedParts = [];
+    const albumStage = stages.find(item => item.id === task.stage.derivedFromStageId);
+
+    for (let index = 0; index < files.length; index++) {
+      const rendered = albumStage
+        ? renderedPipelineVideos.get(getRenderedVideoCacheKey(albumStage.id, index))
+        : null;
+      if (!rendered?.blob) {
+        throw new Error('Run the source album visualization stage before joining the full album video.');
+      }
+      updateAppStatus(
+        `Pipeline joining ${taskIndex + 1} of ${totalTasks}: ${task.title} (${index + 1}/${files.length})`,
+        'recording'
+      );
+      updateTaskProgress(taskIndex, totalTasks, (index + 1) / files.length);
+      renderedParts.push(rendered.blob);
+    }
+
+    const firstType = renderedParts[0]?.type || '';
+    const format = firstType.includes('mp4') ? 'mp4' : firstType.includes('webm') ? 'webm' : 'webm';
+    const blob = new Blob(renderedParts, {
+      type: firstType || `video/${format}`,
+    });
+
+    const app = window.AudioRecorderApp;
+    if (typeof app.addRecording === 'function') {
+      app.addRecording(blob, {
+        sourceName: `${task.title}.${format}`,
+        format,
+      });
+    }
+
+    return {
+      blob,
+      format,
+      usedFallback: false,
+    };
+  }
+
+  function formatTimestamp(seconds) {
+    const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    const base = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return hours > 0 ? `${hours}:${base}` : base;
+  }
+
+  function getFileDurationSeconds(file) {
+    const duration = Number(
+      file?.duration ||
+      file?.metadata?.duration ||
+      file?.audioDuration
+    );
+    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  }
+
+  function buildAlbumTimestampDescription(stage) {
+    if (!isFullAlbumStage(stage)) {
+      return '';
+    }
+
+    const albumStage = stages.find(item => item.id === stage.derivedFromStageId);
+    if (!albumStage) {
+      return '';
+    }
+
+    const files = getStageFiles(albumStage);
+    const durations = selectedFileDurationsByStageId.get(albumStage.id) || [];
+    let offset = 0;
+    return albumStage.tracks.map((track, index) => {
+      const line = `${formatTimestamp(offset)} - ${track.title || getTrackTitleFromFileName(files[index]?.name, index)}`;
+      offset += durations[index] || getFileDurationSeconds(files[index]);
+      return line;
+    }).join('\n');
+  }
+
+  function getTaskDescription(task) {
+    const base = String(task.stage.description || '').trim();
+    const timestamps = buildAlbumTimestampDescription(task.stage);
+    return [base, timestamps].filter(Boolean).join('\n\n');
   }
 
   function collectTaskMetadata(task) {
     const stage = task.stage;
     return {
       title: task.title,
-      description: stage.description || '',
+      description: getTaskDescription(task),
       tags: stage.tags || '',
       playlistIds: stage.playlistIds || '',
       privacyStatus: stage.privacyStatus || 'private',
@@ -2165,6 +2494,8 @@
 
     hasPipelineRun = true;
     isPipelineRunning = true;
+    renderedPipelineVideos.clear();
+    setPipelineProgress(0);
     updateRunState();
 
     try {
@@ -2188,6 +2519,7 @@
       updateAppStatus(`Pipeline failed: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       isPipelineRunning = false;
+      setPipelineProgress(100);
       updateRunState();
     }
   }
@@ -2201,7 +2533,8 @@
     button.className = `pipeline-file-btn${hasStageFiles(stage) ? ' has-files' : ''}`;
     button.dataset.tooltip = 'Select one or more source files for this pipeline stage.';
     button.title = button.dataset.tooltip;
-    const selected = selectedFilesByStageId.get(stage.id) || [];
+    const selected = getStageFiles(stage);
+    button.disabled = isFullAlbumStage(stage);
     button.textContent = selected.length
       ? selected.map(file => file.name).join(', ')
       : 'УКАЖИТЕ ФАЙЛ/ФАЙЛЫ';
@@ -2212,9 +2545,16 @@
     fileInput.accept = 'audio/*,video/*';
     fileInput.className = 'pipeline-stage-file-input pipeline-file-input';
     fileInput.setAttribute('aria-label', `Select files for ${stage.name || 'pipeline stage'}`);
+    fileInput.disabled = isFullAlbumStage(stage);
     fileInput.addEventListener('change', () => {
       const files = Array.from(fileInput.files || []);
+      const previousStageWithFiles = findStageByFileNames(files.map(file => file.name), stage.id);
+      if (previousStageWithFiles) {
+        selectedFilesByStageId.delete(previousStageWithFiles.id);
+        selectedFileDurationsByStageId.delete(previousStageWithFiles.id);
+      }
       selectedFilesByStageId.set(stage.id, files);
+      updateSelectedFileDurations(stage.id, files);
       const changes = { fileNames: files.map(file => file.name) };
       if ((isAlbumStage(stage) || isRegularPostsStage(stage)) && files.length) {
         changes.tracks = createTracksFromFiles(files);
@@ -2234,11 +2574,12 @@
     reset.type = 'button';
     reset.className = 'btn-secondary compact-btn pipeline-reset-files-btn';
     reset.textContent = 'Сбросить файлы';
-    reset.disabled = !selected.length && !stage.fileNames.length;
+    reset.disabled = isFullAlbumStage(stage) || (!selected.length && !stage.fileNames.length);
     reset.dataset.tooltip = 'Clear files added to this stage.';
     reset.title = reset.dataset.tooltip;
     reset.addEventListener('click', () => {
       selectedFilesByStageId.delete(stage.id);
+      selectedFileDurationsByStageId.delete(stage.id);
       if (isAlbumStage(stage) || isRegularPostsStage(stage)) {
         updateStage(stage.id, { fileNames: [], tracks: [] }, true);
       } else {
@@ -2411,6 +2752,7 @@
       const existingFiles = selectedFilesByStageId.get(stage.id) || [];
       const nextFiles = [...existingFiles, ...files];
       selectedFilesByStageId.set(stage.id, nextFiles);
+      updateSelectedFileDurations(stage.id, nextFiles);
       updateStage(stage.id, {
         fileNames: nextFiles.map(file => file.name),
         tracks: [
@@ -2528,11 +2870,16 @@
 
     const typeField = createField('Release type', 'span-4', 'Choose whether this release renders as one video or one video per album track.');
     const releaseType = document.createElement('select');
-    setSelectOptions(releaseType, [
+    const isDerivedFullAlbum = isFullAlbumStage(stage);
+    setSelectOptions(releaseType, isDerivedFullAlbum ? [
+      ['album', 'Album'],
+    ] : [
       ['album', 'Album'],
       ['single', 'Single'],
       ['regular-posts', 'Regular posts'],
     ], stage.releaseType || 'album');
+    releaseType.className = 'pipeline-release-type';
+    releaseType.disabled = isDerivedFullAlbum;
     releaseType.addEventListener('change', () => {
       updateStage(stage.id, { releaseType: releaseType.value }, true);
     });
@@ -2566,7 +2913,33 @@
     presetField.appendChild(presetSelect);
     wrapper.appendChild(presetField);
 
-    if ((stage.releaseType || 'album') === 'album') {
+    if (!isDerivedFullAlbum && (stage.releaseType || 'album') === 'album') {
+      const fullAlbumField = document.createElement('label');
+      fullAlbumField.className = 'pipeline-inline-check span-12';
+      fullAlbumField.dataset.tooltip = 'Create a dependent full-album stage after this album with its own schedule and metadata.';
+      fullAlbumField.title = fullAlbumField.dataset.tooltip;
+
+      const fullAlbumCheckbox = document.createElement('input');
+      fullAlbumCheckbox.type = 'checkbox';
+      fullAlbumCheckbox.className = 'pipeline-full-album-video';
+      fullAlbumCheckbox.checked = Boolean(stage.fullAlbumVideo) ||
+        stages.some(item => isFullAlbumStage(item) && item.derivedFromStageId === stage.id);
+      fullAlbumCheckbox.setAttribute('aria-label', 'Render full album as one video');
+      fullAlbumCheckbox.addEventListener('click', (event) => {
+        updateStage(stage.id, { fullAlbumVideo: event.currentTarget.checked }, true);
+      });
+      fullAlbumCheckbox.addEventListener('change', () => {
+        updateStage(stage.id, { fullAlbumVideo: fullAlbumCheckbox.checked }, true);
+      });
+
+      const fullAlbumText = document.createElement('span');
+      fullAlbumText.className = 'pipeline-check-text';
+      fullAlbumText.textContent = 'Add full album stage';
+
+      fullAlbumField.appendChild(fullAlbumCheckbox);
+      fullAlbumField.appendChild(fullAlbumText);
+      wrapper.appendChild(fullAlbumField);
+
       const tracks = document.createElement('div');
       tracks.className = 'pipeline-album-tracks';
       stage.tracks.forEach((track, index) => {
@@ -2646,6 +3019,7 @@
         const existingFiles = selectedFilesByStageId.get(stage.id) || [];
         const nextFiles = [...existingFiles, ...files];
         selectedFilesByStageId.set(stage.id, nextFiles);
+        updateSelectedFileDurations(stage.id, nextFiles);
         updateStage(stage.id, {
           fileNames: nextFiles.map(file => file.name),
           tracks: [
@@ -2663,7 +3037,7 @@
       wrapper.appendChild(tracks);
     }
 
-    if ((stage.releaseType || 'album') === 'regular-posts') {
+    if (!isDerivedFullAlbum && (stage.releaseType || 'album') === 'regular-posts') {
       const cycleField = createField('Cycle length (days)', 'span-4', 'Number of days in one regular posting cycle.');
       const cycleDays = document.createElement('input');
       cycleDays.type = 'number';
@@ -2673,7 +3047,7 @@
       cycleDays.value = String(stage.regularCycleDays);
       cycleDays.className = 'pipeline-regular-cycle-days';
       cycleDays.addEventListener('input', () => {
-        updateStage(stage.id, { regularCycleDays: cycleDays.value }, true);
+        updateStage(stage.id, { regularCycleDays: cycleDays.value });
       });
       cycleField.appendChild(cycleDays);
       wrapper.appendChild(cycleField);
@@ -2693,6 +3067,7 @@
   }
 
   function renderYouTubeDetails(stage) {
+    const youtubeDisabled = !actionIncludesUpload(stage.action);
     const details = document.createElement('details');
     details.className = 'pipeline-youtube-details';
     details.open = true;
@@ -2709,15 +3084,28 @@
     description.rows = 2;
     description.value = stage.description || '';
     description.className = 'pipeline-stage-description';
+    description.disabled = youtubeDisabled;
     description.addEventListener('input', () => updateStage(stage.id, { description: description.value }));
     descriptionField.appendChild(description);
     grid.appendChild(descriptionField);
+
+    if (isFullAlbumStage(stage)) {
+      const timestampField = createField('Album timestamps', 'span-12', 'Generated from source album track order and durations.');
+      const timestamps = document.createElement('textarea');
+      timestamps.rows = 4;
+      timestamps.value = buildAlbumTimestampDescription(stage);
+      timestamps.readOnly = true;
+      timestamps.className = 'pipeline-album-timestamps';
+      timestampField.appendChild(timestamps);
+      grid.appendChild(timestampField);
+    }
 
     const tagsField = createField('Tags', 'span-12', 'Comma-separated YouTube tags applied to uploads from this stage.');
     const tags = document.createElement('input');
     tags.type = 'text';
     tags.value = stage.tags || '';
     tags.className = 'pipeline-stage-tags';
+    tags.disabled = youtubeDisabled;
     tags.addEventListener('input', () => updateStage(stage.id, { tags: tags.value }));
     tagsField.appendChild(tags);
     grid.appendChild(tagsField);
@@ -2725,7 +3113,7 @@
     const playlistField = createField('Playlists', 'span-12', 'Choose existing YouTube playlists or create a new playlist.');
     const playlistChooser = renderPlaylistChooser(stage, (playlistIds) => {
       updateStage(stage.id, { playlistIds }, true);
-    });
+    }, youtubeDisabled);
     playlistField.appendChild(playlistChooser);
     grid.appendChild(playlistField);
 
@@ -2742,6 +3130,7 @@
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = Boolean(stage[key]);
+      checkbox.disabled = youtubeDisabled;
       checkbox.setAttribute('aria-label', ariaLabel);
       checkbox.addEventListener('change', () => updateStage(stage.id, { [key]: checkbox.checked }));
       const text = document.createElement('span');
@@ -2756,7 +3145,7 @@
     return details;
   }
 
-  function renderPlaylistChooser(stage, onChange) {
+  function renderPlaylistChooser(stage, onChange, disabled = false) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
     const youtube = window.AudioRecorderYouTube;
     const known = youtube && typeof youtube.getSavedPlaylists === 'function'
@@ -2791,6 +3180,7 @@
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = selectedIds.includes(playlist.id);
+      checkbox.disabled = disabled;
       checkbox.addEventListener('change', () => {
         const nextIds = checkbox.checked
           ? [...selectedIds, playlist.id]
@@ -2819,7 +3209,7 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = !youtube ||
+    refreshButton.disabled = disabled || !youtube ||
       typeof youtube.refreshPlaylists !== 'function' ||
       (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
       (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
@@ -2844,10 +3234,12 @@
     input.type = 'text';
     input.placeholder = 'New playlist name';
     input.setAttribute('aria-label', 'New YouTube playlist name');
+    input.disabled = disabled;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-secondary compact-btn';
     button.textContent = 'Create new';
+    button.disabled = disabled;
     button.addEventListener('click', async () => {
       const title = input.value.trim();
       if (!title) {
@@ -2904,6 +3296,9 @@
           ? 'schedule-absolute'
           : 'schedule-relative';
       item.className = `pipeline-stage ${scheduleClass}${validateStage(stage, index, stageBaseDates) ? ' is-invalid' : ''}`;
+      if (isFullAlbumStage(stage)) {
+        item.classList.add('pipeline-full-album-stage');
+      }
       item.dataset.stageId = stage.id;
 
       const fileCell = renderFileCell(stage);
@@ -2926,6 +3321,18 @@
         updateStage(stage.id, { name: nameInput.value });
       });
       nameField.appendChild(nameInput);
+
+      if (isFullAlbumStage(stage)) {
+        const typeField = createField('Type', 'span-4', 'Derived full-album stages always render the source album as one Album video.');
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'pipeline-stage-type';
+        typeSelect.disabled = true;
+        setSelectOptions(typeSelect, [
+          ['album', 'Album'],
+        ], 'album');
+        typeField.appendChild(typeSelect);
+        fields.appendChild(typeField);
+      }
 
       const actionField = createField('Action', 'span-4', 'Choose whether the stage renders visualization, uploads to YouTube, or does both.');
       const actionSelect = document.createElement('select');
@@ -2965,6 +3372,7 @@
       publishAt.disabled = !isAbsolute;
       publishAt.addEventListener('focus', openTimezoneModalIfNeeded);
       publishAt.addEventListener('input', () => updateStage(stage.id, { publishAtLocal: publishAt.value }));
+      publishAt.addEventListener('change', () => updateStage(stage.id, { publishAtLocal: publishAt.value }, true));
       publishField.appendChild(publishAt);
 
       const referenceField = createField('Relative to', 'span-2', 'Choose whether this relative date is calculated from the previous or next stage.');
@@ -3013,8 +3421,9 @@
         input.disabled = !isRelative;
         input.className = `pipeline-relative-offset pipeline-relative-${classSuffix}`;
         input.addEventListener('input', () => {
-          updateStage(stage.id, { [key]: input.value }, true);
+          updateStage(stage.id, { [key]: input.value });
         });
+        input.addEventListener('change', () => updateStage(stage.id, { [key]: input.value }, true));
         field.appendChild(input);
         return field;
       });
@@ -3034,7 +3443,7 @@
         relativeSummary.appendChild(line);
       });
 
-      fields.appendChild(nameField);
+      fields.insertBefore(nameField, fields.firstChild);
       fields.appendChild(actionField);
       fields.appendChild(timingField);
       fields.appendChild(publishField);
@@ -3093,7 +3502,7 @@
       privacyField.appendChild(privacy);
       fields.appendChild(privacyField);
 
-      if (stage.kind === 'release') {
+      if (stage.kind === 'release' || isFullAlbumStage(stage)) {
         fields.appendChild(renderAlbumEditor(stage, stageBaseDates[index]));
       }
 
@@ -3108,6 +3517,7 @@
       uploadBtn.textContent = 'YouTube';
       uploadBtn.dataset.tooltip = 'Open the stage-specific YouTube upload form.';
       uploadBtn.title = uploadBtn.dataset.tooltip;
+      uploadBtn.disabled = !actionIncludesUpload(stage.action);
       uploadBtn.addEventListener('click', () => requestStageUpload(stage));
 
       const deleteBtn = document.createElement('button');
@@ -3329,11 +3739,16 @@
     const defaults = createDefaultStages();
 
     stages = stages.map((stage, index) => {
-      const template = defaults[index] || createDefaultStage(stage.kind || 'custom', index);
+      const template = defaults[index] || (
+        stage.kind === 'release'
+          ? createAddedStage(index)
+          : createDefaultStage(stage.kind || 'custom', index)
+      );
       const changes = {};
       if (options.names) changes.name = template.name;
       if (options.files) {
         selectedFilesByStageId.delete(stage.id);
+        selectedFileDurationsByStageId.delete(stage.id);
         selectedCoversByStageId.delete(stage.id);
         changes.fileNames = [];
       }
@@ -3442,13 +3857,14 @@
   }
 
   addStageBtn.addEventListener('click', () => {
-    stages.push(createDefaultStage('custom', stages.length));
+    stages.push(createAddedStage(stages.length));
     saveStages();
     renderStages();
   });
 
   clearPipelineBtn.addEventListener('click', () => {
     selectedFilesByStageId.clear();
+    selectedFileDurationsByStageId.clear();
     selectedCoversByStageId.clear();
     stages = [];
     hasPipelineRun = false;
@@ -3585,13 +4001,14 @@
   });
 
   window.AudioRecorderPipeline = {
-    addStage(stage = createDefaultStage('custom', stages.length)) {
+    addStage(stage = createAddedStage(stages.length)) {
       stages.push(normalizeStage(stage, stages.length));
       saveStages();
       renderStages();
     },
     replaceStages(nextStages) {
       selectedFilesByStageId.clear();
+      selectedFileDurationsByStageId.clear();
       selectedCoversByStageId.clear();
       stages = Array.isArray(nextStages) ? nextStages.map(normalizeStage) : [];
       saveStages();
@@ -3599,6 +4016,10 @@
     },
     getStages() {
       return stages.map(sanitizeStage);
+    },
+    setStageFileDurationsForDebug,
+    getStageFileDurationsForDebug(stageId) {
+      return selectedFileDurationsByStageId.get(stageId) || [];
     },
     runPipeline,
     saveCurrentPipeline,

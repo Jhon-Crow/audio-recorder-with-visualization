@@ -1283,6 +1283,10 @@ button:focus-visible {
   border-style: solid;
 }
 
+.pipeline-stage.pipeline-full-album-stage {
+  border: 4px solid #d4af37;
+}
+
 .pipeline-stage.is-invalid {
   box-shadow: inset 0 0 0 1px rgba(255, 170, 0, 0.55);
 }
