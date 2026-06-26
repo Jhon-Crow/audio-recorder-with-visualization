@@ -233,6 +233,51 @@ describe('YouTube Upload UI', () => {
     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
   });
 
+  it('refreshes cached YouTube playlists from the API on app startup', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-new',
+            snippet: { title: 'New playlist from YouTube' },
+            contentDetails: { itemCount: 1 },
+          },
+        ],
+      },
+    }).as('listYouTubePlaylists');
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+          tokenScope: combinedYouTubeScope,
+        }));
+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+          { id: 'PL-stale', title: 'Stale cached playlist' },
+        ]));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@listYouTubePlaylists');
+
+    cy.window().then((win) => {
+      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
+        { id: 'PL-new', title: 'New playlist from YouTube' },
+      ]);
+    });
+
+    addSyntheticRecording();
+    cy.contains('button', 'Upload to YouTube').click();
+
+    cy.get('#youtubeUploadModal').should('be.visible');
+    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
+    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
+  });
+
   it('loads existing YouTube playlists and creates a new playlist by title', () => {
     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
       statusCode: 200,
@@ -480,6 +525,19 @@ describe('YouTube Upload UI', () => {
   });
 
   it('remembers upload form options from the last upload attempt', () => {
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+      statusCode: 200,
+      body: {
+        items: [
+          {
+            id: 'PL-memory',
+            snippet: { title: 'Memory playlist' },
+            contentDetails: { itemCount: 1 },
+          },
+        ],
+      },
+    }).as('listMemoryPlaylists');
+
     cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', {
       statusCode: 200,
       headers: { Location: 'https://upload.example/memory-session' },

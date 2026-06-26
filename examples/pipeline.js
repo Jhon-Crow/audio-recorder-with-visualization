@@ -3147,9 +3147,9 @@
 
   function renderPlaylistChooser(stage, onChange, disabled = false) {
     const selectedIds = getPlaylistIds(stage.playlistIds);
-    const youtube = window.AudioRecorderYouTube;
-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
-      ? youtube.getSavedPlaylists()
+    const initialYouTube = window.AudioRecorderYouTube;
+    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
+      ? initialYouTube.getSavedPlaylists()
       : loadSavedYouTubePlaylists();
     selectedIds.forEach(id => {
       if (!known.some(item => item.id === id)) {
@@ -3197,7 +3197,7 @@
     if (!known.length) {
       const empty = document.createElement('div');
       empty.className = 'youtube-playlist-empty';
-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
+      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
         ? 'No playlists loaded yet'
         : 'Sign in to load YouTube playlists';
       list.appendChild(empty);
@@ -3209,14 +3209,18 @@
     refreshButton.type = 'button';
     refreshButton.className = 'btn-secondary compact-btn';
     refreshButton.textContent = 'Refresh';
-    refreshButton.disabled = disabled || !youtube ||
-      typeof youtube.refreshPlaylists !== 'function' ||
-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
+    refreshButton.disabled = disabled || !initialYouTube ||
+      typeof initialYouTube.refreshPlaylists !== 'function' ||
+      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
+      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
     refreshButton.addEventListener('click', async () => {
+      const youtube = window.AudioRecorderYouTube;
       refreshButton.disabled = true;
       refreshButton.textContent = 'Refreshing...';
       try {
+        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
+          throw new Error('Sign in to YouTube before loading playlists.');
+        }
         await youtube.refreshPlaylists({ force: true });
         renderStages();
       } catch (error) {
@@ -3241,6 +3245,7 @@
     button.textContent = 'Create new';
     button.disabled = disabled;
     button.addEventListener('click', async () => {
+      const youtube = window.AudioRecorderYouTube;
       const title = input.value.trim();
       if (!title) {
         input.focus();
