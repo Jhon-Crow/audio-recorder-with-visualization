@@ -2,9 +2,9 @@
 > audio-recorder-with-visualization@1.0.0 build
 > rollup -c
 
-(node:7885) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782478011740/rollup.config.js is not specified and it doesn't parse as CommonJS.
+(node:5841) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1782481065710/rollup.config.js is not specified and it doesn't parse as CommonJS.
 Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
-To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782478011740/package.json.
+To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1782481065710/package.json.
 (Use `node --trace-warnings ...` to show where the warning was created)
 
 src/index.ts → dist/index.js, dist/index.esm.js...
@@ -12,7 +12,7 @@ created dist/index.js, dist/index.esm.js in 2.7s
 
 src/index.ts → dist/audio-recorder-visualization.umd.js...
 (!) [plugin typescript] @rollup/plugin-typescript TS5069: Option 'declarationDir' cannot be specified without specifying option 'declaration' or option 'composite'.
-created dist/audio-recorder-visualization.umd.js in 2s
+created dist/audio-recorder-visualization.umd.js in 1.9s
 
 dist/index.d.ts → dist/index.d.ts...
-created dist/index.d.ts in 124ms
+created dist/index.d.ts in 187ms

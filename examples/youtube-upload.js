@@ -345,7 +345,11 @@
       button.disabled = true;
       button.textContent = 'Creating...';
       try {
-        const playlist = await createYouTubePlaylist(title);
+        const youtubeApi = window.AudioRecorderYouTube || null;
+        const createPlaylist = youtubeApi && typeof youtubeApi.createPlaylist === 'function'
+          ? youtubeApi.createPlaylist
+          : createYouTubePlaylist;
+        const playlist = await createPlaylist(title);
         emitChange([...getCurrentSelectedIds(), playlist.id]);
         input.value = '';
         onStatus(`Playlist "${playlist.title}" created.`, 'success');
@@ -392,6 +396,12 @@
       });
 
     return playlistRefreshPromise;
+  }
+
+  function notifyYouTubePlaylistsChanged() {
+    window.dispatchEvent(new CustomEvent('audioRecorderYouTubePlaylistsChanged', {
+      detail: { playlists: loadSavedYouTubePlaylists() },
+    }));
   }
 
   async function createYouTubePlaylist(title) {
@@ -454,9 +464,14 @@
 
     try {
       await requestAccessToken(savedClientId);
+      if (hasValidAccessToken() && hasPlaylistScope()) {
+        await refreshYouTubePlaylists({ force: true });
+        notifyYouTubePlaylistsChanged();
+      }
       return hasValidAccessToken();
     } catch (error) {
       console.warn('Failed to restore stored Electron YouTube authorization:', error);
+      clearYouTubeAuth();
       return false;
     }
   }
@@ -966,6 +981,10 @@
 
     try {
       await requestAccessToken(clientId);
+      if (hasValidAccessToken() && hasPlaylistScope()) {
+        await refreshYouTubePlaylists({ force: true });
+        notifyYouTubePlaylistsChanged();
+      }
       closeAuthModal();
       openUploadModal();
     } catch (error) {

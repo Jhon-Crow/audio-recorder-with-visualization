@@ -6,26 +6,26 @@ PASS tests/YouTubeUploader.test.ts
   YouTubeUploader
     metadata helpers
       ✓ normalizes comma-separated tags and removes duplicates (3 ms)
-      ✓ normalizes comma-separated and newline playlist IDs
-      ✓ appends #shorts to descriptions only when enabled and not already present
-      ✓ builds YouTube video metadata with private privacy by default
-      ✓ requires a non-empty video title (25 ms)
+      ✓ normalizes comma-separated and newline playlist IDs (1 ms)
+      ✓ appends #shorts to descriptions only when enabled and not already present (1 ms)
+      ✓ builds YouTube video metadata with private privacy by default (1 ms)
+      ✓ requires a non-empty video title (19 ms)
       ✓ sets scheduled publish date and keeps scheduled videos private (2 ms)
       ✓ rejects invalid scheduled publish dates (1 ms)
     playlist helpers
-      ✓ lists the signed-in channel playlists across pages (5 ms)
+      ✓ lists the signed-in channel playlists across pages (6 ms)
       ✓ creates a private playlist by title (1 ms)
     upload()
-      ✓ starts a resumable session and uploads the video blob (4 ms)
-      ✓ sets a custom video thumbnail after uploading the video (3 ms)
-      ✓ adds the uploaded video to requested playlists (2 ms)
+      ✓ starts a resumable session and uploads the video blob (5 ms)
+      ✓ sets a custom video thumbnail after uploading the video (11 ms)
+      ✓ adds the uploaded video to requested playlists (3 ms)
       ✓ returns the uploaded video with warnings when playlist follow-up fails (2 ms)
       ✓ continues after a 308 resumable response (2 ms)
-      ✓ throws a descriptive error for API failures (1 ms)
-      ✓ rejects empty videos before calling the API
+      ✓ throws a descriptive error for API failures (2 ms)
+      ✓ rejects empty videos before calling the API (1 ms)
 
 Test Suites: 1 passed, 1 total
 Tests:       16 passed, 16 total
 Snapshots:   0 total
-Time:        1.945 s, estimated 2 s
+Time:        1.986 s, estimated 3 s
 Ran all test suites within paths "tests/YouTubeUploader.test.ts".

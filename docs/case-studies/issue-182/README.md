@@ -6,8 +6,12 @@
 - Issue comments: `issue-comments.json`
 - Pull request metadata: `pr-185.json`
 - Pull request conversation comments: `pr-185-conversation-comments.json`
+- Latest pull request conversation comments: `pr-comments.json`
 - Pull request review comments: `pr-185-review-comments.json`
+- Latest pull request review comments: `pr-review-comments.json`
 - Pull request reviews: `pr-185-reviews.json`
+- Latest pull request reviews: `pr-reviews.json`
+- Current pull request diff snapshot: `pr-185-current.diff`
 - Local verification logs:
   - `npm-install.log`
   - `jest-youtube-uploader.log`
@@ -23,6 +27,8 @@
 - 2026-06-26 09:05 UTC: CI passed for the first PR version.
 - 2026-06-26 12:46 UTC: Repository owner reported that playlist creation in the pipeline still did not work in manual verification. The owner also clarified that YouTube upload flows should use the same inputs everywhere and avoid duplicated functionality.
 - 2026-06-26 12:47 UTC and later: This follow-up investigation collected issue/PR data into this folder and reworked the playlist selector so the pipeline delegates to the same selector implementation used by the YouTube upload modal.
+- 2026-06-26 13:19 UTC: Repository owner reported that playlists did not auto-refresh and provided an Electron console log where stored YouTube authorization restore failed with `Token has been expired or revoked.`
+- 2026-06-26 13:37 UTC and later: The revoked-token path was reproduced in Cypress and fixed so invalid Electron authorization is cleared, manual re-authorization refreshes playlists immediately, and already-rendered pipeline selectors receive the refreshed playlist list.
 
 ## Root Cause
 
@@ -37,6 +43,8 @@ The modal implementation in `examples/youtube-upload.js` owned the real playlist
 - dispatches playlist-change events
 
 The pipeline implementation in `examples/pipeline.js` duplicated the UI and part of the behavior. That duplicate path could drift from the modal implementation and could make the pipeline form appear to have equivalent controls while not reliably using the same state and helper behavior as the main upload flow.
+
+The later auto-refresh failure had a separate auth-state root cause. When Electron restore failed because the stored Google token had expired or been revoked, `restoreElectronYouTubeAuthorization()` only logged the error and returned `false`. It did not clear the stale local token state, and a later successful manual authorization did not force a playlist refresh before the already-rendered pipeline selector was reused.
 
 ## Fix
 
@@ -54,6 +62,8 @@ The pipeline uses the same renderer for each stage playlist field and passes a s
 
 This keeps the pipeline stage controls separate per stage while sharing the playlist creation, refresh, storage, checkbox rendering, and selected-ID mutation behavior with the main YouTube upload UI.
 
+The Electron recovery path now clears invalid stored authorization after a failed restore. After successful restore or manual authorization, it force-refreshes YouTube playlists and emits the shared playlist-change event so pipeline selectors already visible on screen can re-render with the latest playlist checkboxes.
+
 ## Verification
 
 Passed:
@@ -66,7 +76,9 @@ Pipeline Cypress status:
 
 - `npm run test:e2e -- --spec cypress/e2e/pipeline-mode.cy.js` was run with the local server at `http://localhost:8080`.
 - The issue-specific test `shows fetched YouTube playlists in pipeline stages and creates playlists by name` passed.
-- The full spec completed with 25 passing tests and 2 existing unrelated failures in stage navigation and relative publish date assertions. The saved log is `cypress-pipeline-mode-full.log`.
+- The regression test `creates a pipeline playlist after YouTube helpers become available post-render` passed.
+- The regression test `refreshes pipeline playlists after expired Electron authorization is replaced` passed.
+- The full spec completed with 27 passing tests and 2 existing unrelated failures in stage navigation and relative publish date assertions. The saved log is `cypress-pipeline-mode-full.log`.
 
 ## Notes
 
