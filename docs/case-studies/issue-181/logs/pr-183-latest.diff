@@ -1,52 +1,36 @@
-diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
-index 0874212..510385a 100644
---- a/cypress/e2e/pipeline-mode.cy.js
-+++ b/cypress/e2e/pipeline-mode.cy.js
-@@ -637,6 +637,44 @@ describe('Pipeline Mode', () => {
-       .should('have.value', 'PL-existing, PL-created');
-   });
- 
-+  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
-+    cy.clearLocalStorage();
-+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
-+      statusCode: 200,
-+      body: {
-+        items: [
-+          {
-+            id: 'PL-current',
-+            snippet: { title: 'Current pipeline playlist' },
-+            contentDetails: { itemCount: 5 },
-+          },
-+        ],
-+      },
-+    }).as('refreshPipelinePlaylists');
-+
-+    cy.visit('/examples/index.html', {
-+      onBeforeLoad(win) {
-+        seedSavedVisualizationPresets(win);
-+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
-+          accessToken: 'stored-token',
-+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
-+          tokenScope: combinedYouTubeScope,
-+        }));
-+        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
-+          { id: 'PL-stale', title: 'Stale pipeline playlist' },
-+        ]));
-+      },
-+    });
-+    cy.waitForVisualization();
-+    cy.wait('@refreshPipelinePlaylists');
-+    cy.contains('.tab', 'Pipeline').click();
-+
-+    cy.get('.pipeline-stage').first().within(() => {
-+      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
-+      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
-+    });
-+  });
-+
-   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
-     cy.window().then((win) => {
-       win.AudioRecorderPipeline.replaceStages([
+From 7702534fe575a4fbafbe292e1ca1a0d60e23a21d Mon Sep 17 00:00:00 2001
+From: konard <drakonard@gmail.com>
+Date: Fri, 26 Jun 2026 08:45:38 +0000
+Subject: [PATCH 1/5] Initial commit with task details
+
+Adding .gitkeep for PR creation (default mode).
+This file will be removed when the task is complete.
+
+Issue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181
+---
+ .gitkeep | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 .gitkeep
+
+diff --git a/.gitkeep b/.gitkeep
+new file mode 100644
+index 0000000..8f5b964
+--- /dev/null
++++ b/.gitkeep
+@@ -0,0 +1 @@
++# .gitkeep file auto-generated at 2026-06-26T08:45:38.352Z for PR creation at branch issue-181-0b636e7c0712 for issue https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181
+\ No newline at end of file
+
+From dac74090f360e3ddfeadf6efb8d5508810773631 Mon Sep 17 00:00:00 2001
+From: konard <drakonard@gmail.com>
+Date: Fri, 26 Jun 2026 08:57:18 +0000
+Subject: [PATCH 2/5] Refresh YouTube playlists on app startup
+
+---
+ cypress/e2e/youtube-upload-ui.cy.js | 45 +++++++++++++++++++++++++++++
+ examples/youtube-upload.js          |  2 +-
+ 2 files changed, 46 insertions(+), 1 deletion(-)
+
 diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
 index 45cd15e..1b82892 100644
 --- a/cypress/e2e/youtube-upload-ui.cy.js
@@ -54,7 +38,7 @@ index 45cd15e..1b82892 100644
 @@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
      cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
    });
- 
+
 +  it('refreshes cached YouTube playlists from the API on app startup', () => {
 +    const futureExpiry = Date.now() + 3600 * 1000;
 +
@@ -103,6 +87,112 @@ index 45cd15e..1b82892 100644
    it('loads existing YouTube playlists and creates a new playlist by title', () => {
      cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
        statusCode: 200,
+diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+index 4c9006a..9f58882 100644
+--- a/examples/youtube-upload.js
++++ b/examples/youtube-upload.js
+@@ -348,7 +348,7 @@
+     }
+
+     playlistRefreshPromise = uploader.listPlaylists(accessToken)
+-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
++      .then(playlists => saveYouTubePlaylists(playlists))
+       .finally(() => {
+         playlistRefreshPromise = null;
+       });
+
+From 17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553 Mon Sep 17 00:00:00 2001
+From: konard <drakonard@gmail.com>
+Date: Fri, 26 Jun 2026 09:04:44 +0000
+Subject: [PATCH 3/5] Revert "Initial commit with task details"
+
+This reverts commit 7702534fe575a4fbafbe292e1ca1a0d60e23a21d.
+---
+ .gitkeep | 1 -
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 .gitkeep
+
+diff --git a/.gitkeep b/.gitkeep
+deleted file mode 100644
+index 8f5b964..0000000
+--- a/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-# .gitkeep file auto-generated at 2026-06-26T08:45:38.352Z for PR creation at branch issue-181-0b636e7c0712 for issue https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181
+\ No newline at end of file
+
+From 7b31f9564c73f91cf769de1c78946ba15f17daf0 Mon Sep 17 00:00:00 2001
+From: konard <drakonard@gmail.com>
+Date: Fri, 26 Jun 2026 12:14:25 +0000
+Subject: [PATCH 4/5] Keep YouTube playlist cache fresh after restart
+
+---
+ cypress/e2e/pipeline-mode.cy.js               |  38 +++++++
+ docs/case-studies/issue-181/analysis.md       |  52 +++++++++
+ docs/case-studies/issue-181/logs/ci-runs.json |   1 +
+ .../issue-181/logs/issue-181.json             |   1 +
+ docs/case-studies/issue-181/logs/pr-183.diff  |  69 ++++++++++++
+ docs/case-studies/issue-181/logs/pr-183.json  |   1 +
+ docs/case-studies/issue-181/logs/pr-185.diff  | 102 ++++++++++++++++++
+ examples/pipeline.js                          |  21 ++--
+ examples/youtube-upload.js                    |  11 +-
+ 9 files changed, 283 insertions(+), 13 deletions(-)
+ create mode 100644 docs/case-studies/issue-181/analysis.md
+ create mode 100644 docs/case-studies/issue-181/logs/ci-runs.json
+ create mode 100644 docs/case-studies/issue-181/logs/issue-181.json
+ create mode 100644 docs/case-studies/issue-181/logs/pr-183.diff
+ create mode 100644 docs/case-studies/issue-181/logs/pr-183.json
+ create mode 100644 docs/case-studies/issue-181/logs/pr-185.diff
+
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 0874212..510385a 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -637,6 +637,44 @@ describe('Pipeline Mode', () => {
+       .should('have.value', 'PL-existing, PL-created');
+   });
+
++  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
++    cy.clearLocalStorage();
++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++      statusCode: 200,
++      body: {
++        items: [
++          {
++            id: 'PL-current',
++            snippet: { title: 'Current pipeline playlist' },
++            contentDetails: { itemCount: 5 },
++          },
++        ],
++      },
++    }).as('refreshPipelinePlaylists');
++
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++          accessToken: 'stored-token',
++          accessTokenExpiresAt: Date.now() + 3600 * 1000,
++          tokenScope: combinedYouTubeScope,
++        }));
++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++          { id: 'PL-stale', title: 'Stale pipeline playlist' },
++        ]));
++      },
++    });
++    cy.waitForVisualization();
++    cy.wait('@refreshPipelinePlaylists');
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
++      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
++    });
++  });
++
+   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
 diff --git a/docs/case-studies/issue-181/analysis.md b/docs/case-studies/issue-181/analysis.md
 new file mode 100644
 index 0000000..bf0c711
@@ -188,7 +278,7 @@ index 0000000..84a9040
 +@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
 +     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
 +   });
-+ 
++
 ++  it('refreshes cached YouTube playlists from the API on app startup', () => {
 ++    const futureExpiry = Date.now() + 3600 * 1000;
 ++
@@ -243,7 +333,7 @@ index 0000000..84a9040
 ++++ b/examples/youtube-upload.js
 +@@ -348,7 +348,7 @@
 +     }
-+ 
++
 +     playlistRefreshPromise = uploader.listPlaylists(accessToken)
 +-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
 ++      .then(playlists => saveYouTubePlaylists(playlists))
@@ -270,7 +360,7 @@ index 0000000..86aa83b
 +@@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
 +       .should('have.value', 'PL-existing, PL-created');
 +   });
-+ 
++
 ++  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
 ++    cy.visit('/examples/index.html');
 ++    cy.waitForVisualization();
@@ -313,7 +403,7 @@ index 0000000..86aa83b
 +--- a/examples/pipeline.js
 ++++ b/examples/pipeline.js
 +@@ -3147,9 +3147,9 @@
-+ 
++
 +   function renderPlaylistChooser(stage, onChange, disabled = false) {
 +     const selectedIds = getPlaylistIds(stage.playlistIds);
 +-    const youtube = window.AudioRecorderYouTube;
@@ -370,7 +460,7 @@ index 12f9af9..0eb493c 100644
 --- a/examples/pipeline.js
 +++ b/examples/pipeline.js
 @@ -3147,9 +3147,9 @@
- 
+
    function renderPlaylistChooser(stage, onChange, disabled = false) {
      const selectedIds = getPlaylistIds(stage.playlistIds);
 -    const youtube = window.AudioRecorderYouTube;
@@ -423,7 +513,7 @@ index 12f9af9..0eb493c 100644
        if (!title) {
          input.focus();
 diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
-index 4c9006a..59fb367 100644
+index 9f58882..59fb367 100644
 --- a/examples/youtube-upload.js
 +++ b/examples/youtube-upload.js
 @@ -225,10 +225,7 @@
@@ -436,13 +526,13 @@ index 4c9006a..59fb367 100644
 -    ]);
 +    return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
    }
- 
+
    function setPlaylistIds(ids) {
 @@ -348,7 +345,11 @@
      }
- 
+
      playlistRefreshPromise = uploader.listPlaylists(accessToken)
--      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+-      .then(playlists => saveYouTubePlaylists(playlists))
 +      .then(playlists => {
 +        const refreshed = saveYouTubePlaylists(playlists);
 +        renderPlaylistSelector();
@@ -451,3 +541,1371 @@ index 4c9006a..59fb367 100644
        .finally(() => {
          playlistRefreshPromise = null;
        });
+
+From ae0ced36a8e9dd97a755a25c64543fcd7d8a176e Mon Sep 17 00:00:00 2001
+From: konard <drakonard@gmail.com>
+Date: Fri, 26 Jun 2026 12:38:01 +0000
+Subject: [PATCH 5/5] Enable manual pipeline playlist refresh
+
+---
+ cypress/e2e/pipeline-mode.cy.js               |  36 ++
+ docs/case-studies/issue-181/analysis.md       |  15 +
+ .../pr-comment-4809545108-refresh-button.png  | Bin 0 -> 38743 bytes
+ .../issue-181/logs/ci-runs-latest.json        |   1 +
+ .../issue-181/logs/issue-181-latest.json      |   1 +
+ .../logs/pr-183-comments-latest.json          |   1 +
+ .../issue-181/logs/pr-183-latest.diff         | 453 ++++++++++++++++++
+ .../issue-181/logs/pr-183-latest.json         |   1 +
+ examples/pipeline.js                          |   5 +-
+ 9 files changed, 509 insertions(+), 4 deletions(-)
+ create mode 100644 docs/case-studies/issue-181/artifacts/pr-comment-4809545108-refresh-button.png
+ create mode 100644 docs/case-studies/issue-181/logs/ci-runs-latest.json
+ create mode 100644 docs/case-studies/issue-181/logs/issue-181-latest.json
+ create mode 100644 docs/case-studies/issue-181/logs/pr-183-comments-latest.json
+ create mode 100644 docs/case-studies/issue-181/logs/pr-183-latest.diff
+ create mode 100644 docs/case-studies/issue-181/logs/pr-183-latest.json
+
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 510385a..b766aa7 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -675,6 +675,42 @@ describe('Pipeline Mode', () => {
+     });
+   });
+
++  it('keeps the manual pipeline playlist refresh available when helpers load after render', () => {
++    cy.clearLocalStorage();
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++          { id: 'PL-stale', title: 'Stale manual playlist' },
++        ]));
++      },
++    });
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.window().then((win) => {
++      win.AudioRecorderYouTube = {
++        getSavedPlaylists: () => [{ id: 'PL-fresh', title: 'Fresh manual playlist' }],
++        hasValidAccessToken: () => true,
++        hasPlaylistScope: () => true,
++        refreshPlaylists: cy.stub().as('refreshLatePipelinePlaylists').resolves([
++          { id: 'PL-fresh', title: 'Fresh manual playlist' },
++        ]),
++      };
++    });
++
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('be.visible');
++      cy.contains('button', 'Refresh').should('not.be.disabled').click();
++    });
++
++    cy.get('@refreshLatePipelinePlaylists').should('have.been.calledWith', { force: true });
++    cy.get('.pipeline-stage').first().within(() => {
++      cy.get('.youtube-playlist-option').should('contain.text', 'Fresh manual playlist');
++      cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('not.exist');
++    });
++  });
++
+   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+     cy.window().then((win) => {
+       win.AudioRecorderPipeline.replaceStages([
+diff --git a/docs/case-studies/issue-181/analysis.md b/docs/case-studies/issue-181/analysis.md
+index bf0c711..a077e91 100644
+--- a/docs/case-studies/issue-181/analysis.md
++++ b/docs/case-studies/issue-181/analysis.md
+@@ -13,6 +13,8 @@ The first PR change made API refresh replace the cache instead of merging it. Re
+ - PR 183 diff: `logs/pr-183.diff`
+ - Related PR 185 diff: `logs/pr-185.diff`
+ - CI run list for the branch: `logs/ci-runs.json`
++- Latest PR feedback and CI artifacts after the manual refresh report: `logs/pr-183-latest.json`, `logs/pr-183-comments-latest.json`, `logs/ci-runs-latest.json`, `logs/pr-183-latest.diff`
++- Reviewer screenshot showing the disabled pipeline Refresh button: `artifacts/pr-comment-4809545108-refresh-button.png`
+
+ PR 185 is relevant because it fixes a related YouTube helper readiness problem in the pipeline selector. Its useful pattern is to read `window.AudioRecorderYouTube` at action time, not only at render time.
+
+@@ -22,6 +24,14 @@ YouTube Data API `playlists.list` with `mine=true` returns playlists owned by th
+
+ Reference: https://developers.google.com/youtube/v3/docs/playlists/list
+
++YouTube Data API `playlists.insert` creates playlists through a separate authenticated mutation. Created playlists should still be merged into the local cache immediately because they are new user-visible state returned by YouTube.
++
++Reference: https://developers.google.com/youtube/v3/docs/playlists/insert
++
++The playlist list/create actions require a valid OAuth token with playlist-capable YouTube scopes. The UI must still keep manual controls reachable when helper objects initialize after the pipeline has already rendered, then validate token/scope at click time.
++
++Reference: https://developers.google.com/youtube/v3/guides/auth/client-side-web-apps
++
+ ## Root Cause
+
+ The local playlist cache had two failure modes:
+@@ -31,13 +41,17 @@ The local playlist cache had two failure modes:
+
+ The pipeline selector also captured `window.AudioRecorderYouTube` at render time, so controls could stay tied to a missing or old helper if the YouTube module became available later.
+
++Follow-up PR feedback on 2026-06-26 showed an additional manual-check failure: the pipeline Refresh button was visibly disabled even while cached playlists were rendered. The disabled state was computed from the initial helper snapshot, so a selector rendered before YouTube helpers/token state were ready could not be manually refreshed later. The click handler had already been changed to resolve `window.AudioRecorderYouTube` late, but the disabled gate still prevented the click from ever reaching that safer path.
++
+ ## Solution
+
+ - Treat successful playlist refresh as replacement with the latest YouTube API response.
+ - Keep playlist creation additive because a newly created playlist is an immediate local mutation.
+ - Re-render the upload playlist selector after refresh resolves so visible UI cannot keep stale startup markup.
+ - Apply the PR 185 late-helper pattern to pipeline playlist refresh/create actions.
++- Keep the pipeline manual Refresh button enabled whenever the stage itself is editable, and perform YouTube helper/token/scope validation inside the click handler.
+ - Add Cypress regressions for upload and pipeline startup refresh replacing stale cached playlists.
++- Add a Cypress regression for manual pipeline refresh after YouTube helpers become available post-render.
+
+ ## Alternatives Considered
+
+@@ -50,3 +64,4 @@ The pipeline selector also captured `window.AudioRecorderYouTube` at render time
+ - Unit tests cover playlist API normalization and upload behavior.
+ - Cypress upload regression seeds stale `localStorage`, returns a different API playlist, then verifies the modal only shows the refreshed playlist.
+ - Cypress pipeline regression seeds the same stale cache, waits for startup refresh, then verifies pipeline stages only show the refreshed playlist.
++- Cypress manual refresh regression renders pipeline stale cached playlists first, installs YouTube helpers after render, clicks Refresh, and verifies the selector re-renders with the fresh helper data.
+diff --git a/docs/case-studies/issue-181/artifacts/pr-comment-4809545108-refresh-button.png b/docs/case-studies/issue-181/artifacts/pr-comment-4809545108-refresh-button.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..6c5a931f88802f3742b458f4a76329cf3f5828d2
+GIT binary patch
+literal 38743
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/docs/case-studies/issue-181/logs/ci-runs-latest.json b/docs/case-studies/issue-181/logs/ci-runs-latest.json
+new file mode 100644
+index 0000000..6c31299
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/ci-runs-latest.json
+@@ -0,0 +1 @@
++[{"conclusion":"success","createdAt":"2026-06-26T12:14:35Z","databaseId":28237334803,"headSha":"7b31f9564c73f91cf769de1c78946ba15f17daf0"},{"conclusion":"success","createdAt":"2026-06-26T12:02:50Z","databaseId":28236770983,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553"},{"conclusion":"success","createdAt":"2026-06-26T09:04:50Z","databaseId":28228370693,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553"},{"conclusion":"success","createdAt":"2026-06-26T08:57:29Z","databaseId":28228007268,"headSha":"dac74090f360e3ddfeadf6efb8d5508810773631"},{"conclusion":"success","createdAt":"2026-06-26T08:45:49Z","databaseId":28227447446,"headSha":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d"}]
+diff --git a/docs/case-studies/issue-181/logs/issue-181-latest.json b/docs/case-studies/issue-181/logs/issue-181-latest.json
+new file mode 100644
+index 0000000..33327ed
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/issue-181-latest.json
+@@ -0,0 +1 @@
++{"body":"при заходе в приложение должны обновляться данные от ютуба (сейчас не подгрузились созданные вчера плейлисты)\n","comments":[],"number":181,"title":"update взаимодействие с ютуб апи","updatedAt":"2026-06-26T08:44:20Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181"}
+diff --git a/docs/case-studies/issue-181/logs/pr-183-comments-latest.json b/docs/case-studies/issue-181/logs/pr-183-comments-latest.json
+new file mode 100644
+index 0000000..5021c08
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-183-comments-latest.json
+@@ -0,0 +1 @@
++[{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808067957","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808067957","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4808067957,"node_id":"IC_kwDOQyCEds8AAAABHpVLdQ","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T08:57:58Z","updated_at":"2026-06-26T08:57:58Z","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the fix to PR #183: https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nChanged `examples/youtube-upload.js` so YouTube playlist refresh replaces the cached playlist list with the latest API response instead of merging stale cached entries. Added Cypress coverage proving startup refresh removes a stale cached playlist and shows the newly returned YouTube playlist.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- Focused Cypress test passed for `refreshes cached YouTube playlists from the API on app startup`\n\nNotes:\n- Full local `youtube-upload-ui.cy.js` still has unrelated existing failures around `#presetSettingsBtn` inheriting `pointer-events: none`.\n- No GitHub Actions runs were listed yet for the fork branch after push.\n- Working tree is clean, PR is marked ready for review.\n\n---\n*This summary was automatically extracted from the AI working session output.*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808067957/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808069180","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808069180","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4808069180,"node_id":"IC_kwDOQyCEds8AAAABHpVQPA","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T08:58:10Z","updated_at":"2026-06-26T08:58:10Z","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.108850\n\n### 📊 **Context and tokens usage:**\n- 143.7K / 200K (72%) input tokens, 8.1K / 128K (6%) output tokens\n\nTotal: (143.7K + 2.3M cached) input tokens, 8.1K output tokens, $4.108850 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1300KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/30dc915eb8eb31a4ce43f7bb44772656/raw/868e47020974f26644560d8b5007e8ceb1c7bb74/tmp-solution-draft-log-pr-1782464283946.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808069180/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808115276","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808115276","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4808115276,"node_id":"IC_kwDOQyCEds8AAAABHpYETA","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T09:04:43Z","updated_at":"2026-06-26T09:04:43Z","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4808115276/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809399113","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809399113","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809399113,"node_id":"IC_kwDOQyCEds8AAAABHqmbSQ","user":{"login":"Jhon-Crow","id":133867474,"node_id":"U_kgDOB_qn0g","avatar_url":"https://avatars.githubusercontent.com/u/133867474?v=4","gravatar_id":"","url":"https://api.github.com/users/Jhon-Crow","html_url":"https://github.com/Jhon-Crow","followers_url":"https://api.github.com/users/Jhon-Crow/followers","following_url":"https://api.github.com/users/Jhon-Crow/following{/other_user}","gists_url":"https://api.github.com/users/Jhon-Crow/gists{/gist_id}","starred_url":"https://api.github.com/users/Jhon-Crow/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/Jhon-Crow/subscriptions","organizations_url":"https://api.github.com/users/Jhon-Crow/orgs","repos_url":"https://api.github.com/users/Jhon-Crow/repos","events_url":"https://api.github.com/users/Jhon-Crow/events{/privacy}","received_events_url":"https://api.github.com/users/Jhon-Crow/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:03:41Z","updated_at":"2026-06-26T12:03:41Z","body":"всё ещё старая информация после рестарта\r\nтак же проверь и прими если релевантны наработки из https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/185\r\n \r\nPlease collect data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), and propose possible solutions  (including known existing components/libraries, that solve similar problem or can help in solutions).\r\nи реализуй","author_association":"OWNER","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809399113/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809405997","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809405997","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809405997,"node_id":"IC_kwDOQyCEds8AAAABHqm2LQ","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:04:40Z","updated_at":"2026-06-26T12:04:40Z","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:04:37.396Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809405997/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809477477","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809477477","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809477477,"node_id":"IC_kwDOQyCEds8AAAABHqrNZQ","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:15:13Z","updated_at":"2026-06-26T12:15:13Z","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the follow-up fix to PR #183:\n\nhttps://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nWhat changed:\n- Upload playlist refresh now replaces stale cache and re-renders the visible selector after refresh.\n- Created playlists remain additive, so newly created playlists are preserved immediately.\n- Pipeline playlist controls now use the PR #185 late-helper pattern for refresh/create actions.\n- Added a pipeline Cypress regression for stale cached playlists after restart.\n- Added the requested case study and collected artifacts under `docs/case-studies/issue-181/`.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- `git diff --check` passed\n- Full Cypress upload/pipeline specs confirm the new regressions pass, but still show unrelated existing failures already documented in the PR.\n\nPR is marked ready for review. New GitHub Actions run for commit `7b31f95` is currently in progress, so merge status is temporarily `UNSTABLE` until that run finishes.\n\n---\n*This summary was automatically extracted from the AI working session output.*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809477477/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809478576","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809478576","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809478576,"node_id":"IC_kwDOQyCEds8AAAABHqrRsA","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:15:22Z","updated_at":"2026-06-26T12:15:22Z","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.141215\n\n### 📊 **Context and tokens usage:**\n- 153.5K / 200K (77%) input tokens, 9.9K / 128K (8%) output tokens\n\nTotal: (153.5K + 2.2M cached) input tokens, 9.9K output tokens, $4.141215 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1315KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/d0e518038d40af4bc3cc8c03c51de2b4/raw/cfca34e74568f35dcf349a52c3c1277c7d348369/tmp-solution-draft-log-pr-1782476116590.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809478576/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809507513","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809507513","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809507513,"node_id":"IC_kwDOQyCEds8AAAABHqtCuQ","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:19:50Z","updated_at":"2026-06-26T12:19:50Z","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809507513/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809545108","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809545108","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809545108,"node_id":"IC_kwDOQyCEds8AAAABHqvVlA","user":{"login":"Jhon-Crow","id":133867474,"node_id":"U_kgDOB_qn0g","avatar_url":"https://avatars.githubusercontent.com/u/133867474?v=4","gravatar_id":"","url":"https://api.github.com/users/Jhon-Crow","html_url":"https://github.com/Jhon-Crow","followers_url":"https://api.github.com/users/Jhon-Crow/followers","following_url":"https://api.github.com/users/Jhon-Crow/following{/other_user}","gists_url":"https://api.github.com/users/Jhon-Crow/gists{/gist_id}","starred_url":"https://api.github.com/users/Jhon-Crow/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/Jhon-Crow/subscriptions","organizations_url":"https://api.github.com/users/Jhon-Crow/orgs","repos_url":"https://api.github.com/users/Jhon-Crow/repos","events_url":"https://api.github.com/users/Jhon-Crow/events{/privacy}","received_events_url":"https://api.github.com/users/Jhon-Crow/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:25:38Z","updated_at":"2026-06-26T12:25:38Z","body":"не работает\r\nдаже кнопка рефрешь не работает, почини хотя бы её (для ручной проверки)\r\n<img width=\"1096\" height=\"351\" alt=\"image\" src=\"https://github.com/user-attachments/assets/1de21f20-5429-4600-975b-b469ecb5c872\" />\r\nPlease download all logs and data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), in which we will reconstruct timeline/sequence of events, find root causes of the problem, and propose possible solutions.\r\n","author_association":"OWNER","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809545108/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null},{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809550721","html_url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809550721","issue_url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/183","id":4809550721,"node_id":"IC_kwDOQyCEds8AAAABHqvrgQ","user":{"login":"konard","id":1431904,"node_id":"MDQ6VXNlcjE0MzE5MDQ=","avatar_url":"https://avatars.githubusercontent.com/u/1431904?v=4","gravatar_id":"","url":"https://api.github.com/users/konard","html_url":"https://github.com/konard","followers_url":"https://api.github.com/users/konard/followers","following_url":"https://api.github.com/users/konard/following{/other_user}","gists_url":"https://api.github.com/users/konard/gists{/gist_id}","starred_url":"https://api.github.com/users/konard/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/konard/subscriptions","organizations_url":"https://api.github.com/users/konard/orgs","repos_url":"https://api.github.com/users/konard/repos","events_url":"https://api.github.com/users/konard/events{/privacy}","received_events_url":"https://api.github.com/users/konard/received_events","type":"User","user_view_type":"public","site_admin":false},"created_at":"2026-06-26T12:26:30Z","updated_at":"2026-06-26T12:26:30Z","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:26:28.227Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","author_association":"CONTRIBUTOR","reactions":{"url":"https://api.github.com/repos/Jhon-Crow/audio-recorder-with-visualization/issues/comments/4809550721/reactions","total_count":0,"+1":0,"-1":0,"laugh":0,"hooray":0,"confused":0,"heart":0,"rocket":0,"eyes":0},"performed_via_github_app":null,"minimized":null}]
+\ No newline at end of file
+diff --git a/docs/case-studies/issue-181/logs/pr-183-latest.diff b/docs/case-studies/issue-181/logs/pr-183-latest.diff
+new file mode 100644
+index 0000000..00b228e
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-183-latest.diff
+@@ -0,0 +1,453 @@
++diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
++index 0874212..510385a 100644
++--- a/cypress/e2e/pipeline-mode.cy.js
+++++ b/cypress/e2e/pipeline-mode.cy.js
++@@ -637,6 +637,44 @@ describe('Pipeline Mode', () => {
++       .should('have.value', 'PL-existing, PL-created');
++   });
++
+++  it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
+++    cy.clearLocalStorage();
+++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+++      statusCode: 200,
+++      body: {
+++        items: [
+++          {
+++            id: 'PL-current',
+++            snippet: { title: 'Current pipeline playlist' },
+++            contentDetails: { itemCount: 5 },
+++          },
+++        ],
+++      },
+++    }).as('refreshPipelinePlaylists');
+++
+++    cy.visit('/examples/index.html', {
+++      onBeforeLoad(win) {
+++        seedSavedVisualizationPresets(win);
+++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+++          accessToken: 'stored-token',
+++          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+++          tokenScope: combinedYouTubeScope,
+++        }));
+++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+++          { id: 'PL-stale', title: 'Stale pipeline playlist' },
+++        ]));
+++      },
+++    });
+++    cy.waitForVisualization();
+++    cy.wait('@refreshPipelinePlaylists');
+++    cy.contains('.tab', 'Pipeline').click();
+++
+++    cy.get('.pipeline-stage').first().within(() => {
+++      cy.get('.youtube-playlist-option').should('contain.text', 'Current pipeline playlist');
+++      cy.contains('.youtube-playlist-option', 'Stale pipeline playlist').should('not.exist');
+++    });
+++  });
+++
++   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
++     cy.window().then((win) => {
++       win.AudioRecorderPipeline.replaceStages([
++diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
++index 45cd15e..1b82892 100644
++--- a/cypress/e2e/youtube-upload-ui.cy.js
+++++ b/cypress/e2e/youtube-upload-ui.cy.js
++@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
++     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
++   });
++
+++  it('refreshes cached YouTube playlists from the API on app startup', () => {
+++    const futureExpiry = Date.now() + 3600 * 1000;
+++
+++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+++      statusCode: 200,
+++      body: {
+++        items: [
+++          {
+++            id: 'PL-new',
+++            snippet: { title: 'New playlist from YouTube' },
+++            contentDetails: { itemCount: 1 },
+++          },
+++        ],
+++      },
+++    }).as('listYouTubePlaylists');
+++
+++    cy.visit('/examples/index.html', {
+++      onBeforeLoad(win) {
+++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+++          accessToken: 'stored-token',
+++          accessTokenExpiresAt: futureExpiry,
+++          tokenScope: combinedYouTubeScope,
+++        }));
+++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
+++          { id: 'PL-stale', title: 'Stale cached playlist' },
+++        ]));
+++      },
+++    });
+++    cy.waitForVisualization();
+++    cy.wait('@listYouTubePlaylists');
+++
+++    cy.window().then((win) => {
+++      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
+++        { id: 'PL-new', title: 'New playlist from YouTube' },
+++      ]);
+++    });
+++
+++    addSyntheticRecording();
+++    cy.contains('button', 'Upload to YouTube').click();
+++
+++    cy.get('#youtubeUploadModal').should('be.visible');
+++    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
+++    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
+++  });
+++
++   it('loads existing YouTube playlists and creates a new playlist by title', () => {
++     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++       statusCode: 200,
++diff --git a/docs/case-studies/issue-181/analysis.md b/docs/case-studies/issue-181/analysis.md
++new file mode 100644
++index 0000000..bf0c711
++--- /dev/null
+++++ b/docs/case-studies/issue-181/analysis.md
++@@ -0,0 +1,52 @@
+++# Issue 181 Case Study: Stale YouTube Playlists After Restart
+++
+++## Problem
+++
+++Issue 181 reports that YouTube playlist data remains stale after restarting the app. The affected UI stores playlist summaries in `localStorage` under `audio-recorder-youtube-playlists`, then uses that cache in the upload modal and pipeline playlist chooser.
+++
+++The first PR change made API refresh replace the cache instead of merging it. Reviewer feedback on PR 183 confirmed stale data could still be seen after restart, so the remaining problem is not only cache replacement semantics; rendered consumers also need to refresh from the authoritative cache after startup.
+++
+++## Collected Data
+++
+++- Issue metadata: `logs/issue-181.json`
+++- PR 183 metadata and discussion: `logs/pr-183.json`
+++- PR 183 diff: `logs/pr-183.diff`
+++- Related PR 185 diff: `logs/pr-185.diff`
+++- CI run list for the branch: `logs/ci-runs.json`
+++
+++PR 185 is relevant because it fixes a related YouTube helper readiness problem in the pipeline selector. Its useful pattern is to read `window.AudioRecorderYouTube` at action time, not only at render time.
+++
+++## External Reference
+++
+++YouTube Data API `playlists.list` with `mine=true` returns playlists owned by the authenticated channel. For this app, that API response is the authoritative playlist set during refresh. Local cache should be a startup/display cache only, not a source that preserves removed or renamed playlists after a successful refresh.
+++
+++Reference: https://developers.google.com/youtube/v3/docs/playlists/list
+++
+++## Root Cause
+++
+++The local playlist cache had two failure modes:
+++
+++1. Refresh previously merged API results into cached results, preserving stale playlists that no longer came back from YouTube.
+++2. Startup refresh could update `localStorage` while already-rendered selectors still showed the earlier cached list until a later manual render.
+++
+++The pipeline selector also captured `window.AudioRecorderYouTube` at render time, so controls could stay tied to a missing or old helper if the YouTube module became available later.
+++
+++## Solution
+++
+++- Treat successful playlist refresh as replacement with the latest YouTube API response.
+++- Keep playlist creation additive because a newly created playlist is an immediate local mutation.
+++- Re-render the upload playlist selector after refresh resolves so visible UI cannot keep stale startup markup.
+++- Apply the PR 185 late-helper pattern to pipeline playlist refresh/create actions.
+++- Add Cypress regressions for upload and pipeline startup refresh replacing stale cached playlists.
+++
+++## Alternatives Considered
+++
+++- Clearing the playlist cache on every restart: avoids stale data but creates a worse signed-in startup experience when the network is unavailable.
+++- Disabling cached playlists entirely: removes useful offline/context display and makes saved selected playlist IDs harder to present.
+++- Adding cache timestamps only: useful later, but insufficient because the app already has an authenticated API refresh that should replace stale data when it succeeds.
+++
+++## Verification Strategy
+++
+++- Unit tests cover playlist API normalization and upload behavior.
+++- Cypress upload regression seeds stale `localStorage`, returns a different API playlist, then verifies the modal only shows the refreshed playlist.
+++- Cypress pipeline regression seeds the same stale cache, waits for startup refresh, then verifies pipeline stages only show the refreshed playlist.
++diff --git a/docs/case-studies/issue-181/logs/ci-runs.json b/docs/case-studies/issue-181/logs/ci-runs.json
++new file mode 100644
++index 0000000..35392b7
++--- /dev/null
+++++ b/docs/case-studies/issue-181/logs/ci-runs.json
++@@ -0,0 +1 @@
+++[{"conclusion":"","createdAt":"2026-06-26T12:02:50Z","databaseId":28236770983,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553","status":"in_progress","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T09:04:50Z","databaseId":28228370693,"headSha":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553","status":"completed","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T08:57:29Z","databaseId":28228007268,"headSha":"dac74090f360e3ddfeadf6efb8d5508810773631","status":"completed","workflowName":"Build Portable EXE"},{"conclusion":"success","createdAt":"2026-06-26T08:45:49Z","databaseId":28227447446,"headSha":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d","status":"completed","workflowName":"Build Portable EXE"}]
++diff --git a/docs/case-studies/issue-181/logs/issue-181.json b/docs/case-studies/issue-181/logs/issue-181.json
++new file mode 100644
++index 0000000..b700e31
++--- /dev/null
+++++ b/docs/case-studies/issue-181/logs/issue-181.json
++@@ -0,0 +1 @@
+++{"author":{"id":"U_kgDOB_qn0g","is_bot":false,"login":"Jhon-Crow","name":"Jhon-Crow"},"body":"при заходе в приложение должны обновляться данные от ютуба (сейчас не подгрузились созданные вчера плейлисты)\n","createdAt":"2026-06-26T08:44:20Z","number":181,"state":"OPEN","title":"update взаимодействие с ютуб апи","updatedAt":"2026-06-26T08:44:20Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181"}
++diff --git a/docs/case-studies/issue-181/logs/pr-183.diff b/docs/case-studies/issue-181/logs/pr-183.diff
++new file mode 100644
++index 0000000..84a9040
++--- /dev/null
+++++ b/docs/case-studies/issue-181/logs/pr-183.diff
++@@ -0,0 +1,69 @@
+++diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
+++index 45cd15e..1b82892 100644
+++--- a/cypress/e2e/youtube-upload-ui.cy.js
++++++ b/cypress/e2e/youtube-upload-ui.cy.js
+++@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
+++     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+++   });
+++
++++  it('refreshes cached YouTube playlists from the API on app startup', () => {
++++    const futureExpiry = Date.now() + 3600 * 1000;
++++
++++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++++      statusCode: 200,
++++      body: {
++++        items: [
++++          {
++++            id: 'PL-new',
++++            snippet: { title: 'New playlist from YouTube' },
++++            contentDetails: { itemCount: 1 },
++++          },
++++        ],
++++      },
++++    }).as('listYouTubePlaylists');
++++
++++    cy.visit('/examples/index.html', {
++++      onBeforeLoad(win) {
++++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++++          accessToken: 'stored-token',
++++          accessTokenExpiresAt: futureExpiry,
++++          tokenScope: combinedYouTubeScope,
++++        }));
++++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++++          { id: 'PL-stale', title: 'Stale cached playlist' },
++++        ]));
++++      },
++++    });
++++    cy.waitForVisualization();
++++    cy.wait('@listYouTubePlaylists');
++++
++++    cy.window().then((win) => {
++++      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
++++        { id: 'PL-new', title: 'New playlist from YouTube' },
++++      ]);
++++    });
++++
++++    addSyntheticRecording();
++++    cy.contains('button', 'Upload to YouTube').click();
++++
++++    cy.get('#youtubeUploadModal').should('be.visible');
++++    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
++++    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
++++  });
++++
+++   it('loads existing YouTube playlists and creates a new playlist by title', () => {
+++     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+++       statusCode: 200,
+++diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+++index 4c9006a..9f58882 100644
+++--- a/examples/youtube-upload.js
++++++ b/examples/youtube-upload.js
+++@@ -348,7 +348,7 @@
+++     }
+++
+++     playlistRefreshPromise = uploader.listPlaylists(accessToken)
+++-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
++++      .then(playlists => saveYouTubePlaylists(playlists))
+++       .finally(() => {
+++         playlistRefreshPromise = null;
+++       });
++diff --git a/docs/case-studies/issue-181/logs/pr-183.json b/docs/case-studies/issue-181/logs/pr-183.json
++new file mode 100644
++index 0000000..b0289e3
++--- /dev/null
+++++ b/docs/case-studies/issue-181/logs/pr-183.json
++@@ -0,0 +1 @@
+++{"author":{"id":"MDQ6VXNlcjE0MzE5MDQ=","is_bot":false,"login":"konard","name":"Konstantin Diachenko"},"baseRefName":"main","body":"## Summary\\n- Replace cached YouTube playlists with the latest YouTube API response during refresh instead of merging stale entries\\n- Keep created playlists saved immediately through the existing create flow\\n- Add Cypress coverage for startup refresh replacing a stale cached playlist with the API result\\n\\nFixes Jhon-Crow/audio-recorder-with-visualization#181\\n\\n## Testing\\n- npm test -- --runInBand tests/YouTubeUploader.test.ts\\n- npm run typecheck\\n- npx cypress run --spec cypress/e2e/youtube-upload-ui.cy.js (focused local run for \"refreshes cached YouTube playlists from the API on app startup\")\\n\\n## Notes\\n- A full local youtube-upload-ui Cypress spec run still shows unrelated existing settings-sidebar failures where #presetSettingsBtn inherits pointer-events: none; the new playlist refresh test passes when focused.\n\n\nFixes Jhon-Crow/audio-recorder-with-visualization#181","comments":[{"id":"IC_kwDOQyCEds8AAAABHpVLdQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the fix to PR #183: https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nChanged `examples/youtube-upload.js` so YouTube playlist refresh replaces the cached playlist list with the latest API response instead of merging stale cached entries. Added Cypress coverage proving startup refresh removes a stale cached playlist and shows the newly returned YouTube playlist.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- Focused Cypress test passed for `refreshes cached YouTube playlists from the API on app startup`\n\nNotes:\n- Full local `youtube-upload-ui.cy.js` still has unrelated existing failures around `#presetSettingsBtn` inheriting `pointer-events: none`.\n- No GitHub Actions runs were listed yet for the fork branch after push.\n- Working tree is clean, PR is marked ready for review.\n\n---\n*This summary was automatically extracted from the AI working session output.*","createdAt":"2026-06-26T08:57:58Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808067957","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpVQPA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.108850\n\n### 📊 **Context and tokens usage:**\n- 143.7K / 200K (72%) input tokens, 8.1K / 128K (6%) output tokens\n\nTotal: (143.7K + 2.3M cached) input tokens, 8.1K output tokens, $4.108850 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1300KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/30dc915eb8eb31a4ce43f7bb44772656/raw/868e47020974f26644560d8b5007e8ceb1c7bb74/tmp-solution-draft-log-pr-1782464283946.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","createdAt":"2026-06-26T08:58:10Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808069180","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpYETA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","createdAt":"2026-06-26T09:04:43Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808115276","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqmbSQ","author":{"login":"Jhon-Crow"},"authorAssociation":"OWNER","body":"всё ещё старая информация после рестарта\r\nтак же проверь и прими если релевантны наработки из https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/185\r\n \r\nPlease collect data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), and propose possible solutions  (including known existing components/libraries, that solve similar problem or can help in solutions).\r\nи реализуй","createdAt":"2026-06-26T12:03:41Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809399113","viewerDidAuthor":false},{"id":"IC_kwDOQyCEds8AAAABHqm2LQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:04:37.396Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","createdAt":"2026-06-26T12:04:40Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809405997","viewerDidAuthor":true}],"commits":[{"authoredDate":"2026-06-26T08:45:38Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:45:38Z","messageBody":"Adding .gitkeep for PR creation (default mode).\nThis file will be removed when the task is complete.\n\nIssue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181","messageHeadline":"Initial commit with task details","oid":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d"},{"authoredDate":"2026-06-26T08:57:18Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:57:18Z","messageBody":"","messageHeadline":"Refresh YouTube playlists on app startup","oid":"dac74090f360e3ddfeadf6efb8d5508810773631"},{"authoredDate":"2026-06-26T09:04:44Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T09:04:44Z","messageBody":"This reverts commit 7702534fe575a4fbafbe292e1ca1a0d60e23a21d.","messageHeadline":"Revert \"Initial commit with task details\"","oid":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553"}],"createdAt":"2026-06-26T08:45:45Z","headRefName":"issue-181-0b636e7c0712","isDraft":true,"mergeStateStatus":"UNSTABLE","number":183,"state":"OPEN","title":"Refresh YouTube playlists on app startup","updatedAt":"2026-06-26T12:04:40Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183"}
++diff --git a/docs/case-studies/issue-181/logs/pr-185.diff b/docs/case-studies/issue-181/logs/pr-185.diff
++new file mode 100644
++index 0000000..86aa83b
++--- /dev/null
+++++ b/docs/case-studies/issue-181/logs/pr-185.diff
++@@ -0,0 +1,102 @@
+++diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+++index 0874212..ad38cb7 100644
+++--- a/cypress/e2e/pipeline-mode.cy.js
++++++ b/cypress/e2e/pipeline-mode.cy.js
+++@@ -637,6 +637,40 @@ describe('Pipeline Mode', () => {
+++       .should('have.value', 'PL-existing, PL-created');
+++   });
+++
++++  it('creates a pipeline playlist after YouTube helpers become available post-render', () => {
++++    cy.visit('/examples/index.html');
++++    cy.waitForVisualization();
++++    cy.contains('.tab', 'Pipeline').click();
++++
++++    cy.window().then((win) => {
++++      const youtube = win.AudioRecorderYouTube;
++++      delete win.AudioRecorderYouTube;
++++      win.AudioRecorderPipeline.replaceStages([
++++        {
++++          name: 'Late YouTube helper',
++++          action: 'upload-youtube',
++++          scheduleMode: 'absolute',
++++          publishAtLocal: '2026-07-02T12:00',
++++          playlistIds: '',
++++        },
++++      ]);
++++      win.AudioRecorderYouTube = {
++++        ...youtube,
++++        createPlaylist: cy.stub().as('createLatePipelinePlaylist').resolves({
++++          id: 'PL-late-created',
++++          title: 'Late created playlist',
++++        }),
++++      };
++++    });
++++
++++    cy.get('.pipeline-stage').first().within(() => {
++++      cy.get('.youtube-playlist-create input').type('Late created playlist');
++++      cy.get('.youtube-playlist-create button').should('not.be.disabled').click();
++++      cy.get('.pipeline-stage-playlist-ids').should('have.value', 'PL-late-created');
++++    });
++++    cy.get('@createLatePipelinePlaylist').should('have.been.calledWith', 'Late created playlist');
++++  });
++++
+++   it('blocks out-of-order YouTube uploads by default and allows manual order from settings', () => {
+++     cy.window().then((win) => {
+++       win.AudioRecorderPipeline.replaceStages([
+++diff --git a/examples/pipeline.js b/examples/pipeline.js
+++index 12f9af9..0eb493c 100644
+++--- a/examples/pipeline.js
++++++ b/examples/pipeline.js
+++@@ -3147,9 +3147,9 @@
+++
+++   function renderPlaylistChooser(stage, onChange, disabled = false) {
+++     const selectedIds = getPlaylistIds(stage.playlistIds);
+++-    const youtube = window.AudioRecorderYouTube;
+++-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
+++-      ? youtube.getSavedPlaylists()
++++    const initialYouTube = window.AudioRecorderYouTube;
++++    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
++++      ? initialYouTube.getSavedPlaylists()
+++       : loadSavedYouTubePlaylists();
+++     selectedIds.forEach(id => {
+++       if (!known.some(item => item.id === id)) {
+++@@ -3197,7 +3197,7 @@
+++     if (!known.length) {
+++       const empty = document.createElement('div');
+++       empty.className = 'youtube-playlist-empty';
+++-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
++++      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
+++         ? 'No playlists loaded yet'
+++         : 'Sign in to load YouTube playlists';
+++       list.appendChild(empty);
+++@@ -3209,14 +3209,18 @@
+++     refreshButton.type = 'button';
+++     refreshButton.className = 'btn-secondary compact-btn';
+++     refreshButton.textContent = 'Refresh';
+++-    refreshButton.disabled = disabled || !youtube ||
+++-      typeof youtube.refreshPlaylists !== 'function' ||
+++-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
+++-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
++++    refreshButton.disabled = disabled || !initialYouTube ||
++++      typeof initialYouTube.refreshPlaylists !== 'function' ||
++++      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
++++      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
+++     refreshButton.addEventListener('click', async () => {
++++      const youtube = window.AudioRecorderYouTube;
+++       refreshButton.disabled = true;
+++       refreshButton.textContent = 'Refreshing...';
+++       try {
++++        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
++++          throw new Error('Sign in to YouTube before loading playlists.');
++++        }
+++         await youtube.refreshPlaylists({ force: true });
+++         renderStages();
+++       } catch (error) {
+++@@ -3241,6 +3245,7 @@
+++     button.textContent = 'Create new';
+++     button.disabled = disabled;
+++     button.addEventListener('click', async () => {
++++      const youtube = window.AudioRecorderYouTube;
+++       const title = input.value.trim();
+++       if (!title) {
+++         input.focus();
++diff --git a/examples/pipeline.js b/examples/pipeline.js
++index 12f9af9..0eb493c 100644
++--- a/examples/pipeline.js
+++++ b/examples/pipeline.js
++@@ -3147,9 +3147,9 @@
++
++   function renderPlaylistChooser(stage, onChange, disabled = false) {
++     const selectedIds = getPlaylistIds(stage.playlistIds);
++-    const youtube = window.AudioRecorderYouTube;
++-    const known = youtube && typeof youtube.getSavedPlaylists === 'function'
++-      ? youtube.getSavedPlaylists()
+++    const initialYouTube = window.AudioRecorderYouTube;
+++    const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
+++      ? initialYouTube.getSavedPlaylists()
++       : loadSavedYouTubePlaylists();
++     selectedIds.forEach(id => {
++       if (!known.some(item => item.id === id)) {
++@@ -3197,7 +3197,7 @@
++     if (!known.length) {
++       const empty = document.createElement('div');
++       empty.className = 'youtube-playlist-empty';
++-      empty.textContent = youtube && typeof youtube.hasValidAccessToken === 'function' && youtube.hasValidAccessToken()
+++      empty.textContent = initialYouTube && typeof initialYouTube.hasValidAccessToken === 'function' && initialYouTube.hasValidAccessToken()
++         ? 'No playlists loaded yet'
++         : 'Sign in to load YouTube playlists';
++       list.appendChild(empty);
++@@ -3209,14 +3209,18 @@
++     refreshButton.type = 'button';
++     refreshButton.className = 'btn-secondary compact-btn';
++     refreshButton.textContent = 'Refresh';
++-    refreshButton.disabled = disabled || !youtube ||
++-      typeof youtube.refreshPlaylists !== 'function' ||
++-      (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) ||
++-      (typeof youtube.hasPlaylistScope === 'function' && !youtube.hasPlaylistScope());
+++    refreshButton.disabled = disabled || !initialYouTube ||
+++      typeof initialYouTube.refreshPlaylists !== 'function' ||
+++      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
+++      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
++     refreshButton.addEventListener('click', async () => {
+++      const youtube = window.AudioRecorderYouTube;
++       refreshButton.disabled = true;
++       refreshButton.textContent = 'Refreshing...';
++       try {
+++        if (!youtube || typeof youtube.refreshPlaylists !== 'function') {
+++          throw new Error('Sign in to YouTube before loading playlists.');
+++        }
++         await youtube.refreshPlaylists({ force: true });
++         renderStages();
++       } catch (error) {
++@@ -3241,6 +3245,7 @@
++     button.textContent = 'Create new';
++     button.disabled = disabled;
++     button.addEventListener('click', async () => {
+++      const youtube = window.AudioRecorderYouTube;
++       const title = input.value.trim();
++       if (!title) {
++         input.focus();
++diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
++index 4c9006a..59fb367 100644
++--- a/examples/youtube-upload.js
+++++ b/examples/youtube-upload.js
++@@ -225,10 +225,7 @@
++   function saveYouTubePlaylist(playlist) {
++     const id = String(playlist.id || '').trim();
++     if (!id) return;
++-    return saveYouTubePlaylists([
++-      ...loadSavedYouTubePlaylists().filter(item => item.id !== id),
++-      { id, title: String(playlist.title || id).trim() || id },
++-    ]);
+++    return saveYouTubePlaylists([{ id, title: String(playlist.title || id).trim() || id }], { merge: true });
++   }
++
++   function setPlaylistIds(ids) {
++@@ -348,7 +345,11 @@
++     }
++
++     playlistRefreshPromise = uploader.listPlaylists(accessToken)
++-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
+++      .then(playlists => {
+++        const refreshed = saveYouTubePlaylists(playlists);
+++        renderPlaylistSelector();
+++        return refreshed;
+++      })
++       .finally(() => {
++         playlistRefreshPromise = null;
++       });
+diff --git a/docs/case-studies/issue-181/logs/pr-183-latest.json b/docs/case-studies/issue-181/logs/pr-183-latest.json
+new file mode 100644
+index 0000000..05bd85d
+--- /dev/null
++++ b/docs/case-studies/issue-181/logs/pr-183-latest.json
+@@ -0,0 +1 @@
++{"body":"## Summary\n- Replace cached YouTube playlists with the latest YouTube API response during refresh instead of merging stale entries\n- Re-render the upload playlist selector after startup refresh resolves so visible UI does not keep stale localStorage markup\n- Keep newly created playlists saved additively through the existing create flow\n- Apply the related PR #185 late-helper lookup pattern to pipeline playlist refresh/create actions\n- Add case-study data and analysis under `docs/case-studies/issue-181`\n- Add Cypress coverage for upload and pipeline startup refresh replacing stale cached playlists with API results\n\nFixes Jhon-Crow/audio-recorder-with-visualization#181\n\n## Reproduction\n1. Sign in with YouTube playlist scope so `audio-recorder-youtube-token-state` is restored after restart.\n2. Store a stale playlist in `audio-recorder-youtube-playlists`.\n3. Restart/open the app while YouTube returns a different current playlist from `playlists.list?mine=true`.\n4. Before this fix, rendered playlist selectors could still show stale cached entries. After this fix, a successful refresh replaces the cache and re-renders selectors from the refreshed list.\n\n## Testing\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts`\n- `npm run typecheck`\n- `git diff --check`\n- `npx cypress run --spec cypress/e2e/youtube-upload-ui.cy.js` passed the new startup playlist refresh regression; full spec still has 5 unrelated existing settings-sidebar failures where `#presetSettingsBtn` inherits `pointer-events: none`.\n- `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` passed the new pipeline stale-cache regression; full spec still has 2 unrelated existing failures in stage navigator active state and relative publish date update.\n\n## Case Study\nSee `docs/case-studies/issue-181/analysis.md` and collected raw artifacts in `docs/case-studies/issue-181/logs/`.\n","comments":[{"id":"IC_kwDOQyCEds8AAAABHpVLdQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the fix to PR #183: https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nChanged `examples/youtube-upload.js` so YouTube playlist refresh replaces the cached playlist list with the latest API response instead of merging stale cached entries. Added Cypress coverage proving startup refresh removes a stale cached playlist and shows the newly returned YouTube playlist.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- Focused Cypress test passed for `refreshes cached YouTube playlists from the API on app startup`\n\nNotes:\n- Full local `youtube-upload-ui.cy.js` still has unrelated existing failures around `#presetSettingsBtn` inheriting `pointer-events: none`.\n- No GitHub Actions runs were listed yet for the fork branch after push.\n- Working tree is clean, PR is marked ready for review.\n\n---\n*This summary was automatically extracted from the AI working session output.*","createdAt":"2026-06-26T08:57:58Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808067957","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpVQPA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.108850\n\n### 📊 **Context and tokens usage:**\n- 143.7K / 200K (72%) input tokens, 8.1K / 128K (6%) output tokens\n\nTotal: (143.7K + 2.3M cached) input tokens, 8.1K output tokens, $4.108850 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1300KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/30dc915eb8eb31a4ce43f7bb44772656/raw/868e47020974f26644560d8b5007e8ceb1c7bb74/tmp-solution-draft-log-pr-1782464283946.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","createdAt":"2026-06-26T08:58:10Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808069180","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHpYETA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","createdAt":"2026-06-26T09:04:43Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4808115276","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqmbSQ","author":{"login":"Jhon-Crow"},"authorAssociation":"OWNER","body":"всё ещё старая информация после рестарта\r\nтак же проверь и прими если релевантны наработки из https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/185\r\n \r\nPlease collect data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), and propose possible solutions  (including known existing components/libraries, that solve similar problem or can help in solutions).\r\nи реализуй","createdAt":"2026-06-26T12:03:41Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809399113","viewerDidAuthor":false},{"id":"IC_kwDOQyCEds8AAAABHqm2LQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:04:37.396Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","createdAt":"2026-06-26T12:04:40Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809405997","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqrNZQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"<!-- hive-mind:working-session-summary -->\n## Working session summary\n\nImplemented and pushed the follow-up fix to PR #183:\n\nhttps://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183\n\nWhat changed:\n- Upload playlist refresh now replaces stale cache and re-renders the visible selector after refresh.\n- Created playlists remain additive, so newly created playlists are preserved immediately.\n- Pipeline playlist controls now use the PR #185 late-helper pattern for refresh/create actions.\n- Added a pipeline Cypress regression for stale cached playlists after restart.\n- Added the requested case study and collected artifacts under `docs/case-studies/issue-181/`.\n\nVerification:\n- `npm test -- --runInBand tests/YouTubeUploader.test.ts` passed\n- `npm run typecheck` passed\n- `git diff --check` passed\n- Full Cypress upload/pipeline specs confirm the new regressions pass, but still show unrelated existing failures already documented in the PR.\n\nPR is marked ready for review. New GitHub Actions run for commit `7b31f95` is currently in progress, so merge status is temporarily `UNSTABLE` until that run finishes.\n\n---\n*This summary was automatically extracted from the AI working session output.*","createdAt":"2026-06-26T12:15:13Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809477477","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqrRsA","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## 🤖 Solution Draft Log\nThis log file contains the complete execution trace of the AI solution draft process.\n\n### 💰 **Cost estimation:**\n- Model: GPT-5.5\n- Provider: OpenAI\n- Public pricing estimate: $4.141215\n\n### 📊 **Context and tokens usage:**\n- 153.5K / 200K (77%) input tokens, 9.9K / 128K (8%) output tokens\n\nTotal: (153.5K + 2.2M cached) input tokens, 9.9K output tokens, $4.141215 cost\n\n### 🤖 **Models used:**\n- Tool: OpenAI Codex\n- Requested: `gpt-5.5`\n- **Model: GPT-5.5** (`gpt-5.5`)\n\n### 📎 **Log file uploaded as Gist** (1315KB)\n- [View complete solution draft log](https://gist.githubusercontent.com/konard/d0e518038d40af4bc3cc8c03c51de2b4/raw/cfca34e74568f35dcf349a52c3c1277c7d348369/tmp-solution-draft-log-pr-1782476116590.txt.log.txt)\n\n---\n*Now working session is ended, feel free to review and add any feedback on the solution draft.*","createdAt":"2026-06-26T12:15:22Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809478576","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqtCuQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"## ✅ Ready to merge\n\nThis pull request is now ready to be merged:\n- All CI checks have passed\n- No merge conflicts\n- No pending changes\n\n---\n*Monitored by hive-mind with --auto-restart-until-mergeable flag*","createdAt":"2026-06-26T12:19:50Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809507513","viewerDidAuthor":true},{"id":"IC_kwDOQyCEds8AAAABHqvVlA","author":{"login":"Jhon-Crow"},"authorAssociation":"OWNER","body":"не работает\r\nдаже кнопка рефрешь не работает, почини хотя бы её (для ручной проверки)\r\n<img width=\"1096\" height=\"351\" alt=\"image\" src=\"https://github.com/user-attachments/assets/1de21f20-5429-4600-975b-b469ecb5c872\" />\r\nPlease download all logs and data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), in which we will reconstruct timeline/sequence of events, find root causes of the problem, and propose possible solutions.\r\n","createdAt":"2026-06-26T12:25:38Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809545108","viewerDidAuthor":false},{"id":"IC_kwDOQyCEds8AAAABHqvrgQ","author":{"login":"konard"},"authorAssociation":"CONTRIBUTOR","body":"🤖 **AI Work Session Started**\n\nStarting automated work session at 2026-06-26T12:26:28.227Z\n\nThe PR has been converted to draft mode while work is in progress.\n\n_This comment marks the beginning of an AI work session. Please wait for the session to finish, and provide your feedback._","createdAt":"2026-06-26T12:26:30Z","includesCreatedEdit":false,"isMinimized":false,"minimizedReason":"","reactionGroups":[],"url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183#issuecomment-4809550721","viewerDidAuthor":true}],"commits":[{"authoredDate":"2026-06-26T08:45:38Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:45:38Z","messageBody":"Adding .gitkeep for PR creation (default mode).\nThis file will be removed when the task is complete.\n\nIssue: https://github.com/Jhon-Crow/audio-recorder-with-visualization/issues/181","messageHeadline":"Initial commit with task details","oid":"7702534fe575a4fbafbe292e1ca1a0d60e23a21d"},{"authoredDate":"2026-06-26T08:57:18Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T08:57:18Z","messageBody":"","messageHeadline":"Refresh YouTube playlists on app startup","oid":"dac74090f360e3ddfeadf6efb8d5508810773631"},{"authoredDate":"2026-06-26T09:04:44Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T09:04:44Z","messageBody":"This reverts commit 7702534fe575a4fbafbe292e1ca1a0d60e23a21d.","messageHeadline":"Revert \"Initial commit with task details\"","oid":"17fb1b7635ffc7d7a6474bd5ffe96e47a8ccd553"},{"authoredDate":"2026-06-26T12:14:25Z","authors":[{"email":"drakonard@gmail.com","id":"MDQ6VXNlcjE0MzE5MDQ=","login":"konard","name":"konard"}],"committedDate":"2026-06-26T12:14:25Z","messageBody":"","messageHeadline":"Keep YouTube playlist cache fresh after restart","oid":"7b31f9564c73f91cf769de1c78946ba15f17daf0"}],"isDraft":true,"number":183,"statusCheckRollup":[{"__typename":"CheckRun","completedAt":"2026-06-26T12:19:21Z","conclusion":"SUCCESS","detailsUrl":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/actions/runs/28237334803/job/83655273863","name":"build","startedAt":"2026-06-26T12:14:37Z","status":"COMPLETED","workflowName":"Build Portable EXE"},{"__typename":"CheckRun","completedAt":"2026-06-26T12:19:21Z","conclusion":"SKIPPED","detailsUrl":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/actions/runs/28237334803/job/83656038678","name":"release","startedAt":"2026-06-26T12:19:22Z","status":"COMPLETED","workflowName":"Build Portable EXE"}],"title":"Keep YouTube playlists fresh after restart","updatedAt":"2026-06-26T12:26:30Z","url":"https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/183"}
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 0eb493c..283cf72 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -3209,10 +3209,7 @@
+     refreshButton.type = 'button';
+     refreshButton.className = 'btn-secondary compact-btn';
+     refreshButton.textContent = 'Refresh';
+-    refreshButton.disabled = disabled || !initialYouTube ||
+-      typeof initialYouTube.refreshPlaylists !== 'function' ||
+-      (typeof initialYouTube.hasValidAccessToken === 'function' && !initialYouTube.hasValidAccessToken()) ||
+-      (typeof initialYouTube.hasPlaylistScope === 'function' && !initialYouTube.hasPlaylistScope());
++    refreshButton.disabled = disabled;
+     refreshButton.addEventListener('click', async () => {
+       const youtube = window.AudioRecorderYouTube;
+       refreshButton.disabled = true;

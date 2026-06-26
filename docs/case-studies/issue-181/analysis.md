@@ -43,6 +43,8 @@ The pipeline selector also captured `window.AudioRecorderYouTube` at render time
 
 Follow-up PR feedback on 2026-06-26 showed an additional manual-check failure: the pipeline Refresh button was visibly disabled even while cached playlists were rendered. The disabled state was computed from the initial helper snapshot, so a selector rendered before YouTube helpers/token state were ready could not be manually refreshed later. The click handler had already been changed to resolve `window.AudioRecorderYouTube` late, but the disabled gate still prevented the click from ever reaching that safer path.
 
+Later PR feedback on 2026-06-26 reported that clicking Refresh produced no network request and no console errors. That makes the next likely failure point an unobserved click-path prerequisite, such as a missing `window.AudioRecorderYouTube` helper, missing `refreshPlaylists`, missing token/scope state, or a click handler not firing. The pipeline refresh action now logs a compact console diagnostic for click, blocked, success, and failure states so manual verification can identify which prerequisite prevents the YouTube request.
+
 ## Solution
 
 - Treat successful playlist refresh as replacement with the latest YouTube API response.
@@ -50,6 +52,7 @@ Follow-up PR feedback on 2026-06-26 showed an additional manual-check failure: t
 - Re-render the upload playlist selector after refresh resolves so visible UI cannot keep stale startup markup.
 - Apply the PR 185 late-helper pattern to pipeline playlist refresh/create actions.
 - Keep the pipeline manual Refresh button enabled whenever the stage itself is editable, and perform YouTube helper/token/scope validation inside the click handler.
+- Log pipeline YouTube playlist refresh diagnostics to the console so manual checks show whether the click handler fired and which prerequisite blocked or completed refresh.
 - Add Cypress regressions for upload and pipeline startup refresh replacing stale cached playlists.
 - Add a Cypress regression for manual pipeline refresh after YouTube helpers become available post-render.
 
@@ -65,3 +68,4 @@ Follow-up PR feedback on 2026-06-26 showed an additional manual-check failure: t
 - Cypress upload regression seeds stale `localStorage`, returns a different API playlist, then verifies the modal only shows the refreshed playlist.
 - Cypress pipeline regression seeds the same stale cache, waits for startup refresh, then verifies pipeline stages only show the refreshed playlist.
 - Cypress manual refresh regression renders pipeline stale cached playlists first, installs YouTube helpers after render, clicks Refresh, and verifies the selector re-renders with the fresh helper data.
+- Cypress manual refresh regression also asserts the console diagnostics for click and successful refresh are emitted.

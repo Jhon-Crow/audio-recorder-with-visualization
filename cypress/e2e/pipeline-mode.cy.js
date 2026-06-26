@@ -680,6 +680,7 @@ describe('Pipeline Mode', () => {
     cy.visit('/examples/index.html', {
       onBeforeLoad(win) {
         seedSavedVisualizationPresets(win);
+        cy.stub(win.console, 'info').as('consoleInfo');
         win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
           { id: 'PL-stale', title: 'Stale manual playlist' },
         ]));
@@ -705,6 +706,21 @@ describe('Pipeline Mode', () => {
     });
 
     cy.get('@refreshLatePipelinePlaylists').should('have.been.calledWith', { force: true });
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[Pipeline YouTube playlists]',
+      'Refresh clicked',
+      Cypress.sinon.match({
+        hasYouTubeHelper: true,
+        hasRefreshPlaylists: true,
+        hasValidAccessToken: true,
+        hasPlaylistScope: true,
+      }));
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[Pipeline YouTube playlists]',
+      'Refresh completed',
+      Cypress.sinon.match({
+        returnedPlaylistCount: 1,
+      }));
     cy.get('.pipeline-stage').first().within(() => {
       cy.get('.youtube-playlist-option').should('contain.text', 'Fresh manual playlist');
       cy.contains('.youtube-playlist-option', 'Stale manual playlist').should('not.exist');
