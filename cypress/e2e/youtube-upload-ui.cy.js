@@ -278,6 +278,52 @@ describe('YouTube Upload UI', () => {
     cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
   });
 
+  it('refreshes YouTube channel default tags from the API on app startup', () => {
+    const futureExpiry = Date.now() + 3600 * 1000;
+
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        cy.stub(win.console, 'info').as('consoleInfo');
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: futureExpiry,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.wait('@loadYouTubeChannelDefaults');
+
+    cy.window().then((win) => {
+      const saved = JSON.parse(win.localStorage.getItem('audio-recorder-youtube-channel-defaults') || '{}');
+      expect(saved).to.have.property('tags').that.is.a('string');
+    });
+
+    cy.get('@consoleInfo').should('have.been.calledWith',
+      '[YouTube startup] Token is valid, starting startup refresh for channel defaults');
+    cy.get('@consoleInfo').should('have.been.calledWith',
+      '[YouTube channel defaults] Calling channels.list?part=brandingSettings&mine=true');
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[YouTube channel defaults] API response received',
+      Cypress.sinon.match.object);
+  });
+
+  it('logs startup token state and skips API refresh when no valid token', () => {
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        cy.stub(win.console, 'info').as('consoleInfo');
+      },
+    });
+    cy.waitForVisualization();
+
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[YouTube startup] Token state at startup',
+      Cypress.sinon.match.object);
+    cy.get('@consoleInfo').should('have.been.calledWithMatch',
+      '[YouTube startup] No valid token at startup, skipping API refresh',
+      Cypress.sinon.match.object);
+  });
+
   it('loads existing YouTube playlists and creates a new playlist by title', () => {
     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
       statusCode: 200,
