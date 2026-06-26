@@ -856,6 +856,11 @@ describe('Pipeline Mode', () => {
       .should('have.attr', 'data-preview-state', 'ready')
       .and('have.attr', 'data-tooltip')
       .and('contain', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
+      .should('have.attr', 'data-preview-state', 'ready')
+      .and('have.class', 'pipeline-preview-trigger')
+      .and('have.attr', 'aria-label')
+      .and('contain', 'album-cover.png preview');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-full-album-video')
       .should('not.be.checked')
       .check();

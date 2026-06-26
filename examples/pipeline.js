@@ -1449,6 +1449,9 @@
         if (!element.isConnected) return;
         element.style.setProperty('--pipeline-preview-image', `url("${dataUrl}")`);
         element.dataset.previewState = 'ready';
+        if (activePreviewTooltipTrigger === element) {
+          showPipelinePreviewTooltip(element);
+        }
       })
       .catch(error => {
         console.warn('Failed to render pipeline preview:', error);
@@ -1477,7 +1480,9 @@
     element.dataset.tooltip = `${stage.sharedImageName || cover.name || 'Selected cover'} preview`;
     element.dataset.previewState = 'loading';
     element.title = element.dataset.tooltip;
+    element.tabIndex = 0;
     element.style.setProperty('--pipeline-preview-aspect', '16 / 9');
+    element.setAttribute('aria-label', element.dataset.tooltip);
 
     readImageAsDataUrl(cover)
       .then(dataUrl => {
@@ -2957,6 +2962,7 @@
       updateStage(stage.id, { sharedImageName: image ? image.name : '' }, true);
     });
     imageField.appendChild(imageInput);
+    applyCoverPreviewTooltip(imageField, stage);
     wrapper.appendChild(imageField);
 
     const presetField = createField('Release preset', 'span-4', 'Visualizer preset used for release render tasks.');
