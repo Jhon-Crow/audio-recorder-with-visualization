@@ -263,6 +263,55 @@ body {
   box-shadow: none;
 }
 
+.preset-load-btn,
+.pipeline-load-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.preset-load-btn.has-thumbnail,
+.pipeline-load-btn.has-thumbnail,
+.preset-load-btn.has-generated-thumbnail,
+.pipeline-load-btn.has-generated-thumbnail {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.7)), var(--saved-item-thumbnail);
+  background-position: center;
+  background-size: cover;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.88);
+}
+
+.preset-load-btn.has-generated-thumbnail,
+.pipeline-load-btn.has-generated-thumbnail {
+  --saved-item-thumbnail:
+    radial-gradient(circle at 28% 24%, rgba(0, 255, 136, 0.82), transparent 28%),
+    radial-gradient(circle at 72% 34%, rgba(0, 136, 255, 0.78), transparent 30%),
+    linear-gradient(135deg, #162032, #3b1f5f 52%, #102f28);
+}
+
+.preset-load-btn.has-thumbnail::after,
+.pipeline-load-btn.has-thumbnail::after,
+.preset-load-btn.has-generated-thumbnail::after,
+.pipeline-load-btn.has-generated-thumbnail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 -18px 24px rgba(0, 0, 0, 0.58);
+  pointer-events: none;
+}
+
+.saved-item-label {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 3px;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
 .preset-load-btn {
   font-size: 13px;
   font-weight: 700;
@@ -291,8 +340,6 @@ body {
 }
 
 .preset-load-btn.is-active {
-  background: rgba(0, 255, 136, 0.2);
-  color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-glow);
 }
 

@@ -89,4 +89,5 @@ References:
 - Latest `npm test -- --runInBand` passed.
 - Latest `npm run build` passed.
 - Latest `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` ran with 26 passing and 2 unrelated existing failures. The new saved-pipeline cover persistence test passed. Remaining failures are the known navigator active-state assertion at `cypress/e2e/pipeline-mode.cy.js:257` and the relative publish-date assertion at `cypress/e2e/pipeline-mode.cy.js:397`.
+- After merging upstream `main`, `npm test -- --runInBand`, `npm run build`, and `node --check examples/pipeline.js` passed. `npx cypress run --spec cypress/e2e/pipeline-mode.cy.js` ran with 32 passing and 4 unrelated failures; `keeps saved album cover previews after reload and pipeline restore` passed.
 - The latest downloaded upstream CI run before this follow-up was successful: workflow `Build Portable EXE`, run `28228694701`, commit `799adae`.
