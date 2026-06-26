@@ -1687,7 +1687,14 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
         button.classList.add('is-active');
         button.setAttribute('aria-current', 'true');
       }
-      button.addEventListener('click', () => loadPreset(preset.id));
+      button.addEventListener('click', event => {
+        if (event.shiftKey) {
+          event.preventDefault();
+          openPresetRenameDialog(preset.id);
+          return;
+        }
+        loadPreset(preset.id);
+      });
       button.addEventListener('contextmenu', event => {
         event.preventDefault();
         showPresetContextMenu(preset.id, event.clientX, event.clientY);

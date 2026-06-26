@@ -3676,7 +3676,14 @@
       }
       button.textContent = pipeline.name || String(index + 1);
       button.setAttribute('aria-label', `Load pipeline ${pipeline.name || index + 1}`);
-      button.addEventListener('click', () => loadPipeline(pipeline.id));
+      button.addEventListener('click', event => {
+        if (event.shiftKey) {
+          event.preventDefault();
+          openPipelineRenameDialog(pipeline.id);
+          return;
+        }
+        loadPipeline(pipeline.id);
+      });
       button.addEventListener('contextmenu', event => {
         event.preventDefault();
         showPipelineContextMenu(pipeline.id, event.clientX, event.clientY);

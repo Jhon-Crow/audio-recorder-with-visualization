@@ -122,6 +122,18 @@ describe('Preset Management', () => {
     cy.get('#presetList .preset-load-btn').first().should('contain', 'Beta');
   });
 
+  it('opens the rename dialog when a saved preset is shift-clicked', () => {
+    visitWithPresets([
+      { id: 'preset-a', name: 'Alpha', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },
+    ]);
+    cy.get('#presetEdgeTrigger').trigger('pointerenter');
+
+    cy.get('#presetList .preset-load-btn').first().click({ shiftKey: true });
+
+    cy.get('#presetRenameModal').should('be.visible');
+    cy.get('#presetRenameInput').should('be.focused').and('have.value', 'Alpha');
+  });
+
   it('delete confirmation uses a custom modal instead of window.confirm', () => {
     visitWithPresets([
       { id: 'preset-a', name: 'ToDelete', createdAt: '2026-06-04T00:00:00.000Z', settings: {} },

@@ -1363,4 +1363,20 @@ describe('Pipeline Mode', () => {
       expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
     });
   });
+
+  it('opens the rename dialog when a saved pipeline is shift-clicked', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-pipelines', JSON.stringify([
+        { id: 'pipe-a', name: 'Alpha Pipeline', timezone: '', uploadOrder: 'chronological', stages: [] },
+      ]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#pipelineList .pipeline-load-btn').first().click({ shiftKey: true });
+
+    cy.get('#pipelineRenameModal').should('be.visible');
+    cy.get('#pipelineRenameInput').should('be.focused').and('have.value', 'Alpha Pipeline');
+  });
 });
