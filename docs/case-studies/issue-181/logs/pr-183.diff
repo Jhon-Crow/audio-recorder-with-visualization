@@ -1,0 +1,69 @@
+diff --git a/cypress/e2e/youtube-upload-ui.cy.js b/cypress/e2e/youtube-upload-ui.cy.js
+index 45cd15e..1b82892 100644
+--- a/cypress/e2e/youtube-upload-ui.cy.js
++++ b/cypress/e2e/youtube-upload-ui.cy.js
+@@ -219,6 +219,51 @@ describe('YouTube Upload UI', () => {
+     cy.get('#youtubeAuthSettingsStatus').should('contain.text', 'Signed in');
+   });
+
++  it('refreshes cached YouTube playlists from the API on app startup', () => {
++    const futureExpiry = Date.now() + 3600 * 1000;
++
++    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
++      statusCode: 200,
++      body: {
++        items: [
++          {
++            id: 'PL-new',
++            snippet: { title: 'New playlist from YouTube' },
++            contentDetails: { itemCount: 1 },
++          },
++        ],
++      },
++    }).as('listYouTubePlaylists');
++
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
++          accessToken: 'stored-token',
++          accessTokenExpiresAt: futureExpiry,
++          tokenScope: combinedYouTubeScope,
++        }));
++        win.localStorage.setItem('audio-recorder-youtube-playlists', JSON.stringify([
++          { id: 'PL-stale', title: 'Stale cached playlist' },
++        ]));
++      },
++    });
++    cy.waitForVisualization();
++    cy.wait('@listYouTubePlaylists');
++
++    cy.window().then((win) => {
++      expect(JSON.parse(win.localStorage.getItem('audio-recorder-youtube-playlists'))).to.deep.equal([
++        { id: 'PL-new', title: 'New playlist from YouTube' },
++      ]);
++    });
++
++    addSyntheticRecording();
++    cy.contains('button', 'Upload to YouTube').click();
++
++    cy.get('#youtubeUploadModal').should('be.visible');
++    cy.get('#youtubePlaylistSelector').should('contain.text', 'New playlist from YouTube');
++    cy.contains('#youtubePlaylistSelector', 'Stale cached playlist').should('not.exist');
++  });
++
+   it('loads existing YouTube playlists and creates a new playlist by title', () => {
+     cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/playlists*', {
+       statusCode: 200,
+diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+index 4c9006a..9f58882 100644
+--- a/examples/youtube-upload.js
++++ b/examples/youtube-upload.js
+@@ -348,7 +348,7 @@
+     }
+
+     playlistRefreshPromise = uploader.listPlaylists(accessToken)
+-      .then(playlists => saveYouTubePlaylists(playlists, { merge: true }))
++      .then(playlists => saveYouTubePlaylists(playlists))
+       .finally(() => {
+         playlistRefreshPromise = null;
+       });
