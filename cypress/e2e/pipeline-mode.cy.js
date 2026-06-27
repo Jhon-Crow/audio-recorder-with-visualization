@@ -976,6 +976,108 @@ describe('Pipeline Mode', () => {
     cy.get('.pipeline-stage').eq(1).find('.pipeline-track-title').eq(3).should('have.value', '04 bonus take');
   });
 
+  it('adds full album as the last upload item in combined release mode', () => {
+    const publishAtValues = [];
+    const uploadTitles = [];
+    let uploadIndex = 0;
+
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      uploadIndex += 1;
+      publishAtValues.push(body.status.publishAt);
+      uploadTitles.push(body.snippet.title);
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: `https://upload.example/combined-release-${uploadIndex}` },
+        body: '',
+      });
+    }).as('startCombinedReleaseUpload');
+
+    cy.intercept('PUT', /^https:\/\/upload\.example\/combined-release-\d+$/, (req) => {
+      req.reply({
+        statusCode: 201,
+        body: { id: `combined-release-${uploadIndex}` },
+      });
+    }).as('finishCombinedReleaseUpload');
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+          accessToken: 'stored-token',
+          accessTokenExpiresAt: Date.now() + 3600 * 1000,
+          tokenScope: combinedYouTubeScope,
+        }));
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          kind: 'release',
+          name: 'Combined release',
+          action: 'upload-youtube',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-07-01T08:00',
+          publishImmediately: false,
+          releaseType: 'album-with-full',
+          privacyStatus: 'private',
+        },
+      ]);
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.contains('label', 'Release type').find('select')
+        .should('contain.text', 'One track one video + full album')
+        .and('have.value', 'album-with-full');
+      cy.get('.pipeline-stage-file-input').selectFile([
+        {
+          contents: Cypress.Buffer.from('combined-one'),
+          fileName: '01 first track.mp4',
+          mimeType: 'video/mp4',
+        },
+        {
+          contents: Cypress.Buffer.from('combined-two'),
+          fileName: '02 second track.mp4',
+          mimeType: 'video/mp4',
+        },
+      ], { force: true });
+    });
+
+    cy.get('.pipeline-stage').first().within(() => {
+      cy.get('.pipeline-album-track').should('have.length', 3);
+      cy.get('.pipeline-album-track').eq(0).find('.pipeline-track-title')
+        .should('have.value', '01 first track');
+      cy.get('.pipeline-album-track').eq(1).find('.pipeline-track-title')
+        .should('have.value', '02 second track');
+      cy.get('.pipeline-album-track').eq(2)
+        .should('have.class', 'pipeline-full-album-track')
+        .find('.pipeline-track-title')
+        .should('have.value', 'Combined release (full album)')
+        .and('be.disabled');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    for (let index = 0; index < 3; index += 1) {
+      cy.wait('@startCombinedReleaseUpload');
+      cy.wait('@finishCombinedReleaseUpload');
+    }
+
+    cy.wrap(uploadTitles).should('deep.equal', [
+      '01 first track',
+      '02 second track',
+      'Combined release (full album)',
+    ]);
+    cy.wrap(publishAtValues).should('deep.equal', [
+      '2026-07-01T08:00:00.000Z',
+      '2026-07-01T08:01:00.000Z',
+      '2026-07-01T08:02:00.000Z',
+    ]);
+  });
+
   it('adds a dependent full album stage with its own schedule and generated timestamps', () => {
     cy.reload();
     cy.visit('/examples/index.html', {

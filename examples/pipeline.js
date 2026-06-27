@@ -598,7 +598,7 @@
     normalized.tracks = Array.isArray(normalized.tracks)
       ? normalized.tracks.map(normalizeTrack)
       : [];
-    normalized.releaseType = ['album', 'single', 'regular-posts'].includes(normalized.releaseType)
+    normalized.releaseType = ['album', 'single', 'regular-posts', 'album-with-full'].includes(normalized.releaseType)
       ? normalized.releaseType
       : (normalized.kind === 'release' ? 'album' : 'single');
     normalized.fullAlbumVideo = Boolean(normalized.fullAlbumVideo);
@@ -631,7 +631,9 @@
     if (!getSavedPresetSettings(normalized.presetId) && getDefaultPresetId()) {
       normalized.presetId = getDefaultPresetId();
     }
-    if (normalized.kind === 'release' && normalized.releaseType === 'album' && !normalized.tracks.length) {
+    if (normalized.kind === 'release' &&
+      (normalized.releaseType === 'album' || normalized.releaseType === 'album-with-full') &&
+      !normalized.tracks.length) {
       normalized.tracks = [createTrack('Track 01', 0), createTrack('Track 02', 1)];
     }
     if (normalized.kind === 'release' && normalized.releaseType === 'regular-posts' &&
@@ -1021,7 +1023,12 @@
   }
 
   function isAlbumStage(stage) {
-    return stage.kind === 'release' && (stage.releaseType || 'album') === 'album';
+    return stage.kind === 'release' &&
+      ((stage.releaseType || 'album') === 'album' || stage.releaseType === 'album-with-full');
+  }
+
+  function includesFullAlbumTask(stage) {
+    return stage.kind === 'release' && stage.releaseType === 'album-with-full';
   }
 
   function isRegularPostsStage(stage) {
@@ -1096,7 +1103,7 @@
       !Number.isFinite(stageBaseDates[index]?.getTime())) {
       return 'Relative stages need a valid reference and offset.';
     }
-    if (stage.kind === 'release' && stage.releaseType === 'album' && !stage.tracks.length) {
+    if (stage.kind === 'release' && isAlbumStage(stage) && !stage.tracks.length) {
       return 'Album release stages need at least one track.';
     }
     if (isFullAlbumStage(stage)) {
@@ -2175,6 +2182,11 @@
     return stage.name || getTrackTitleFromFileName(file.name, index);
   }
 
+  function getFullAlbumTaskTitle(stage) {
+    const trimmedName = String(stage.name || '').trim();
+    return trimmedName ? `${trimmedName} (full album)` : 'Full album';
+  }
+
   function getAlbumTaskTitle(stage) {
     return stage.name || 'Album';
   }
@@ -2275,6 +2287,23 @@
           publishAt: publishDate ? publishDate.toISOString() : undefined,
         });
       });
+
+      if (includesFullAlbumTask(stage) && files.length) {
+        const publishDate = stageBaseDate
+          ? new Date(stageBaseDate.getTime() + files.length * 60000)
+          : null;
+        tasks.push({
+          stage,
+          stageIndex,
+          file: files[0],
+          files,
+          fileIndex: files.length,
+          totalFiles: files.length + 1,
+          title: getFullAlbumTaskTitle(stage),
+          publishAt: publishDate ? publishDate.toISOString() : undefined,
+          isFullAlbum: true,
+        });
+      }
     });
 
     return tasks;
@@ -3426,14 +3455,15 @@
     const wrapper = document.createElement('div');
     wrapper.className = 'pipeline-album-editor';
 
-    const typeField = createField('Release type', 'span-4', 'Choose whether this release renders as one video or one video per album track.');
+    const typeField = createField('Release type', 'span-4', 'Choose whether this release creates track videos, one full-album video, or both.');
     const releaseType = document.createElement('select');
     const isDerivedFullAlbum = isFullAlbumStage(stage);
     setSelectOptions(releaseType, isDerivedFullAlbum ? [
       ['album', 'Album'],
     ] : [
-      ['album', 'Album'],
-      ['single', 'Single'],
+      ['album', 'One track one video'],
+      ['single', 'All tracks in one video (full album)'],
+      ['album-with-full', 'One track one video + full album'],
       ['regular-posts', 'Regular posts'],
     ], stage.releaseType || 'album');
     releaseType.className = 'pipeline-release-type';
@@ -3500,14 +3530,25 @@
       fullAlbumField.appendChild(fullAlbumCheckbox);
       fullAlbumField.appendChild(fullAlbumText);
       wrapper.appendChild(fullAlbumField);
+    }
 
+    if ((stage.releaseType || 'album') === 'album' || stage.releaseType === 'album-with-full' || isDerivedFullAlbum) {
       const tracks = document.createElement('div');
       tracks.className = 'pipeline-album-tracks';
-      stage.tracks.forEach((track, index) => {
+      const displayTracks = includesFullAlbumTask(stage)
+        ? [
+          ...stage.tracks,
+          { id: `${stage.id}-full-album`, title: getFullAlbumTaskTitle(stage), isFullAlbum: true },
+        ]
+        : stage.tracks;
+      displayTracks.forEach((track, index) => {
         const row = document.createElement('div');
         row.className = 'pipeline-album-track';
-        row.draggable = true;
+        row.draggable = !track.isFullAlbum;
         row.dataset.trackId = track.id;
+        if (track.isFullAlbum) {
+          row.classList.add('pipeline-full-album-track');
+        }
 
         const handle = document.createElement('span');
         handle.className = 'pipeline-track-handle';
@@ -3520,18 +3561,31 @@
         input.className = 'pipeline-track-title';
         input.setAttribute('aria-label', `Album track ${index + 1} title`);
         input.title = 'Rendered video title for this album track.';
-        input.addEventListener('input', () => updateTrack(stage.id, track.id, { title: input.value }));
+        input.disabled = Boolean(track.isFullAlbum);
+        input.addEventListener('input', () => {
+          if (!track.isFullAlbum) {
+            updateTrack(stage.id, track.id, { title: input.value });
+          }
+        });
 
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'btn-danger pipeline-track-remove';
         remove.textContent = '×';
         remove.setAttribute('aria-label', `Remove album track ${index + 1}`);
+        remove.disabled = Boolean(track.isFullAlbum);
         remove.addEventListener('click', () => {
+          if (track.isFullAlbum) {
+            return;
+          }
           updateStage(stage.id, { tracks: stage.tracks.filter(item => item.id !== track.id) }, true);
         });
 
         row.addEventListener('dragstart', event => {
+          if (track.isFullAlbum) {
+            event.preventDefault();
+            return;
+          }
           draggedTrack = { stageId: stage.id, trackId: track.id };
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/plain', track.id);

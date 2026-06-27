@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -721,6 +721,31 @@ app.on('web-contents-created', (event, contents) => {
       callback(true);
     } else {
       callback(false);
+    }
+  });
+
+  contents.on('context-menu', (menuEvent, params) => {
+    const { isEditable, selectionText, editFlags } = params;
+    if (!isEditable && !selectionText) {
+      return;
+    }
+
+    const menuItems = [];
+
+    if (isEditable) {
+      menuItems.push(
+        { role: 'cut', enabled: editFlags.canCut },
+        { role: 'copy', enabled: editFlags.canCopy },
+        { role: 'paste', enabled: editFlags.canPaste },
+        { type: 'separator' },
+        { role: 'selectAll', enabled: editFlags.canSelectAll }
+      );
+    } else if (selectionText) {
+      menuItems.push({ role: 'copy', enabled: editFlags.canCopy });
+    }
+
+    if (menuItems.length > 0) {
+      Menu.buildFromTemplate(menuItems).popup({ window: BrowserWindow.fromWebContents(contents) });
     }
   });
 });
