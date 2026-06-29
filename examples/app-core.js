@@ -72,6 +72,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   const previewBtn = document.getElementById('previewBtn');
   const stopPreviewBtn = document.getElementById('stopPreviewBtn');
   const loopPreviewCheckbox = document.getElementById('loopPreview');
+  const offlineRenderCheckbox = document.getElementById('offlineRender');
   const progressFill = document.getElementById('progressFill');
   const videoQuality = document.getElementById('videoQuality');
   const aspectRatio = document.getElementById('aspectRatio');
@@ -2037,6 +2038,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       previewBtn,
       stopPreviewBtn,
       loopPreviewCheckbox,
+      offlineRenderCheckbox,
       progressFill,
       videoQuality,
       aspectRatio,

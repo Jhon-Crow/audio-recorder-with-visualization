@@ -430,6 +430,7 @@ function initInteractions() {
           videoWidth: dimensions.width,
           videoHeight: dimensions.height,
           format: requestedFormat,
+          offlineRender: el.offlineRenderCheckbox?.checked ?? false,
           onProgress: progress => updateProgress(progress, index, totalFiles),
         });
 

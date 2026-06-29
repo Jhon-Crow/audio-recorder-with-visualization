@@ -72,6 +72,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private debug: boolean;
   private _readyPromise: Promise<void>;
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
+  private audioTimerNode: ScriptProcessorNode | null = null;
   private debugVisualActive = false;
   private debugVisualAnimationId: number | null = null;
   private debugVisualStartTime = 0;
@@ -152,6 +153,12 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
 
+    // Set up window blur/focus handlers for minimization detection
+    this.handleWindowBlur = this.handleWindowBlur.bind(this);
+    this.handleWindowFocus = this.handleWindowFocus.bind(this);
+    window.addEventListener('blur', this.handleWindowBlur);
+    window.addEventListener('focus', this.handleWindowFocus);
+
     this.log('AudioRecorder initialized');
   }
 
@@ -191,21 +198,96 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   }
 
   /**
-   * Start timer-based fallback for visualization when tab is hidden or window is minimized
-   * Note: setInterval is used instead of requestAnimationFrame because rAF pauses when tab/window is not visible
-   * We use a shorter interval (16ms) than the target frame rate because browsers may throttle timers
-   * when the page is hidden, so we want to ensure frames are drawn as frequently as possible
+   * Handle window blur to detect minimization
+   * When window loses focus, it might be minimized, so use timer-based fallback
    */
-  private startTimerFallback(): void {
-    if (this.timerIntervalId !== null) {
+  private handleWindowBlur(): void {
+    // Check if we have an active audio source that needs visualization
+    if (this._sourceType === null) {
       return;
     }
 
-    // Use a shorter polling interval (16ms ~ 60fps) to ensure frames are drawn
-    // even when the browser throttles the timer. The actual frame rate is still
-    // controlled by lastFrameTime check.
-    const pollingInterval = Math.min(16, this.frameInterval);
+    this.log('Window blurred, switching to hybrid visualization mode');
 
+    // Don't completely stop rAF, but ensure timer fallback is running as backup
+    // This handles cases where the window is minimized but document.hidden is false
+    this.startTimerFallback();
+  }
+
+  /**
+   * Handle window focus to restore normal visualization mode
+   */
+  private handleWindowFocus(): void {
+    // Check if we have an active audio source that needs visualization
+    if (this._sourceType === null) {
+      return;
+    }
+
+    // Only stop timer fallback if page is visible (not hidden tab)
+    if (!document.hidden) {
+      this.log('Window focused and visible, stopping timer fallback');
+      this.stopTimerFallback();
+
+      // Ensure requestAnimationFrame is running
+      if (this._sourceType !== null && this.animationFrameId === null) {
+        this.startVisualization();
+      }
+    }
+  }
+
+  /**
+   * Start background-safe visualization fallback using Web Audio API as timer.
+   *
+   * Web Audio API (ScriptProcessorNode) is NOT throttled when the window is
+   * minimized or the tab is hidden — unlike requestAnimationFrame (~1fps when
+   * minimized) and setInterval (~1fps throttle in minimized windows).
+   *
+   * We create a silent ScriptProcessorNode connected to the existing AudioContext.
+   * Its onaudioprocess fires at the audio sample rate regardless of window state.
+   * We use that callback to draw visualization frames at the configured fps.
+   *
+   * A setInterval fallback is also started for environments where AudioContext
+   * is not available or not running.
+   */
+  private startTimerFallback(): void {
+    if (this.timerIntervalId !== null || this.audioTimerNode !== null) {
+      return;
+    }
+
+    // Try Web Audio API-based timer first (not throttled when minimized)
+    try {
+      const audioCtx = this.analyzer.getAudioContext();
+      if (audioCtx.state === 'running') {
+        // bufferSize 4096 gives ~93ms callback interval at 44100Hz, which is enough
+        // for driving frame rate checks (actual fps is controlled by lastFrameTime)
+        const bufferSize = 4096;
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        const scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+
+        scriptNode.onaudioprocess = () => {
+          const timestamp = performance.now();
+          if (timestamp - this.lastFrameTime >= this.frameInterval) {
+            this.lastFrameTime = timestamp;
+            this.drawFrame(timestamp);
+          }
+        };
+
+        // Connect to destination through a silent gain (no audible output)
+        const silentGain = audioCtx.createGain();
+        silentGain.gain.value = 0;
+        scriptNode.connect(silentGain);
+        silentGain.connect(audioCtx.destination);
+
+        this.audioTimerNode = scriptNode;
+        this.log('Started Web Audio API-based visualization timer (background-safe)');
+        return;
+      }
+    } catch {
+      // Fall through to setInterval
+    }
+
+    // Fallback: setInterval (may throttle to ~1fps in minimized windows)
+    const pollingInterval = Math.min(16, this.frameInterval);
     this.timerIntervalId = setInterval(() => {
       const timestamp = performance.now();
       if (timestamp - this.lastFrameTime >= this.frameInterval) {
@@ -214,13 +296,19 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       }
     }, pollingInterval);
 
-    this.log('Started timer fallback visualization with polling interval:', pollingInterval);
+    this.log('Started setInterval fallback visualization (may throttle when minimized)');
   }
 
   /**
-   * Stop timer-based fallback
+   * Stop background-safe timer fallback
    */
   private stopTimerFallback(): void {
+    if (this.audioTimerNode !== null) {
+      this.audioTimerNode.onaudioprocess = null;
+      this.audioTimerNode.disconnect();
+      this.audioTimerNode = null;
+      this.log('Stopped Web Audio API visualization timer');
+    }
     if (this.timerIntervalId !== null) {
       clearInterval(this.timerIntervalId);
       this.timerIntervalId = null;
@@ -570,7 +658,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    * Check if visualization is active
    */
   get isVisualizationActive(): boolean {
-    return this.animationFrameId !== null || this.timerIntervalId !== null;
+    return this.animationFrameId !== null || this.timerIntervalId !== null || this.audioTimerNode !== null;
   }
 
   /**
@@ -754,6 +842,9 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   destroy(): void {
     // Remove visibility change listener
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    // Remove window blur/focus listeners
+    window.removeEventListener('blur', this.handleWindowBlur);
+    window.removeEventListener('focus', this.handleWindowFocus);
 
     this.hideDebugVisual();
     this.stopVisualization();

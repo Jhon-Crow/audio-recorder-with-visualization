@@ -345,6 +345,13 @@ export interface ConversionConfig {
   onProgress?: (progress: number) => void;
   /** Enable verbose logging */
   debug?: boolean;
+  /**
+   * Enable offline rendering mode (no real-time audio playback)
+   * When enabled, the video is rendered without playing audio in real-time,
+   * which can be faster for long audio files.
+   * Default: false (real-time rendering with audio playback)
+   */
+  offlineRender?: boolean;
 }
 
 /**
