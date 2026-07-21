@@ -3,6 +3,7 @@ import { VideoRecorder } from './core/VideoRecorder';
 import {
   ConversionConfig,
   RecordingFormat,
+  VideoConcatenationConfig,
   Visualizer,
   VisualizationData,
   VisualizerOptions,
@@ -184,6 +185,370 @@ export class AudioToVideoConverter {
         usedFallback: true,
         fallbackMessage: this.getMP4FallbackMessage(),
       };
+    }
+  }
+
+  /**
+   * Join completed video files into one continuous recording. The source videos
+   * are decoded and composited in order, so container headers and timestamps are
+   * rebuilt instead of concatenating encoded file bytes.
+   *
+   * If MP4 encoding is unavailable, the operation falls back to WebM using the
+   * same behavior as audio visualization conversion.
+   */
+  async concatenateVideosWithFallback(
+    config: VideoConcatenationConfig
+  ): Promise<ConversionResult> {
+    const requestedFormat = config.format ?? 'webm';
+    const videoWidth = config.videoWidth ?? 1920;
+    const videoHeight = config.videoHeight ?? 1080;
+    const encoderSupportCacheKey = this.getEncoderSupportCacheKey(
+      requestedFormat,
+      videoWidth,
+      videoHeight
+    );
+
+    if (requestedFormat === 'mp4') {
+      const hasKnownMP4Support = this.encoderSupportCache.get(encoderSupportCacheKey) === true;
+      if (!hasKnownMP4Support) {
+        const mp4Supported = await VideoRecorder.testEncoderSupport(
+          'mp4',
+          2000,
+          videoWidth,
+          videoHeight
+        );
+        if (!mp4Supported) {
+          this.encoderSupportCache.set(encoderSupportCacheKey, false);
+          const blob = await this.concatenateVideos({ ...config, format: 'webm' });
+          return {
+            blob,
+            format: 'webm',
+            usedFallback: true,
+            fallbackMessage: this.getMP4FallbackMessage(),
+          };
+        }
+        this.encoderSupportCache.set(encoderSupportCacheKey, true);
+      }
+    }
+
+    try {
+      const blob = await this.concatenateVideos(config);
+      if (requestedFormat === 'mp4') {
+        this.encoderSupportCache.set(encoderSupportCacheKey, true);
+      }
+      return {
+        blob,
+        format: requestedFormat,
+        usedFallback: false,
+      };
+    } catch (error) {
+      if (requestedFormat !== 'mp4' || !this.shouldFallbackFromMP4Error(error)) {
+        throw error;
+      }
+
+      this.encoderSupportCache.set(encoderSupportCacheKey, false);
+      this.log('MP4 video concatenation failed, falling back to WebM:', error);
+      const blob = await this.concatenateVideos({ ...config, format: 'webm' });
+      return {
+        blob,
+        format: 'webm',
+        usedFallback: true,
+        fallbackMessage: this.getMP4FallbackMessage(),
+      };
+    }
+  }
+
+  /**
+   * Join completed video files into one valid media container.
+   */
+  async concatenateVideos(config: VideoConcatenationConfig): Promise<Blob> {
+    this.isCancelled = false;
+
+    const {
+      videoSources,
+      canvas: canvasConfig,
+      fps = 30,
+      videoWidth = 1920,
+      videoHeight = 1080,
+      videoBitrate = 8000000,
+      audioBitrate = 192000,
+      format = 'webm',
+      onProgress,
+    } = config;
+
+    if (!videoSources.length) {
+      throw new Error('At least one completed video is required for concatenation');
+    }
+
+    let canvas: HTMLCanvasElement;
+    if (typeof canvasConfig === 'string') {
+      const element = document.querySelector(canvasConfig);
+      if (!element || !(element instanceof HTMLCanvasElement)) {
+        throw new Error(`Canvas element not found: ${canvasConfig}`);
+      }
+      canvas = element;
+    } else {
+      canvas = canvasConfig;
+    }
+
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+    const ctx = canvas.getContext('2d', {
+      alpha: true,
+      colorSpace: 'srgb',
+      willReadFrequently: false,
+    });
+    if (!ctx) {
+      throw new Error('Failed to get 2D context from canvas');
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    type PreparedVideo = {
+      element: HTMLVideoElement;
+      objectUrl: string;
+      duration: number;
+      audioSourceNode: MediaElementAudioSourceNode;
+    };
+    type FrameAwareVideo = HTMLVideoElement & {
+      requestVideoFrameCallback?: (callback: () => void) => number;
+      cancelVideoFrameCallback?: (handle: number) => void;
+    };
+
+    const audioContext = new AudioContext();
+    const audioDestination = audioContext.createMediaStreamDestination();
+    const preparedVideos: PreparedVideo[] = [];
+    let videoRecorder: VideoRecorder | null = null;
+
+    const drawVideoFrame = (video: HTMLVideoElement): void => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    };
+
+    const prepareVideo = async (source: Blob, index: number): Promise<PreparedVideo> => {
+      const objectUrl = URL.createObjectURL(source);
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.playsInline = true;
+      video.crossOrigin = 'anonymous';
+      video.src = objectUrl;
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const cleanupListeners = (): void => {
+            video.removeEventListener('loadeddata', handleLoadedData);
+            video.removeEventListener('error', handleError);
+          };
+          const handleLoadedData = (): void => {
+            cleanupListeners();
+            resolve();
+          };
+          const handleError = (): void => {
+            cleanupListeners();
+            reject(new Error(`Failed to load completed video ${index + 1}`));
+          };
+
+          if (video.readyState >= 2) {
+            resolve();
+            return;
+          }
+          video.addEventListener('loadeddata', handleLoadedData);
+          video.addEventListener('error', handleError);
+          video.load();
+        });
+
+        const audioSourceNode = audioContext.createMediaElementSource(video);
+        audioSourceNode.connect(audioDestination);
+        return {
+          element: video,
+          objectUrl,
+          duration: Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+          audioSourceNode,
+        };
+      } catch (error) {
+        video.removeAttribute('src');
+        video.load();
+        URL.revokeObjectURL(objectUrl);
+        throw error;
+      }
+    };
+
+    const playVideo = (
+      prepared: PreparedVideo,
+      index: number,
+      allDurationsKnown: boolean,
+      totalDuration: number,
+      completedDuration: number
+    ): Promise<void> => new Promise((resolve, reject) => {
+      const video = prepared.element as FrameAwareVideo;
+      let frameCallbackHandle: number | null = null;
+      let animationFrameHandle: number | null = null;
+      let settled = false;
+
+      const cancelScheduledFrame = (): void => {
+        if (frameCallbackHandle !== null && video.cancelVideoFrameCallback) {
+          video.cancelVideoFrameCallback(frameCallbackHandle);
+        }
+        if (animationFrameHandle !== null) {
+          cancelAnimationFrame(animationFrameHandle);
+        }
+        frameCallbackHandle = null;
+        animationFrameHandle = null;
+      };
+
+      const cleanupListeners = (): void => {
+        video.removeEventListener('ended', handleEnded);
+        video.removeEventListener('error', handleError);
+        cancelScheduledFrame();
+      };
+
+      const finish = (error?: Error): void => {
+        if (settled) return;
+        settled = true;
+        cleanupListeners();
+        if (error) {
+          reject(error);
+        } else {
+          const completedProgress = allDurationsKnown && totalDuration > 0
+            ? (completedDuration + prepared.duration) / totalDuration
+            : (index + 1) / preparedVideos.length;
+          onProgress?.(Math.min(completedProgress, 1));
+          resolve();
+        }
+      };
+
+      const reportProgress = (): void => {
+        if (!onProgress) return;
+        if (allDurationsKnown && totalDuration > 0) {
+          onProgress(Math.min((completedDuration + video.currentTime) / totalDuration, 1));
+          return;
+        }
+        const localProgress = prepared.duration > 0
+          ? Math.min(video.currentTime / prepared.duration, 1)
+          : 0;
+        onProgress(Math.min((index + localProgress) / preparedVideos.length, 1));
+      };
+
+      const scheduleFrame = (): void => {
+        if (video.requestVideoFrameCallback) {
+          frameCallbackHandle = video.requestVideoFrameCallback(drawFrame);
+        } else {
+          animationFrameHandle = requestAnimationFrame(drawFrame);
+        }
+      };
+
+      const drawFrame = (): void => {
+        frameCallbackHandle = null;
+        animationFrameHandle = null;
+        if (settled) return;
+        if (this.isCancelled) {
+          video.pause();
+          finish(new Error('Video concatenation cancelled by user'));
+          return;
+        }
+        try {
+          drawVideoFrame(video);
+          reportProgress();
+          if (!video.ended) {
+            scheduleFrame();
+          }
+        } catch (error) {
+          finish(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+
+      const handleEnded = (): void => {
+        try {
+          drawVideoFrame(video);
+          finish();
+        } catch (error) {
+          finish(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+      const handleError = (): void => {
+        finish(new Error(`Completed video ${index + 1} failed during playback`));
+      };
+
+      video.addEventListener('ended', handleEnded);
+      video.addEventListener('error', handleError);
+      drawVideoFrame(video);
+      reportProgress();
+      scheduleFrame();
+      video.play().catch(error => {
+        const message = error instanceof Error ? error.message : String(error);
+        finish(new Error(`Failed to play completed video ${index + 1}: ${message}`));
+      });
+    });
+
+    try {
+      for (let index = 0; index < videoSources.length; index++) {
+        preparedVideos.push(await prepareVideo(videoSources[index], index));
+      }
+
+      await audioContext.resume();
+      onProgress?.(0);
+
+      const durations = preparedVideos.map(video => video.duration);
+      const allDurationsKnown = durations.every(duration => duration > 0);
+      const totalDuration = durations.reduce((sum, duration) => sum + duration, 0);
+      let completedDuration = 0;
+
+      videoRecorder = new VideoRecorder({ debug: this.debug });
+      let rejectEncoding: (reason: Error) => void = () => undefined;
+      const encodingFailed = new Promise<never>((_resolve, reject) => {
+        rejectEncoding = reject;
+      });
+      videoRecorder.onError(error => {
+        const helpfulMessage = format === 'mp4'
+          ? `${error.message}. Try using WebM format instead for better compatibility.`
+          : error.message;
+        rejectEncoding(new Error(`Encoding failed: ${helpfulMessage}`));
+      });
+      videoRecorder.start(canvas, audioDestination.stream, {
+        format,
+        fps,
+        videoBitrate,
+        audioBitrate,
+      });
+
+      const playAllVideos = async (): Promise<void> => {
+        for (let index = 0; index < preparedVideos.length; index++) {
+          await playVideo(
+            preparedVideos[index],
+            index,
+            allDurationsKnown,
+            totalDuration,
+            completedDuration
+          );
+          completedDuration += preparedVideos[index].duration;
+        }
+      };
+
+      await Promise.race([playAllVideos(), encodingFailed]);
+      await new Promise(resolve => setTimeout(resolve, Math.ceil(1000 / fps)));
+      const blob = await Promise.race([videoRecorder.stop(), encodingFailed]);
+
+      if (blob.size === 0) {
+        throw new Error('Export failed: concatenated video blob is empty');
+      }
+      onProgress?.(1);
+      this.log('Video concatenation complete, blob size:', blob.size, 'bytes');
+      return blob;
+    } finally {
+      if (videoRecorder?.state !== 'inactive') {
+        videoRecorder?.cancel();
+      }
+      preparedVideos.forEach(prepared => {
+        prepared.element.pause();
+        prepared.audioSourceNode.disconnect();
+        prepared.element.removeAttribute('src');
+        prepared.element.load();
+        URL.revokeObjectURL(prepared.objectUrl);
+      });
+      audioDestination.stream.getTracks().forEach(track => track.stop());
+      if (audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
     }
   }
 
