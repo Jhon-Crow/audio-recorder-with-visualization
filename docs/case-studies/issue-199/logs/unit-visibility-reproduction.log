@@ -1,0 +1,203 @@
+
+> audio-recorder-with-visualization@1.0.0 test
+> jest --runInBand tests/AudioRecorder.test.ts -t should keep an explicitly stopped visualization paused
+
+  console.log
+    [AudioRecorder] AudioRecorder initialized
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioAnalyzer] Created AudioContext, sample rate: 44100
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioAnalyzer] Created AnalyserNode, fftSize: 2048 frequencyBinCount: 1024
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioAnalyzer] Connected audio graph without enhancement
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioAnalyzer] Connected MediaStream source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioRecorder] Started visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Started microphone capture
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Page hidden, switching to timer-based visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Started timer fallback visualization with polling interval: 16
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Stopped timer fallback visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Stopped visualization
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioRecorder] Stopped microphone
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioRecorder] Cancelled recording
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+  console.log
+    [AudioAnalyzer] Disconnected source
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioAnalyzer] Closed AudioContext
+
+      at AudioAnalyzer.log (src/core/AudioAnalyzer.ts:55:15)
+
+  console.log
+    [AudioRecorder] Destroyed AudioRecorder
+
+      at AudioRecorder.log (src/AudioRecorder.ts:241:15)
+
+FAIL tests/AudioRecorder.test.ts (6.247 s)
+  AudioRecorder
+    Initialization
+      ○ skipped should initialize with canvas element
+      ○ skipped should initialize with canvas selector
+      ○ skipped should throw error for invalid canvas selector
+      ○ skipped should initialize with custom dimensions
+      ○ skipped should initialize with custom FPS
+      ○ skipped should initialize with custom visualizer by string name
+      ○ skipped should initialize with custom visualizer instance
+      ○ skipped should initialize with default BarVisualizer
+      ○ skipped should initialize with visualizer options
+      ○ skipped should initialize with debug mode
+      ○ skipped should initialize with custom FFT settings
+      ○ skipped should initialize with audio enhancement disabled by default
+      ○ skipped should initialize with audio enhancement options
+    ready() method
+      ○ skipped should resolve immediately when no images
+      ○ skipped should wait for image loading when visualizer has images
+    Visualizer management
+      ○ skipped should change visualizer by string
+      ○ skipped should change visualizer by instance
+      ○ skipped should update visualizer options
+      ○ skipped should throw for unknown visualizer name
+      ○ skipped getAvailableVisualizers should return list
+    Audio source management
+      ○ skipped should start microphone capture
+      ○ skipped should stop microphone
+      ○ skipped should emit source:change event on microphone start
+      ○ skipped should connect audio file
+      ○ skipped should connect audio file from File object
+      ○ skipped should emit source:change event on file connect
+      ○ skipped should stop previous microphone when connecting file
+    Visualization control
+      ○ skipped should report isVisualizationActive
+      ○ skipped should stop visualization
+      ○ skipped should resume visualization
+      ○ skipped should not resume without source
+      ○ skipped should show demo visualization
+      ○ skipped should complete demo visualization after duration
+      ○ skipped should emit frame events during visualization
+      ○ skipped should restart source visualization after demo when source exists
+    Recording control
+      ○ skipped should start recording
+      ○ skipped should emit recording:start event
+      ○ skipped should throw when starting recording twice
+      ○ skipped should pause recording
+      ○ skipped should emit recording:pause event
+      ○ skipped should resume recording
+      ○ skipped should emit recording:resume event
+      ○ skipped should stop recording
+      ○ skipped should emit recording:stop event
+      ○ skipped should cancel recording
+      ○ skipped should start recording with custom bitrates
+      ○ skipped should record from processed stream when audio enhancement is active
+      ○ skipped should start recording without audio stream
+    Audio enhancement control
+      ○ skipped should update audio enhancement settings at runtime
+    Audio data access
+      ○ skipped should get frequency data
+      ○ skipped should get time domain data
+      ○ skipped should get audio context
+    Supported formats
+      ○ skipped should get supported formats
+    Debug visual
+      ○ skipped should show debug visual
+      ○ skipped should hide debug visual
+      ○ skipped should not start debug visual twice
+      ○ skipped should animate debug visual over multiple frames
+    Visibility change handling
+      ✕ should keep an explicitly stopped visualization paused across visibility changes (124 ms)
+      ○ skipped should handle visibility change to hidden
+      ○ skipped should handle visibility change to visible
+      ○ skipped should not handle visibility change without source
+      ○ skipped should use timer fallback when page is hidden
+      ○ skipped should not start timer fallback twice
+    Error handling
+      ○ skipped should emit error event on microphone failure
+    Cleanup
+      ○ skipped should destroy all resources
+      ○ skipped should cleanup blob URLs for file sources
+
+  ● AudioRecorder › Visibility change handling › should keep an explicitly stopped visualization paused across visibility changes
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      581 |       });
+      582 |       document.dispatchEvent(new Event('visibilitychange'));
+    > 583 |       expect(recorder.isVisualizationActive).toBe(false);
+          |                                              ^
+      584 |
+      585 |       Object.defineProperty(document, 'hidden', {
+      586 |         configurable: true,
+
+      at Object.<anonymous> (tests/AudioRecorder.test.ts:583:46)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 65 skipped, 66 total
+Snapshots:   0 total
+Time:        7.323 s
+Ran all test suites matching /tests\/AudioRecorder.test.ts/i with tests matching "should keep an explicitly stopped visualization paused".
