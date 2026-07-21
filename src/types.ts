@@ -348,6 +348,30 @@ export interface ConversionConfig {
 }
 
 /**
+ * Configuration for joining completed video files into one continuous video.
+ */
+export interface VideoConcatenationConfig {
+  /** Completed video files in playback order */
+  videoSources: Blob[];
+  /** Canvas element or selector used to composite decoded video frames */
+  canvas: HTMLCanvasElement | string;
+  /** Target frames per second */
+  fps?: number;
+  /** Video width in pixels */
+  videoWidth?: number;
+  /** Video height in pixels */
+  videoHeight?: number;
+  /** Video bitrate in bits per second */
+  videoBitrate?: number;
+  /** Audio bitrate in bits per second */
+  audioBitrate?: number;
+  /** Preferred output format */
+  format?: RecordingFormat;
+  /** Progress callback */
+  onProgress?: (progress: number) => void;
+}
+
+/**
  * Events emitted by AudioRecorder
  */
 export type AudioRecorderEvents = {

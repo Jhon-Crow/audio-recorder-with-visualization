@@ -1047,6 +1047,21 @@ describe('Pipeline Mode', () => {
       ], { force: true });
     });
 
+    cy.window().then((win) => {
+      cy.stub(win.AudioRecorderApp.converter, 'concatenateVideosWithFallback')
+        .callsFake(({ videoSources, onProgress }) => {
+          onProgress?.(0.5);
+          onProgress?.(1);
+          return Promise.resolve({
+            blob: new win.Blob(['combined-upload-video'], { type: 'video/webm' }),
+            format: 'webm',
+            usedFallback: false,
+            sourceCount: videoSources.length,
+          });
+        })
+        .as('combinedReleaseStitch');
+    });
+
     cy.get('.pipeline-stage').first().within(() => {
       cy.get('.pipeline-album-track').should('have.length', 3);
       cy.get('.pipeline-album-track').eq(0).find('.pipeline-track-title')
@@ -1065,6 +1080,11 @@ describe('Pipeline Mode', () => {
       cy.wait('@startCombinedReleaseUpload');
       cy.wait('@finishCombinedReleaseUpload');
     }
+
+    cy.get('@combinedReleaseStitch').should('have.been.calledOnce');
+    cy.get('@combinedReleaseStitch').then((stitch) => {
+      expect(stitch.firstCall.args[0].videoSources).to.have.length(2);
+    });
 
     cy.wrap(uploadTitles).should('deep.equal', [
       '01 first track',
@@ -1092,6 +1112,9 @@ describe('Pipeline Mode', () => {
     });
     cy.waitForVisualization();
     cy.contains('.tab', 'Pipeline').click();
+    cy.get('#pipelineSettingsBtn').click();
+    cy.get('#pipelineReviewBeforeUpload').uncheck();
+    cy.get('#confirmPipelineTimezoneBtn').click();
 
     cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-name').clear().type('Album premiere');
     cy.get('.pipeline-stage').eq(1).find('.pipeline-stage-description').type('Album release description');
@@ -1122,21 +1145,20 @@ describe('Pipeline Mode', () => {
       .should('have.attr', 'data-preview-state', 'ready')
       .and('have.attr', 'data-tooltip')
       .and('contain', 'album-cover.png preview');
-    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover')
-      .should('have.attr', 'data-preview-state', 'ready')
-      .and('have.attr', 'data-preview-src')
-      .and('have.class', 'pipeline-preview-trigger')
-      .and('have.attr', 'aria-label')
-      .and('contain', 'album-cover.png preview');
+    cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').should(($label) => {
+      expect($label).to.have.attr('data-preview-state', 'ready');
+      expect($label.attr('data-preview-src')).to.match(/^data:image\/png;base64,/);
+      expect($label).to.have.class('pipeline-preview-trigger');
+      expect($label.attr('aria-label')).to.contain('album-cover.png preview');
+    });
     cy.get('.pipeline-stage').eq(1).contains('label', 'YouTube cover').trigger('pointerover');
-    cy.get('#pipelinePreviewTooltip')
-      .should('have.class', 'is-visible')
-      .and('have.attr', 'aria-hidden', 'false')
-      .and('have.attr', 'data-preview-src')
-      .should(($tooltip) => {
-        const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
-        expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
-      });
+    cy.get('#pipelinePreviewTooltip').should(($tooltip) => {
+      expect($tooltip).to.have.class('is-visible');
+      expect($tooltip).to.have.attr('aria-hidden', 'false');
+      expect($tooltip.attr('data-preview-src')).to.match(/^data:image\/png;base64,/);
+      const previewImage = $tooltip[0].style.getPropertyValue('--pipeline-preview-image');
+      expect(previewImage).to.match(/^url\("data:image\/png;base64,/);
+    });
     cy.get('#pipelinePreviewTooltip .pipeline-preview-tooltip-image')
       .should('have.attr', 'src')
       .then(src => {
@@ -1211,9 +1233,9 @@ describe('Pipeline Mode', () => {
       win.__pipelineProgressWidths = [];
       cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback')
         .callsFake(({ audioSource, onProgress }) => {
-          onProgress?.({ percent: 0.5 });
+          onProgress?.(0.5);
           win.__pipelineProgressWidths.push(win.AudioRecorderApp.elements.progressFill.style.width);
-          onProgress?.({ percent: 1 });
+          onProgress?.(1);
           return Promise.resolve({
             blob: new win.Blob([audioSource.name], { type: 'video/webm' }),
             format: 'webm',
@@ -1221,6 +1243,18 @@ describe('Pipeline Mode', () => {
           });
         })
         .as('pipelineConvert');
+      cy.stub(win.AudioRecorderApp.converter, 'concatenateVideosWithFallback')
+        .callsFake(({ videoSources, onProgress }) => {
+          onProgress?.(0.5);
+          onProgress?.(1);
+          return Promise.resolve({
+            blob: new win.Blob(['joined-track-videos'], { type: 'video/webm' }),
+            format: 'webm',
+            usedFallback: false,
+            sourceCount: videoSources.length,
+          });
+        })
+        .as('pipelineStitch');
       const uploadTitles = [];
       const uploadDescriptions = [];
       cy.stub(win.AudioRecorderYouTube, 'uploadDirect')
@@ -1241,6 +1275,7 @@ describe('Pipeline Mode', () => {
     cy.get('#runPipelineBtn').should('not.be.disabled').click();
 
     cy.get('@pipelineConvert').should('have.callCount', 4);
+    cy.get('@pipelineStitch').should('have.been.calledOnce');
     cy.get('@pipelineUpload').should('have.callCount', 5);
     cy.get('@pipelineConvert').then((convert) => {
       const convertedNames = convert.getCalls().map(call => call.args[0].audioSource.name);
@@ -1253,7 +1288,7 @@ describe('Pipeline Mode', () => {
     });
     cy.get('@pipelineUpload').then((upload) => {
       const fullAlbumUpload = upload.getCalls().find(call => call.args[0].metadata.title === 'Complete album visual');
-      expect(fullAlbumUpload.args[0].video).to.have.property('size', 'track-one.mp3track-two.mp3'.length);
+      expect(fullAlbumUpload.args[0].video).to.have.property('size', 'joined-track-videos'.length);
       expect(fullAlbumUpload.args[0].thumbnail).to.have.property('name', 'album-cover.png');
     });
     cy.window().its('__pipelineProgressWidths').should((widths) => {

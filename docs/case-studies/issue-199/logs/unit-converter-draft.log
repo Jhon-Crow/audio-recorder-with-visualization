@@ -1,0 +1,50 @@
+
+> audio-recorder-with-visualization@1.0.0 test
+> jest --runInBand tests/AudioToVideoConverter.test.ts
+
+PASS tests/AudioToVideoConverter.test.ts (23.443 s)
+  AudioToVideoConverter
+    Initialization
+      ✓ should create converter instance (10 ms)
+      ✓ should create converter with debug mode (3 ms)
+    getAvailableVisualizers
+      ✓ should return list of available visualizers (3 ms)
+    getSupportedFormats
+      ✓ should return list of supported formats (2 ms)
+    cancel()
+      ✓ should set cancellation flag (1 ms)
+    convert() with canvas element
+      ✓ should convert audio to video (1142 ms)
+      ✓ should convert with canvas selector (1141 ms)
+      ✓ should throw for invalid canvas selector (41 ms)
+      ✓ should convert with File source (1132 ms)
+      ✓ should convert with string visualizer (1141 ms)
+      ✓ should convert with visualizer instance (1147 ms)
+      ✓ should convert with default BarVisualizer when not specified (1133 ms)
+      ✓ should throw for unknown visualizer name (3 ms)
+      ✓ should call onProgress callback (1138 ms)
+      ✓ should convert with custom bitrates (1127 ms)
+      ✓ should convert with visualizer options (1131 ms)
+      ✓ should convert with audio enhancement options (1137 ms)
+    convert() cancellation
+      ✓ should reject when cancelled (34 ms)
+    convert() error handling
+      ✓ should handle audio load error (14 ms)
+    Debug mode
+      ✓ should log when debug is enabled (1130 ms)
+    convertWithFallback()
+      ✓ should return ConversionResult with blob and format info for webm (1133 ms)
+      ✓ should return result with usedFallback=false when mp4 is supported (1135 ms)
+      ✓ should default to webm format when not specified (1129 ms)
+      ✓ should reuse successful mp4 encoder support for the same resolution (4 ms)
+      ✓ should fall back to webm when mp4 conversion fails after support probe (4 ms)
+    concatenateVideosWithFallback()
+      ✓ should reject an empty source list before allocating browser media resources (2 ms)
+      ✓ should return the joined WebM result without fallback (1 ms)
+      ✓ should fall back to WebM when MP4 concatenation fails after its support probe (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       28 passed, 28 total
+Snapshots:   0 total
+Time:        24.565 s
+Ran all test suites matching /tests\/AudioToVideoConverter.test.ts/i.

@@ -232,6 +232,16 @@ const blob = await converter.convert({
   format?: 'webm' | 'mp4',
   onProgress?: (progress: number) => void,
 });
+
+// Join completed videos in order and rebuild a valid output container.
+const joined = await converter.concatenateVideosWithFallback({
+  videoSources: [firstVideoBlob, secondVideoBlob],
+  canvas,
+  videoWidth: 1920,
+  videoHeight: 1080,
+  format: 'webm',
+  onProgress: (progress) => console.log(progress),
+});
 ```
 
 ### YouTubeUploader

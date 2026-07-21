@@ -59,6 +59,7 @@ export type {
   AudioRecorderConfig,
   AudioRecorderEvents,
   ConversionConfig,
+  VideoConcatenationConfig,
   AudioEnhancementOptions,
   AudioNoiseProfile,
   AudioNoiseProfileBand,

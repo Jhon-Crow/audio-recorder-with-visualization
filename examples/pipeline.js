@@ -1340,6 +1340,18 @@
     setPipelineProgress(((taskIndex + normalizedTaskProgress) / taskCount) * 100);
   }
 
+  function getProgressFraction(progress) {
+    const value = typeof progress === 'number' ? progress : progress?.percent;
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue)
+      ? Math.max(0, Math.min(1, numericValue))
+      : 0;
+  }
+
+  function isCombinedAlbumTask(task) {
+    return Boolean(task?.fullAlbumVideo || task?.isFullAlbum);
+  }
+
   function getPipelineApp() {
     const app = window.AudioRecorderApp;
     if (!app || !app.converter || typeof app.converter.convertWithFallback !== 'function') {
@@ -2166,7 +2178,9 @@
       return (albumStage?.tracks[index] && albumStage.tracks[index].title) ||
         getTrackTitleFromFileName(file.name, index);
     }
-    if (stage.action === 'upload-youtube' && !isRegularPostsStage(stage)) {
+    if (stage.action === 'upload-youtube' &&
+      !isRegularPostsStage(stage) &&
+      !includesFullAlbumTask(stage)) {
       if (totalFiles > 1) {
         return `${stage.name || 'Pipeline stage'} ${index + 1}`;
       }
@@ -2625,7 +2639,7 @@
   }
 
   async function renderTask(task, taskIndex, totalTasks) {
-    if (task.fullAlbumVideo) {
+    if (isCombinedAlbumTask(task)) {
       return renderCombinedAlbumTask(task, taskIndex, totalTasks);
     }
 
@@ -2646,7 +2660,7 @@
       videoHeight: dimensions.height,
       format: getRequestedVideoFormat(app),
       onProgress: progress => {
-        const progressPercent = Number(progress?.percent || 0);
+        const progressPercent = getProgressFraction(progress);
         const percent = Math.round(progressPercent * 100);
         updateTaskProgress(taskIndex, totalTasks, progressPercent);
         updateAppStatus(
@@ -2674,43 +2688,65 @@
       throw new Error('Album stage has no files to render.');
     }
 
-    const renderedParts = [];
-    const albumStage = stages.find(item => item.id === task.stage.derivedFromStageId);
-
-    for (let index = 0; index < files.length; index++) {
-      const rendered = albumStage
-        ? renderedPipelineVideos.get(getRenderedVideoCacheKey(albumStage.id, index))
-        : null;
-      if (!rendered?.blob) {
-        throw new Error('Run the source album visualization stage before joining the full album video.');
-      }
-      updateAppStatus(
-        `Pipeline joining ${taskIndex + 1} of ${totalTasks}: ${task.title} (${index + 1}/${files.length})`,
-        'recording'
-      );
-      updateTaskProgress(taskIndex, totalTasks, (index + 1) / files.length);
-      renderedParts.push(rendered.blob);
+    const app = getPipelineApp();
+    if (typeof app.converter.concatenateVideosWithFallback !== 'function') {
+      throw new Error('Video concatenation is not ready. Run npm run build before joining an album.');
     }
 
-    const firstType = renderedParts[0]?.type || '';
-    const format = firstType.includes('mp4') ? 'mp4' : firstType.includes('webm') ? 'webm' : 'webm';
-    const blob = new Blob(renderedParts, {
-      type: firstType || `video/${format}`,
+    const sourceStage = stages.find(item => item.id === task.stage.derivedFromStageId) || task.stage;
+    const renderedResults = files.map((_file, index) => (
+      renderedPipelineVideos.get(getRenderedVideoCacheKey(sourceStage.id, index))
+    ));
+    const hasAnyRenderedResult = renderedResults.some(result => Boolean(result?.blob));
+    const hasAllRenderedResults = renderedResults.every(result => Boolean(result?.blob));
+
+    let videoSources;
+    if (hasAllRenderedResults) {
+      videoSources = renderedResults.map(result => result.blob);
+    } else if (hasAnyRenderedResult) {
+      throw new Error('All source album tracks must finish rendering before joining the full album video.');
+    } else if (files.every(file => String(file?.type || '').startsWith('video/'))) {
+      videoSources = files;
+    } else {
+      throw new Error('Run the source album visualization stage before joining the full album video.');
+    }
+
+    const dimensions = parseResolution(task.stage.resolution || sourceStage.resolution);
+    const cachedFormat = renderedResults.find(result => result?.format)?.format;
+    const requestedFormat = cachedFormat || getRequestedVideoFormat(app);
+
+    updateAppStatus(
+      `Pipeline joining ${taskIndex + 1} of ${totalTasks}: ${task.title} (0%)`,
+      'recording'
+    );
+    updateTaskProgress(taskIndex, totalTasks, 0);
+
+    const result = await app.converter.concatenateVideosWithFallback({
+      videoSources,
+      canvas: app.canvas,
+      fps: 30,
+      videoWidth: dimensions.width,
+      videoHeight: dimensions.height,
+      format: requestedFormat,
+      onProgress: progress => {
+        const progressFraction = getProgressFraction(progress);
+        const percent = Math.round(progressFraction * 100);
+        updateTaskProgress(taskIndex, totalTasks, progressFraction);
+        updateAppStatus(
+          `Pipeline joining ${taskIndex + 1} of ${totalTasks}: ${task.title} (${percent}%)`,
+          'recording'
+        );
+      },
     });
 
-    const app = window.AudioRecorderApp;
     if (typeof app.addRecording === 'function') {
-      app.addRecording(blob, {
-        sourceName: `${task.title}.${format}`,
-        format,
+      app.addRecording(result.blob, {
+        sourceName: `${task.title}.${result.format}`,
+        format: result.format,
       });
     }
 
-    return {
-      blob,
-      format,
-      usedFallback: false,
-    };
+    return result;
   }
 
   function formatTimestamp(seconds) {
@@ -2823,12 +2859,16 @@
   }
 
   async function executePipelineTask(task, taskIndex, totalTasks) {
-    if (task.stage.action === 'upload-youtube') {
+    if (task.stage.action === 'upload-youtube' && !isCombinedAlbumTask(task)) {
       const result = await uploadTask(task, task.file, taskIndex, totalTasks);
       return { type: 'uploaded', report: createUploadReport(task, result) };
     }
 
     const rendered = await renderTask(task, taskIndex, totalTasks);
+    if (task.stage.action === 'upload-youtube') {
+      const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
+      return { type: 'uploaded', report: createUploadReport(task, result) };
+    }
     if (task.stage.action === 'visualize-upload') {
       if (!pipelineReviewBeforeUpload) {
         const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
@@ -3066,11 +3106,23 @@
       return;
     }
 
+    const app = getPipelineApp();
     hasPipelineRun = true;
     isPipelineRunning = true;
     renderedPipelineVideos.clear();
     setPipelineProgress(0);
     updateRunState();
+
+    const recorder = app.recorder;
+    const needsCanvas = tasks.some(task => (
+      task.stage.action !== 'upload-youtube' || isCombinedAlbumTask(task)
+    ));
+    const shouldResumeVisualization = Boolean(
+      needsCanvas && recorder?.isVisualizationActive
+    );
+    if (shouldResumeVisualization) {
+      recorder.stopVisualization();
+    }
 
     try {
       assertUploadReady(tasks);
@@ -3102,6 +3154,9 @@
       isPipelineRunning = false;
       setPipelineProgress(100);
       updateRunState();
+      if (shouldResumeVisualization && recorder?.sourceType) {
+        recorder.resumeVisualization();
+      }
     }
   }
 
