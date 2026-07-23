@@ -2514,7 +2514,7 @@
       button.setAttribute('aria-label', `Go to stage ${index + 1}: ${stage.name || 'Untitled stage'}`);
       const title = button.querySelector('.pipeline-stage-nav-title');
       const meta = button.querySelector('.pipeline-stage-nav-meta');
-      if (title) title.textContent = stage.name || `Stage ${index + 1}`;
+      if (title) title.textContent = stage.name || 'Untitled stage';
       if (meta) {
         meta.textContent = [
           getStageActionLabel(stage.action),
