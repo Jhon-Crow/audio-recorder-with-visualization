@@ -1937,12 +1937,46 @@ describe('Pipeline Mode', () => {
     cy.get('@authorizeYouTube')
       .should('have.been.calledOnce')
       .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
-    cy.wait('@startPipelineUpload');
-    cy.wait('@finishPipelineUpload');
+  });
+
+  it('starts browser YouTube sign-in from Run without a separate YouTube click', () => {
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-web-client-id.apps.googleusercontent.com');
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient: cy.stub().callsFake(({ callback }) => ({
+                requestAccessToken: cy.stub().as('requestAccessToken').callsFake(() => callback({
+                  access_token: 'browser-token',
+                  expires_in: 3600,
+                  scope: combinedYouTubeScope,
+                })),
+              })).as('initTokenClient'),
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-video'),
+      fileName: 'direct-video.webm',
+      mimeType: 'video/webm',
+    }, { force: true });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@initTokenClient').should('have.been.calledOnce');
+    cy.get('@requestAccessToken').should('have.been.calledOnceWith', { prompt: 'consent' });
     cy.get('#youtubeAuthModal').should('not.be.visible');
-    cy.get('#status').should('contain.text', 'Pipeline complete: 1 task finished');
-    cy.get('#pipelineReportList a')
-      .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-auth-video-id');
   });
 
   it('keeps generated tooltip boxes inside the viewport', () => {

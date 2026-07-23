@@ -1182,12 +1182,32 @@
       return true;
     }
 
-    if (await restoreElectronYouTubeAuthorization()) {
-      return true;
+    const clientId = clientIdInput.value.trim();
+    if (!clientId) {
+      openAuthModal();
+      throw new Error('Add a YouTube OAuth Client ID to sign in before running upload stages.');
     }
 
-    openAuthModal();
-    throw new Error('Complete YouTube sign-in, then run the pipeline again.');
+    if (!GOOGLE_CLIENT_ID_PATTERN.test(clientId)) {
+      openAuthModal();
+      throw new Error(getOAuthClientSetupMessage(clientId));
+    }
+
+    if (!isElectronYouTubeOAuthAvailable() && !isSupportedGoogleSignInOrigin()) {
+      openAuthModal();
+      throw new Error(UNSUPPORTED_ORIGIN_MESSAGE);
+    }
+
+    try {
+      await requestAccessToken(clientId);
+      await refreshYouTubeChannelDefaults({ force: true });
+      closeAuthModal();
+      return true;
+    } catch (error) {
+      openAuthModal();
+      setStatus(authStatus, error.message || 'Google authorization failed.', 'error');
+      throw error;
+    }
   }
 
   window.AudioRecorderYouTube = {
