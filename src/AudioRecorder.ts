@@ -72,6 +72,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
   private debug: boolean;
   private _readyPromise: Promise<void>;
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
+  private visualizationSuspended = false;
   private debugVisualActive = false;
   private debugVisualAnimationId: number | null = null;
   private debugVisualStartTime = 0;
@@ -160,7 +161,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    */
   private handleVisibilityChange(): void {
     // Check if we have an active audio source that needs visualization
-    if (this._sourceType === null) {
+    if (this._sourceType === null || this.visualizationSuspended) {
       return;
     }
 
@@ -274,6 +275,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       await this.analyzer.connectStream(this.micStream);
       this._sourceType = 'microphone';
       this.emit('source:change', 'microphone');
+      this.visualizationSuspended = false;
       this.startVisualization();
       this.log('Started microphone capture');
     } catch (error) {
@@ -302,6 +304,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
       await this.analyzer.connectAudioElement(this.audioElement);
       this._sourceType = 'file';
       this.emit('source:change', 'file');
+      this.visualizationSuspended = false;
       this.startVisualization();
       this.log('Connected audio file');
 
@@ -351,6 +354,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    * Stop visualization loop
    */
   stopVisualization(): void {
+    this.visualizationSuspended = true;
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
@@ -367,6 +371,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
    */
   resumeVisualization(): void {
     if (this._sourceType !== null) {
+      this.visualizationSuspended = false;
       this.startVisualization();
     }
   }
@@ -437,7 +442,7 @@ export class AudioRecorder extends EventEmitter<AudioRecorderEvents> {
         this.animationFrameId = null;
         // If there was an active source, restart its visualization
         if (this._sourceType !== null) {
-          this.startVisualization();
+          this.resumeVisualization();
         }
       }
     };

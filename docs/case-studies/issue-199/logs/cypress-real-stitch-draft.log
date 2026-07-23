@@ -1,0 +1,63 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run --spec cypress/e2e/pipeline-album-rendering.cy.js --config video=false
+
+
+DevTools listening on ws://127.0.0.1:42559/devtools/browser/c988d965-5690-49c7-be40-8306105a4cc0
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-album-rendering.cy.js)                                       │
+  │ Searched:       cypress/e2e/pipeline-album-rendering.cy.js                                     │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  pipeline-album-rendering.cy.js                                                  (1 of 1)
+
+
+  Pipeline album rendering
+    ✓ pauses the preview loop and stitches the two completed track videos (3279ms)
+    ✓ creates a playable container from completed browser-recorded videos (3980ms)
+
+
+  2 passing (8s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     7 seconds                                                                        │
+  │ Spec Ran:     pipeline-album-rendering.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/pipeline-album-rendering.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  pipeline-album-rendering.cy.js           00:07        2        2        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:07        2        2        -        -        -

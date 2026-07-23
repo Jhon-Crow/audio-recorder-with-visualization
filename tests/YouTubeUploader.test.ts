@@ -5,6 +5,7 @@ import {
   buildYouTubeVideoResource,
   normalizeYouTubePlaylistIds,
   normalizeYouTubeTags,
+  parseYouTubeChannelKeywords,
   type YouTubeUploadProgress,
 } from '../src/core/YouTubeUploader';
 
@@ -42,6 +43,15 @@ describe('YouTubeUploader', () => {
         'music',
         'visualizer',
         'synth wave',
+      ]);
+    });
+
+    test('parses quoted YouTube channel keywords', () => {
+      expect(parseYouTubeChannelKeywords('audio "synth wave" visualizer "live set"')).toEqual([
+        'audio',
+        'synth wave',
+        'visualizer',
+        'live set',
       ]);
     });
 
@@ -109,6 +119,35 @@ describe('YouTubeUploader', () => {
   });
 
   describe('playlist helpers', () => {
+    test('loads channel default tags from branding settings keywords', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock.mockResolvedValueOnce(createResponse(JSON.stringify({
+        items: [
+          {
+            brandingSettings: {
+              channel: {
+                keywords: 'audio "synth wave" Visualizer audio',
+              },
+            },
+          },
+        ],
+      }), { status: 200 }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+
+      await expect(uploader.getChannelDefaults('token-123')).resolves.toEqual({
+        tags: ['audio', 'synth wave', 'Visualizer'],
+      });
+
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        'https://www.googleapis.com/youtube/v3/channels?part=brandingSettings&mine=true&maxResults=1',
+      );
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({
+        method: 'GET',
+        headers: { Authorization: 'Bearer token-123' },
+      });
+    });
+
     test('lists the signed-in channel playlists across pages', async () => {
       const fetchMock = createFetchMock();
       fetchMock
@@ -349,6 +388,45 @@ describe('YouTubeUploader', () => {
       expect(JSON.parse(secondPlaylistInit.body as string).snippet.playlistId).toBe('PL456');
     });
 
+    test('returns the uploaded video with warnings when playlist follow-up fails', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'video-123' }), {
+          status: 201,
+        }))
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const result = await uploader.upload({
+        video: new Blob(['video'], { type: 'video/webm' }),
+        accessToken: 'token-123',
+        metadata: {
+          title: 'Audio visualizer',
+          playlistIds: 'PL123',
+        },
+      });
+
+      expect(result).toMatchObject({
+        id: 'video-123',
+        url: 'https://www.youtube.com/watch?v=video-123',
+        playlistItems: [],
+        playlistErrors: [{
+          operation: 'playlist',
+          playlistId: 'PL123',
+          message: 'Failed to fetch',
+        }],
+        warnings: [{
+          operation: 'playlist',
+          playlistId: 'PL123',
+          message: 'Failed to fetch',
+        }],
+      });
+    });
+
     test('continues after a 308 resumable response', async () => {
       const fetchMock = createFetchMock();
       fetchMock
@@ -395,7 +473,7 @@ describe('YouTubeUploader', () => {
         video: new Blob(['video'], { type: 'video/webm' }),
         accessToken: 'token-123',
         metadata: { title: 'Failed upload' },
-      })).rejects.toThrow('Quota exceeded');
+      })).rejects.toThrow('Unable to start YouTube upload session: Quota exceeded (HTTP 403)');
     });
 
     test('rejects empty videos before calling the API', async () => {

@@ -1,0 +1,166 @@
+
+DevTools listening on ws://127.0.0.1:34539/devtools/browser/248dc4a0-1e17-4ec7-ab77-75798ef1c601
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-mode.cy.js)                                                  │
+  │ Searched:       cypress/e2e/pipeline-mode.cy.js                                                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  pipeline-mode.cy.js                                                             (1 of 1)
+
+
+  Pipeline Mode
+    1) seeds and persists the default release pipeline with a right sidebar
+    2) shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards
+    ✓ keeps the stage navigator fixed at the bottom of the viewport on narrow screens (1023ms)
+    ✓ requires files before running and resets selected fields with a hold action (2792ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (2119ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (1071ms)
+    3) keeps relative publish dates current when the reference date changes
+    ✓ loads sidebar presets stored as flat setting objects (1862ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (1880ms)
+    ✓ updates pipeline preset choices immediately after saving a new preset (3115ms)
+    ✓ updates pipeline preset choices when preset persistence fails but the in-memory preset is saved (2679ms)
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (1093ms)
+    ✓ applies preset visualization offsets to generated tooltip previews (1071ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (2564ms)
+    ✓ replaces stale cached YouTube playlists in pipeline stages after restart (1760ms)
+    ✓ keeps the manual pipeline playlist refresh available when helpers load after render (1871ms)
+    4) refreshes pipeline playlists after restoring an expired Electron YouTube token
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1314ms)
+    ✓ deletes a stage only after confirmation (1496ms)
+    ✓ shows release type controls on stages added after clearing the pipeline (1136ms)
+    ✓ keeps YouTube upload options separate for each stage (3642ms)
+    ✓ turns selected album files into ordered editable tracks (952ms)
+    ✓ adds a dependent full album stage with its own schedule and generated timestamps (7582ms)
+    ✓ keeps saved album cover previews after reload and pipeline restore (3625ms)
+    ✓ schedules regular release posts from ordered files and cycle slots (4538ms)
+    ✓ resets added files from a stage without opening the full reset modal (1156ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (1013ms)
+    ✓ runs visualization-only stages through the converter (2846ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (4795ms)
+    ✓ keeps generated tooltip boxes inside the viewport (1079ms)
+    ✓ renames, deletes, and reorders saved pipelines from the sidebar (2759ms)
+    ✓ stores a square visualization thumbnail when saving a pipeline (993ms)
+    ✓ still saves a pipeline if thumbnail capture is unavailable (978ms)
+    ✓ still saves a pipeline if thumbnail storage exceeds localStorage limits (937ms)
+    ✓ opens the rename dialog when a saved pipeline is shift-clicked (1956ms)
+    ✓ rename input selects the existing saved pipeline name before typing (2360ms)
+
+
+  32 passing (2m)
+  4 failing
+
+  1) Pipeline Mode
+       seeds and persists the default release pipeline with a right sidebar:
+     AssertionError: Target cannot be null or undefined.
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:203:6)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+
+  2) Pipeline Mode
+       shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards:
+     AssertionError: Timed out retrying after 10000ms: expected '<button.pipeline-stage-nav-btn>' to have class 'is-active'
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:263:9)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+
+  3) Pipeline Mode
+       keeps relative publish dates current when the reference date changes:
+
+      Timed out retrying after 10000ms
+      + expected - actual
+
+      -'2026-07-01T16:09'
+      +'2026-08-08T18:00'
+
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:403:7)
+
+  4) Pipeline Mode
+       refreshes pipeline playlists after restoring an expired Electron YouTube token:
+     CypressError: Timed out retrying after 10000ms: `cy.wait()` timed out waiting `10000ms` for the 1st request to the route: `listRestoredTokenPlaylists`. No request ever occurred.
+
+https://on.cypress.io/wait
+      at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:78162:18)
+      at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:78230:10)
+      at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:138625:84)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:138650:28)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        36                                                                               │
+  │ Passing:      32                                                                               │
+  │ Failing:      4                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  4                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 minute, 49 seconds                                                             │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1782489010730/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- seeds and persists the default release pipeline with a right sidebar
+      (failed).png
+  -  /tmp/gh-issue-solver-1782489010730/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag
+     es without narrowing cards (failed).png
+  -  /tmp/gh-issue-solver-1782489010730/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- keeps relative publish dates current when the reference date changes
+      (failed).png
+  -  /tmp/gh-issue-solver-1782489010730/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- refreshes pipeline playlists after restoring an expired Electron You
+     Tube token (failed).png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1782489010730/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  pipeline-mode.cy.js                      01:49       36       32        4        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     01:49       36       32        4        -        -

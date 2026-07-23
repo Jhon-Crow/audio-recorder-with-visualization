@@ -573,6 +573,26 @@ describe('AudioRecorder', () => {
       expect(recorder.isVisualizationActive).toBe(false);
     });
 
+    test('should keep an explicitly stopped visualization paused across visibility changes', () => {
+      recorder.stopVisualization();
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: true,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(recorder.isVisualizationActive).toBe(false);
+
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(recorder.isVisualizationActive).toBe(false);
+
+      recorder.resumeVisualization();
+      expect(recorder.isVisualizationActive).toBe(true);
+    });
+
     test('should use timer fallback when page is hidden', async () => {
       // Simulate page hidden
       Object.defineProperty(document, 'hidden', {

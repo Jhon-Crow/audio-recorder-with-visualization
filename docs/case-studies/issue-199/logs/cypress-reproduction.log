@@ -1,0 +1,97 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run --spec cypress/e2e/pipeline-album-rendering.cy.js --config video=false
+
+It looks like this is your first time using Cypress: 15.8.1
+
+[STARTED]  Verifying Cypress can run /home/box/.cache/Cypress/15.8.1/Cypress
+[TITLE]  Verified Cypress!       /home/box/.cache/Cypress/15.8.1/Cypress
+[SUCCESS]  Verified Cypress!       /home/box/.cache/Cypress/15.8.1/Cypress
+
+Opening Cypress...
+
+DevTools listening on ws://127.0.0.1:39761/devtools/browser/bdec5a4e-3f5d-4729-9c0e-bdaec2df3f67
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          1 found (pipeline-album-rendering.cy.js)                                       │
+  │ Searched:       cypress/e2e/pipeline-album-rendering.cy.js                                     │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  pipeline-album-rendering.cy.js                                                  (1 of 1)
+
+
+  Pipeline album rendering
+    1) pauses the preview loop and stitches the two completed track videos
+
+
+  0 passing (13s)
+  1 failing
+
+  1) Pipeline album rendering
+       pauses the preview loop and stitches the two completed track videos:
+     Timed out retrying after 10000ms: expected renderPipelineTrack to have been called exactly "twice", but it was called thrice
+
+    The following calls were made:
+
+    renderPipelineTrack(Object{10}) => {} at AudioToVideoConverter.renderPipelineTrack (http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+    renderPipelineTrack(Object{10}) => {} at AudioToVideoConverter.renderPipelineTrack (http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+    renderPipelineTrack(Object{10}) => {} at AudioToVideoConverter.renderPipelineTrack (http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+  AssertionError: Timed out retrying after 10000ms: expected renderPipelineTrack to have been called exactly "twice", but it was called thrice
+
+      The following calls were made:
+
+      at <unknown> (    renderPipelineTrackObject{10} => {} at AudioToVideoConverter.renderPipelineTrack http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+      at <unknown> (    renderPipelineTrackObject{10} => {} at AudioToVideoConverter.renderPipelineTrack http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+      at <unknown> (    renderPipelineTrackObject{10} => {} at AudioToVideoConverter.renderPipelineTrack http://localhost:8080/__cypress/runner/cypress_runner.js:53311:26)
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-album-rendering.cy.js:100:35)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      0                                                                                │
+  │ Failing:      1                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  1                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     12 seconds                                                                       │
+  │ Spec Ran:     pipeline-album-rendering.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/pipeline-album-rendering.     (1280x720)
+     cy.js/Pipeline album rendering -- pauses the preview loop and stitches the two c
+     ompleted track videos (failed).png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/pipeline-album-rendering.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  pipeline-album-rendering.cy.js           00:12        1        -        1        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     00:12        1        -        1        -        -

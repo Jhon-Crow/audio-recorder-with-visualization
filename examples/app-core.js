@@ -749,6 +749,28 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
     });
   }
 
+  function capturePresetThumbnail() {
+    try {
+      const thumbnailCanvas = document.createElement('canvas');
+      const size = 96;
+      const ctx = thumbnailCanvas.getContext('2d');
+      if (!ctx || !canvas.width || !canvas.height) {
+        return null;
+      }
+
+      thumbnailCanvas.width = size;
+      thumbnailCanvas.height = size;
+      const sourceSize = Math.min(canvas.width, canvas.height);
+      const sourceX = Math.max(0, (canvas.width - sourceSize) / 2);
+      const sourceY = Math.max(0, (canvas.height - sourceSize) / 2);
+      ctx.drawImage(canvas, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+      return thumbnailCanvas.toDataURL('image/png');
+    } catch (error) {
+      console.warn('Failed to capture preset thumbnail:', error);
+      return null;
+    }
+  }
+
   // Apply settings to UI
   function applySettings(settings) {
     visualizerSelect.value = settings.visualizer;
@@ -1679,15 +1701,31 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'preset-icon-btn preset-load-btn';
-      button.textContent = preset.name || String(index + 1);
+      const label = document.createElement('span');
+      label.className = 'saved-item-label';
+      label.textContent = preset.name || String(index + 1);
+      button.appendChild(label);
       button.setAttribute('aria-label', `Load preset ${preset.name || index + 1}`);
       button.dataset.presetId = preset.id;
+      if (preset.thumbnail) {
+        button.classList.add('has-thumbnail');
+        button.style.setProperty('--saved-item-thumbnail', `url("${preset.thumbnail}")`);
+      } else {
+        button.classList.add('has-generated-thumbnail');
+      }
       button.draggable = true;
       if (isPresetCurrentlyActive(preset)) {
         button.classList.add('is-active');
         button.setAttribute('aria-current', 'true');
       }
-      button.addEventListener('click', () => loadPreset(preset.id));
+      button.addEventListener('click', event => {
+        if (event.shiftKey) {
+          event.preventDefault();
+          openPresetRenameDialog(preset.id);
+          return;
+        }
+        loadPreset(preset.id);
+      });
       button.addEventListener('contextmenu', event => {
         event.preventDefault();
         showPresetContextMenu(preset.id, event.clientX, event.clientY);
@@ -1728,6 +1766,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       name: name || getNextPresetName(),
       createdAt: new Date().toISOString(),
       settings: getCurrentSettings(),
+      thumbnail: capturePresetThumbnail(),
     };
 
     presets = [...presets, preset];

@@ -1,0 +1,29 @@
+
+> audio-recorder-with-visualization@1.0.0 serve
+> http-server examples -o -c-1
+
+Starting up http-server, serving examples
+
+http-server version: 14.1.1
+
+http-server settings:
+CORS: disabled
+Cache: -1 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://127.0.0.1:8080
+  http://172.17.0.8:8080
+Hit CTRL-C to stop the server
+Open: http://127.0.0.1:8080
+
+[2026-06-26T15:57:10.736Z]  "GET /examples/index.html" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.8.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+(node:5073) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2026-06-26T15:57:10.740Z]  "GET /examples/index.html" Error (404): "Not found"
+http-server stopped.

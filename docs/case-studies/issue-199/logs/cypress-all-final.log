@@ -1,0 +1,724 @@
+
+> audio-recorder-with-visualization@1.0.0 test:e2e
+> cypress run
+
+
+DevTools listening on ws://127.0.0.1:46617/devtools/browser/1f796f54-7677-4dc2-b620-a0705ef4df5c
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.8.1                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v20.20.2 (/home/box/.nvm/versions/node/v20.20.2/bin/node)                      │
+  │ Specs:          10 found (aspect-ratio-settings.cy.js, background-size-preservation.cy.js, bat │
+  │                 ch-visualization.cy.js, image-blink-controls.cy.js, large-file-handling.cy.js, │
+  │                  pipeline-album-rendering.cy.js, pipeline-mode.cy.js, preset-management.cy.js, │
+  │                  preview-alignment-guid...)                                                    │
+  │ Searched:       cypress/e2e/**/*.cy.{js,jsx,ts,tsx}                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  aspect-ratio-settings.cy.js                                                    (1 of 10)
+
+
+  Aspect Ratio Settings
+    ✓ defaults to 16:9 and preserves the existing 1080p canvas size (1469ms)
+    ✓ switches 1080p output to 9:16 shorts dimensions (1223ms)
+    ✓ calculates portrait dimensions from the selected quality height (1127ms)
+    ✓ restores the selected aspect ratio after reload (2303ms)
+
+
+  4 passing (7s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     6 seconds                                                                        │
+  │ Spec Ran:     aspect-ratio-settings.cy.js                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/aspect-ratio-settings.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  background-size-preservation.cy.js                                             (2 of 10)
+
+
+  Background Size Mode Preservation
+    ✓ should load with default background size mode (cover) (1310ms)
+    ✓ should persist background size mode to localStorage when changed (1891ms)
+    ✓ should restore background size mode after page reload (14439ms)
+    ✓ should apply background size mode correctly with a background image (16154ms)
+    ✓ should preserve background size mode with background image after reload (6175ms)
+    ✓ should show custom size controls when custom mode is selected (2956ms)
+
+
+  6 passing (44s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      6                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  5                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     43 seconds                                                                       │
+  │ Spec Ran:     background-size-preservation.cy.js                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-cover.png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-contain.png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-stretch.png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-mode-center.png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/background-size-preservat    (1280x2268)
+     ion.cy.js/background-contain-after-reload.png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/background-size-preservation.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  batch-visualization.cy.js                                                      (3 of 10)
+
+
+  Batch Visualization Mode
+    ✓ allows selecting multiple audio files for conversion (870ms)
+    ✓ shows a disabled Save All button until recordings exist (665ms)
+    ✓ uses one Electron batch save request for Save All (1054ms)
+    ✓ names every MP4 batch recording from the actual rendered blob type (782ms)
+    ✓ names a single MP4 visualization from the actual rendered blob type (766ms)
+    ✓ uses the selected output format for every file in a batch (743ms)
+
+
+  6 passing (6s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        6                                                                                │
+  │ Passing:      6                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     5 seconds                                                                        │
+  │ Spec Ran:     batch-visualization.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/batch-visualization.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  image-blink-controls.cy.js                                                     (4 of 10)
+
+
+  Image Blink Controls
+    ✓ keeps frequency range sliders separated and updates their combined value (1403ms)
+
+
+  1 passing (2s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 second                                                                         │
+  │ Spec Ran:     image-blink-controls.cy.js                                                       │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/image-blink-controls.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  large-file-handling.cy.js                                                      (5 of 10)
+
+
+  Large File Handling
+    ✓ should handle Uint8Array conversion for file transfer (1162ms)
+    ✓ should not use Array.from for blob conversion (1013ms)
+    ✓ should handle Blob.arrayBuffer() conversion (36115ms)
+    ✓ should demonstrate Array.from limitation for documentation (9234ms)
+
+
+  4 passing (48s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     48 seconds                                                                       │
+  │ Spec Ran:     large-file-handling.cy.js                                                        │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/large-file-handling.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  pipeline-album-rendering.cy.js                                                 (6 of 10)
+
+
+  Pipeline album rendering
+    ✓ pauses the preview loop and stitches the two completed track videos (2009ms)
+    ✓ creates a playable container from completed browser-recorded videos (3975ms)
+
+
+  2 passing (6s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     6 seconds                                                                        │
+  │ Spec Ran:     pipeline-album-rendering.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/pipeline-album-rendering.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  pipeline-mode.cy.js                                                            (7 of 10)
+
+
+  Pipeline Mode
+    ✓ seeds and persists the default release pipeline with a right sidebar (4996ms)
+    1) restores selected pipeline files after reload so the pipeline can run
+    2) shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards
+    ✓ keeps the stage navigator fixed at the bottom of the viewport on narrow screens (1712ms)
+    ✓ opens stage rename and delete actions from the stage navigator context menu (2328ms)
+    ✓ requires files before running and resets selected fields with a hold action (3636ms)
+    ✓ asks for and persists a timezone when delayed publishing is first used (3111ms)
+    ✓ uses saved visualization presets and disables inactive timing fields (1618ms)
+    3) keeps relative publish dates current when the reference date changes
+    ✓ loads sidebar presets stored as flat setting objects (3608ms)
+    ✓ updates pipeline preset choices when the sidebar loads saved presets after startup (3601ms)
+    ✓ updates pipeline preset choices immediately after saving a new preset (4611ms)
+    ✓ updates pipeline preset choices when preset persistence fails but the in-memory preset is saved (3874ms)
+    ✓ shows image-backed visualization previews for vertical stages and landscape album tracks (1603ms)
+    ✓ applies preset visualization offsets to generated tooltip previews (1441ms)
+    ✓ shows fetched YouTube playlists in pipeline stages and creates playlists by name (3445ms)
+    ✓ replaces stale cached YouTube playlists in pipeline stages after restart (2584ms)
+    ✓ creates a pipeline playlist after YouTube helpers become available post-render (3123ms)
+    ✓ blocks out-of-order YouTube uploads by default and allows manual order from settings (1898ms)
+    ✓ keeps upload review enabled by default and can disable it from settings (1691ms)
+    ✓ deletes a stage only after confirmation (2381ms)
+    ✓ shows release type controls on stages added after clearing the pipeline (1686ms)
+    ✓ uses signed-in YouTube channel default tags for newly added stages (3057ms)
+    ✓ keeps YouTube upload options separate for each stage (5385ms)
+    ✓ turns selected album files into ordered editable tracks (1623ms)
+    ✓ adds full album as the last upload item in combined release mode (3831ms)
+    ✓ adds a dependent full album stage with its own schedule and generated timestamps (13747ms)
+    ✓ keeps saved album cover previews after reload and pipeline restore (8588ms)
+    ✓ schedules regular release posts from ordered files and cycle slots (4790ms)
+    ✓ resets added files from a stage without opening the full reset modal (1706ms)
+    ✓ labels pipeline YouTube checkboxes and generated controls with tooltips (1455ms)
+    ✓ runs visualization-only stages through the converter (3718ms)
+    ✓ reviews rendered visualization uploads before YouTube upload and can skip them (1761ms)
+    ✓ uploads reviewed visualization results only after confirmation (2299ms)
+    ✓ uploads rendered visualization results immediately when review is disabled (2025ms)
+    ✓ uploads direct YouTube stages with stage metadata when already signed in (6406ms)
+    ✓ keeps generated tooltip boxes inside the viewport (1360ms)
+    ✓ renames, deletes, and reorders saved pipelines from the sidebar (3675ms)
+
+
+  35 passing (3m)
+  3 failing
+
+  1) Pipeline Mode
+       restores selected pipeline files after reload so the pipeline can run:
+
+      Timed out retrying after 10000ms
+      + expected - actual
+
+      -'Select files for every stage before running.'
+
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:219:40)
+
+  2) Pipeline Mode
+       shows a fixed numbered stage navigator that scrolls to pipeline stages without narrowing cards:
+     AssertionError: Timed out retrying after 10000ms: expected '<button.pipeline-stage-nav-btn>' to have class 'is-active'
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:271:9)
+      at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:122653:20)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:122664:66)
+      at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:122915:21)
+      at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:146027:19)
+
+  3) Pipeline Mode
+       keeps relative publish dates current when the reference date changes:
+
+      Timed out retrying after 10000ms
+      + expected - actual
+
+      -'2026-07-26T16:48'
+      +'2026-08-08T18:00'
+
+      at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:438:7)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        38                                                                               │
+  │ Passing:      35                                                                               │
+  │ Failing:      3                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  3                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     2 minutes, 42 seconds                                                            │
+  │ Spec Ran:     pipeline-mode.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- restores selected pipeline files after reload so the pipeline can ru
+     n (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag
+     es without narrowing cards (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
+     ine Mode -- keeps relative publish dates current when the reference date changes
+      (failed).png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/pipeline-mode.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preset-management.cy.js                                                        (8 of 10)
+
+
+  Preset Management
+    ✓ saves current settings as a preset and restores them from the sidebar (2548ms)
+    ✓ shows saved preset names over square visualization thumbnails (1945ms)
+    ✓ gives legacy presets without stored thumbnails a generated visual background (2025ms)
+    ✓ uses skip dialog mode with numbered default names (1729ms)
+    ✓ renames, deletes, and reorders presets from the sidebar (4019ms)
+    ✓ rename input receives focus and accepts typing after context menu click (5051ms)
+    ✓ opens the rename dialog when a saved preset is shift-clicked (2670ms)
+    ✓ delete confirmation uses a custom modal instead of window.confirm (3084ms)
+    ✓ highlights the loaded preset until settings change (2627ms)
+    ✓ restores the active preset highlight after reload when settings still match (3713ms)
+    ✓ persists rename to disk via updatePresetFile when sourcePath is present (3052ms)
+    ✓ loads presets from a manually selected Electron folder (1686ms)
+    ✓ loads presets from a saved Electron folder on startup (1363ms)
+
+
+  13 passing (37s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        13                                                                               │
+  │ Passing:      13                                                                               │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     36 seconds                                                                       │
+  │ Spec Ran:     preset-management.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/preset-management.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  preview-alignment-guides.cy.js                                                 (9 of 10)
+
+
+  Preview Alignment Guides
+    ✓ shows a preview-only mounting-area outline for portrait output (1301ms)
+    ✓ reveals grid and smart guides only while dragging visualization offsets (1791ms)
+
+
+  2 passing (3s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     3 seconds                                                                        │
+  │ Spec Ran:     preview-alignment-guides.cy.js                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/preview-alignment-guides.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Running:  youtube-upload-ui.cy.js                                                       (10 of 10)
+
+
+  YouTube Upload UI
+    ✓ shows an upload button beside the generated recording download action (1550ms)
+    ✓ offers to reopen file origins on localhost before Google sign-in (1269ms)
+    ✓ explains invalid OAuth client IDs before Google sign-in (1884ms)
+    ✓ opens Google Cloud OAuth setup guidance with the current origin (1321ms)
+    ✓ explains Google invalid_client responses with origin setup guidance (1842ms)
+    ✓ uses Electron native OAuth instead of the browser Google token flow (2269ms)
+    ✓ restores Electron Google authorization with the saved client ID before showing the auth form (1229ms)
+    ✓ restores saved Google authorization after a restart (1209ms)
+    ✓ refreshes cached YouTube playlists from the API on app startup (1417ms)
+    ✓ refreshes YouTube channel default tags from the API on app startup (1060ms)
+    ✓ logs startup token state and skips API refresh when no valid token (992ms)
+    ✓ loads existing YouTube playlists and creates a new playlist by title (2934ms)
+    ✓ signs out from Google authorization settings (1525ms)
+    1) authorizes with Google and uploads metadata with the short tag enabled
+    ✓ remembers upload form options from the last upload attempt (5007ms)
+    ✓ shows a timezone selector in the upload modal (1370ms)
+    2) uses the selected timezone when computing the scheduled publish time
+    ✓ restores the saved timezone in the upload modal (1432ms)
+    ✓ keeps the upload form open when text selection ends outside the form (3187ms)
+    3) shows Google account and timezone fields in the Settings modal
+    4) saves OAuth client ID entered in Settings to the auth modal
+    5) persists the Desktop Client Secret from Settings across page reloads
+    ✓ shows Desktop Client Secret from Settings in the auth modal (1440ms)
+    6) saves the Settings timezone and pre-selects it in the upload modal
+    ✓ fills upload tags from the signed-in YouTube channel defaults (1405ms)
+    ✓ fills upload tags from channel defaults when saved upload state has blank tags (1332ms)
+
+
+  20 passing (2m)
+  6 failing
+
+  1) YouTube Upload UI
+       authorizes with Google and uploads metadata with the short tag enabled:
+     CypressError: Timed out retrying after 10000ms: `cy.wait()` timed out waiting `10000ms` for the 1st request to the route: `startYouTubeUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+      at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:78162:18)
+      at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:78230:10)
+      at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:138625:84)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:138650:28)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+  2) YouTube Upload UI
+       uses the selected timezone when computing the scheduled publish time:
+     CypressError: Timed out retrying after 10000ms: `cy.wait()` timed out waiting `10000ms` for the 1st request to the route: `startTimezoneUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+      at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:78162:18)
+      at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:78230:10)
+      at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:138625:84)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:138650:28)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+  3) YouTube Upload UI
+       shows Google account and timezone fields in the Settings modal:
+     CypressError: Timed out retrying after 10050ms: `cy.click()` failed because this element:
+
+          `<button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>`
+
+          has CSS `pointer-events: none`, inherited from this element:
+
+`<aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">...</aside>`
+
+          `pointer-events: none` prevents user mouse interaction.
+
+          Fix this problem, or use {force: true} to disable error checking.
+
+https://on.cypress.io/element-cannot-be-interacted-with
+      at ensureElDoesNotHaveCSS (http://localhost:8080/__cypress/runner/cypress_runner.js:114938:66)
+      at ensureDescendents (http://localhost:8080/__cypress/runner/cypress_runner.js:115046:5)
+      at ensureDescendentsAndScroll (http://localhost:8080/__cypress/runner/cypress_runner.js:115054:14)
+      at ensureElIsNotCovered (http://localhost:8080/__cypress/runner/cypress_runner.js:115185:5)
+      at runAllChecks (http://localhost:8080/__cypress/runner/cypress_runner.js:115384:52)
+      at retryActionability (http://localhost:8080/__cypress/runner/cypress_runner.js:115421:16)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+  4) YouTube Upload UI
+       saves OAuth client ID entered in Settings to the auth modal:
+     CypressError: Timed out retrying after 10050ms: `cy.click()` failed because this element:
+
+          `<button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>`
+
+          has CSS `pointer-events: none`, inherited from this element:
+
+`<aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">...</aside>`
+
+          `pointer-events: none` prevents user mouse interaction.
+
+          Fix this problem, or use {force: true} to disable error checking.
+
+https://on.cypress.io/element-cannot-be-interacted-with
+      at ensureElDoesNotHaveCSS (http://localhost:8080/__cypress/runner/cypress_runner.js:114938:66)
+      at ensureDescendents (http://localhost:8080/__cypress/runner/cypress_runner.js:115046:5)
+      at ensureDescendentsAndScroll (http://localhost:8080/__cypress/runner/cypress_runner.js:115054:14)
+      at ensureElIsNotCovered (http://localhost:8080/__cypress/runner/cypress_runner.js:115185:5)
+      at runAllChecks (http://localhost:8080/__cypress/runner/cypress_runner.js:115384:52)
+      at retryActionability (http://localhost:8080/__cypress/runner/cypress_runner.js:115421:16)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+  5) YouTube Upload UI
+       persists the Desktop Client Secret from Settings across page reloads:
+     CypressError: Timed out retrying after 10050ms: `cy.click()` failed because this element:
+
+          `<button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>`
+
+          has CSS `pointer-events: none`, inherited from this element:
+
+`<aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">...</aside>`
+
+          `pointer-events: none` prevents user mouse interaction.
+
+          Fix this problem, or use {force: true} to disable error checking.
+
+https://on.cypress.io/element-cannot-be-interacted-with
+      at ensureElDoesNotHaveCSS (http://localhost:8080/__cypress/runner/cypress_runner.js:114938:66)
+      at ensureDescendents (http://localhost:8080/__cypress/runner/cypress_runner.js:115046:5)
+      at ensureDescendentsAndScroll (http://localhost:8080/__cypress/runner/cypress_runner.js:115054:14)
+      at ensureElIsNotCovered (http://localhost:8080/__cypress/runner/cypress_runner.js:115185:5)
+      at runAllChecks (http://localhost:8080/__cypress/runner/cypress_runner.js:115384:52)
+      at retryActionability (http://localhost:8080/__cypress/runner/cypress_runner.js:115421:16)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+  6) YouTube Upload UI
+       saves the Settings timezone and pre-selects it in the upload modal:
+     CypressError: Timed out retrying after 10050ms: `cy.click()` failed because this element:
+
+          `<button type="button" class="preset-icon-btn preset-settings-btn" id="presetSettingsBtn" data-tooltip="Settings" aria-label="Settings">⚙️</button>`
+
+          has CSS `pointer-events: none`, inherited from this element:
+
+`<aside class="preset-sidebar" id="presetSidebar" aria-label="Preset sidebar">...</aside>`
+
+          `pointer-events: none` prevents user mouse interaction.
+
+          Fix this problem, or use {force: true} to disable error checking.
+
+https://on.cypress.io/element-cannot-be-interacted-with
+      at ensureElDoesNotHaveCSS (http://localhost:8080/__cypress/runner/cypress_runner.js:114938:66)
+      at ensureDescendents (http://localhost:8080/__cypress/runner/cypress_runner.js:115046:5)
+      at ensureDescendentsAndScroll (http://localhost:8080/__cypress/runner/cypress_runner.js:115054:14)
+      at ensureElIsNotCovered (http://localhost:8080/__cypress/runner/cypress_runner.js:115185:5)
+      at runAllChecks (http://localhost:8080/__cypress/runner/cypress_runner.js:115384:52)
+      at retryActionability (http://localhost:8080/__cypress/runner/cypress_runner.js:115421:16)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4285:29)
+      at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:151724:68)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:151665:14)
+      at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1777:23)
+      at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1489:31)
+      at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1546:18)
+      at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1591:10)
+      at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1671:18)
+      at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1615:18)
+      at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5420:46)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        26                                                                               │
+  │ Passing:      20                                                                               │
+  │ Failing:      6                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  6                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     1 minute, 55 seconds                                                             │
+  │ Spec Ran:     youtube-upload-ui.cy.js                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- authorizes with Google and uploads metadata with the short t
+     ag enabled (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- uses the selected timezone when computing the scheduled publ
+     ish time (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- shows Google account and timezone fields in the Settings mod
+     al (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- saves OAuth client ID entered in Settings to the auth modal
+     (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- persists the Desktop Client Secret from Settings across page
+      reloads (failed).png
+  -  /tmp/gh-issue-solver-1784648091699/cypress/screenshots/youtube-upload-ui.cy.js/Y     (1280x720)
+     ouTube Upload UI -- saves the Settings timezone and pre-selects it in the upload
+      modal (failed).png
+
+
+  (Video)
+
+  -  Video output: /tmp/gh-issue-solver-1784648091699/cypress/videos/youtube-upload-ui.cy.js.mp4
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  aspect-ratio-settings.cy.js              00:06        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  background-size-preservation.cy.js       00:43        6        6        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  batch-visualization.cy.js                00:05        6        6        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  image-blink-controls.cy.js               00:01        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  large-file-handling.cy.js                00:48        4        4        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  pipeline-album-rendering.cy.js           00:06        2        2        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✖  pipeline-mode.cy.js                      02:42       38       35        3        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preset-management.cy.js                  00:36       13       13        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  preview-alignment-guides.cy.js           00:03        2        2        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✖  youtube-upload-ui.cy.js                  01:55       26       20        6        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  2 of 10 failed (20%)                     07:10      102       93        9        -        -

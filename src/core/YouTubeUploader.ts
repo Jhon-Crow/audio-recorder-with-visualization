@@ -9,6 +9,7 @@ export const YOUTUBE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtub
 export const YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/thumbnails/set';
 export const YOUTUBE_PLAYLISTS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlists';
 export const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/playlistItems';
+export const YOUTUBE_CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels';
 export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 
 const DEFAULT_CATEGORY_ID = '10';
@@ -39,6 +40,10 @@ export interface YouTubePlaylistSummary {
   itemCount?: number;
 }
 
+export interface YouTubeChannelDefaults {
+  tags: string[];
+}
+
 export interface YouTubeCreatePlaylistOptions {
   description?: string;
   privacyStatus?: YouTubePrivacyStatus;
@@ -67,8 +72,11 @@ export interface YouTubeUploadResult {
   id: string;
   url: string;
   thumbnail?: unknown;
+  thumbnailError?: YouTubeUploadWarning;
   playlistItem?: unknown;
   playlistItems?: unknown[];
+  playlistErrors?: YouTubeUploadWarning[];
+  warnings?: YouTubeUploadWarning[];
   rawResponse: unknown;
 }
 
@@ -87,6 +95,14 @@ export interface YouTubeVideoResource {
   };
 }
 
+export interface YouTubeUploadWarning {
+  operation: 'thumbnail' | 'playlist';
+  message: string;
+  status?: number;
+  details?: unknown;
+  playlistId?: string;
+}
+
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 export interface YouTubeUploaderConfig {
@@ -95,6 +111,7 @@ export interface YouTubeUploaderConfig {
   thumbnailUploadEndpoint?: string;
   playlistsEndpoint?: string;
   playlistItemsEndpoint?: string;
+  channelsEndpoint?: string;
 }
 
 export class YouTubeUploadError extends Error {
@@ -138,6 +155,41 @@ export function normalizeYouTubeTags(tags?: string[] | string): string[] {
   });
 
   return normalized;
+}
+
+export function parseYouTubeChannelKeywords(keywords?: string): string[] {
+  if (!keywords) {
+    return [];
+  }
+
+  const parsed: string[] = [];
+  let current = '';
+  let quoted = false;
+
+  for (let index = 0; index < keywords.length; index += 1) {
+    const character = keywords[index];
+
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (/\s/.test(character) && !quoted) {
+      if (current.trim()) {
+        parsed.push(current.trim());
+        current = '';
+      }
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (current.trim()) {
+    parsed.push(current.trim());
+  }
+
+  return parsed;
 }
 
 export function normalizeYouTubePlaylistIds(playlistIds?: string[] | string): string[] {
@@ -231,6 +283,7 @@ export class YouTubeUploader {
   private readonly thumbnailUploadEndpoint: string;
   private readonly playlistsEndpoint: string;
   private readonly playlistItemsEndpoint: string;
+  private readonly channelsEndpoint: string;
 
   constructor(config: YouTubeUploaderConfig = {}) {
     this.fetchImpl = config.fetch;
@@ -238,6 +291,43 @@ export class YouTubeUploader {
     this.thumbnailUploadEndpoint = config.thumbnailUploadEndpoint || YOUTUBE_THUMBNAIL_UPLOAD_ENDPOINT;
     this.playlistsEndpoint = config.playlistsEndpoint || YOUTUBE_PLAYLISTS_ENDPOINT;
     this.playlistItemsEndpoint = config.playlistItemsEndpoint || YOUTUBE_PLAYLIST_ITEMS_ENDPOINT;
+    this.channelsEndpoint = config.channelsEndpoint || YOUTUBE_CHANNELS_ENDPOINT;
+  }
+
+  async getChannelDefaults(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubeChannelDefaults> {
+    if (!accessToken.trim()) {
+      throw new YouTubeUploadError('Google access token is required');
+    }
+
+    const fetchImpl = this.getFetch();
+    const url = new URL(this.channelsEndpoint);
+    url.searchParams.set('part', 'brandingSettings');
+    url.searchParams.set('mine', 'true');
+    url.searchParams.set('maxResults', '1');
+
+    const response = await fetchImpl(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      throw await this.createError(response, 'Unable to load YouTube channel defaults');
+    }
+
+    const data = await readResponseBody(response);
+    const firstChannel = isRecord(data) && Array.isArray(data.items) ? data.items[0] : undefined;
+    const brandingSettings = isRecord(firstChannel) && isRecord(firstChannel.brandingSettings)
+      ? firstChannel.brandingSettings
+      : {};
+    const channel = isRecord(brandingSettings.channel) ? brandingSettings.channel : {};
+    const keywords = typeof channel.keywords === 'string' ? channel.keywords : '';
+
+    return {
+      tags: normalizeYouTubeTags(parseYouTubeChannelKeywords(keywords)),
+    };
   }
 
   async listPlaylists(accessToken: string, options: { signal?: AbortSignal } = {}): Promise<YouTubePlaylistSummary[]> {
@@ -367,13 +457,22 @@ export class YouTubeUploader {
     const result = await this.uploadChunks(fetchImpl, uploadUrl, request, contentType);
 
     if (request.thumbnail && request.thumbnail.size > 0) {
-      result.thumbnail = await this.uploadThumbnail(
-        fetchImpl,
-        request.accessToken,
-        result.id,
-        request.thumbnail,
-        request.signal
-      );
+      try {
+        result.thumbnail = await this.uploadThumbnail(
+          fetchImpl,
+          request.accessToken,
+          result.id,
+          request.thumbnail,
+          request.signal
+        );
+      } catch (error) {
+        if (isAbortError(error)) {
+          throw error;
+        }
+
+        result.thumbnailError = normalizeUploadWarning('thumbnail', error);
+        result.warnings = [...(result.warnings || []), result.thumbnailError];
+      }
     }
 
     const playlistIds = normalizeYouTubePlaylistIds([
@@ -385,13 +484,23 @@ export class YouTubeUploader {
       result.playlistItems = [];
 
       for (const playlistId of playlistIds) {
-        result.playlistItems.push(await this.addVideoToPlaylist(
-          fetchImpl,
-          request.accessToken,
-          playlistId,
-          result.id,
-          request.signal
-        ));
+        try {
+          result.playlistItems.push(await this.addVideoToPlaylist(
+            fetchImpl,
+            request.accessToken,
+            playlistId,
+            result.id,
+            request.signal
+          ));
+        } catch (error) {
+          if (isAbortError(error)) {
+            throw error;
+          }
+
+          const warning = normalizeUploadWarning('playlist', error, playlistId);
+          result.playlistErrors = [...(result.playlistErrors || []), warning];
+          result.warnings = [...(result.warnings || []), warning];
+        }
       }
 
       result.playlistItem = result.playlistItems[0];
@@ -508,7 +617,10 @@ export class YouTubeUploader {
 
   private async createError(response: Response, fallbackMessage: string): Promise<YouTubeUploadError> {
     const details = await readResponseBody(response);
-    const message = extractErrorMessage(details) || fallbackMessage;
+    const detailMessage = extractErrorMessage(details);
+    const message = detailMessage
+      ? `${fallbackMessage}: ${detailMessage} (HTTP ${response.status})`
+      : `${fallbackMessage} (HTTP ${response.status})`;
     return new YouTubeUploadError(message, response.status, details);
   }
 
@@ -664,6 +776,32 @@ function extractErrorMessage(value: unknown): string | null {
   }
 
   return typeof value.message === 'string' ? value.message : null;
+}
+
+function normalizeUploadWarning(
+  operation: YouTubeUploadWarning['operation'],
+  error: unknown,
+  playlistId?: string
+): YouTubeUploadWarning {
+  const warning: YouTubeUploadWarning = {
+    operation,
+    message: error instanceof Error ? error.message : String(error || 'Unknown error'),
+  };
+
+  if (error instanceof YouTubeUploadError) {
+    warning.status = error.status;
+    warning.details = error.details;
+  }
+
+  if (playlistId) {
+    warning.playlistId = playlistId;
+  }
+
+  return warning;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

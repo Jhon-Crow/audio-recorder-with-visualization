@@ -426,6 +426,63 @@ describe('AudioToVideoConverter', () => {
       expect(result.fallbackMessage).toMatch(/MP4 encoding is not supported/);
     });
   });
+
+  describe('concatenateVideosWithFallback()', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('should reject an empty source list before allocating browser media resources', async () => {
+      await expect(converter.concatenateVideos({
+        videoSources: [],
+        canvas,
+      })).rejects.toThrow('At least one completed video is required');
+    });
+
+    test('should return the joined WebM result without fallback', async () => {
+      const joinedBlob = new Blob(['joined-video'], { type: 'video/webm' });
+      const concatenateSpy = jest
+        .spyOn(converter, 'concatenateVideos')
+        .mockResolvedValue(joinedBlob);
+
+      const result = await converter.concatenateVideosWithFallback({
+        videoSources: [new Blob(['one']), new Blob(['two'])],
+        canvas,
+        format: 'webm',
+      });
+
+      expect(concatenateSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        blob: joinedBlob,
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    test('should fall back to WebM when MP4 concatenation fails after its support probe', async () => {
+      jest.spyOn(VideoRecorder, 'testEncoderSupport').mockResolvedValue(true);
+      const webmBlob = new Blob(['joined-video'], { type: 'video/webm' });
+      const concatenateSpy = jest
+        .spyOn(converter, 'concatenateVideos')
+        .mockRejectedValueOnce(new Error('Encoding failed: MP4 encoder unavailable'))
+        .mockResolvedValueOnce(webmBlob);
+
+      const result = await converter.concatenateVideosWithFallback({
+        videoSources: [new Blob(['one']), new Blob(['two'])],
+        canvas,
+        format: 'mp4',
+        videoWidth: 640,
+        videoHeight: 360,
+      });
+
+      expect(concatenateSpy).toHaveBeenCalledTimes(2);
+      expect(concatenateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ format: 'mp4' }));
+      expect(concatenateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ format: 'webm' }));
+      expect(result.format).toBe('webm');
+      expect(result.usedFallback).toBe(true);
+      expect(result.blob).toBe(webmBlob);
+    });
+  });
 });
 
 // Type for event callbacks
