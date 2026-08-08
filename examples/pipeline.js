@@ -2846,12 +2846,25 @@
 
   function assertUploadReady(tasks) {
     if (!tasks.some(task => actionIncludesUpload(task.stage.action))) {
-      return;
+      return false;
     }
 
     const youtube = window.AudioRecorderYouTube;
     if (!youtube || typeof youtube.uploadDirect !== 'function') {
       throw new Error('YouTube upload is not ready. Run npm run build before using upload pipeline stages.');
+    }
+    return true;
+  }
+
+  async function ensureUploadReady(tasks) {
+    if (!assertUploadReady(tasks)) {
+      return;
+    }
+
+    const youtube = window.AudioRecorderYouTube;
+    if (typeof youtube.ensureAuthorizedForPipeline === 'function') {
+      await youtube.ensureAuthorizedForPipeline();
+      return;
     }
     if (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) {
       throw new Error('Sign in to YouTube before running upload pipeline stages.');
@@ -3125,7 +3138,7 @@
     }
 
     try {
-      assertUploadReady(tasks);
+      await ensureUploadReady(tasks);
       const uploadReports = [];
       const reviewItems = [];
 
@@ -3817,7 +3830,7 @@
   }
 
   function renderPlaylistChooser(stage, onChange, disabled = false) {
-    const selectedIds = getPlaylistIds(stage.playlistIds);
+    let selectedIds = getPlaylistIds(stage.playlistIds);
     const initialYouTube = window.AudioRecorderYouTube;
     const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
       ? initialYouTube.getSavedPlaylists()
@@ -3841,6 +3854,7 @@
     list.className = 'youtube-playlist-list';
     const setSelectedIds = (ids) => {
       const nextIds = ids.filter((item, index, list) => list.indexOf(item) === index);
+      selectedIds = nextIds;
       hidden.value = nextIds.join(', ');
       onChange(nextIds.join(', '));
     };
@@ -3932,6 +3946,8 @@
       try {
         const playlist = await youtube.createPlaylist(title);
         setSelectedIds([...selectedIds, playlist.id]);
+        saveSavedYouTubePlaylists([...known.filter(item => item.id !== playlist.id), playlist]);
+        renderStages();
       } catch (error) {
         updateAppStatus(error.message || 'Unable to create YouTube playlist.', 'error');
         input.focus();
