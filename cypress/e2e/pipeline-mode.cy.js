@@ -1763,6 +1763,102 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineReportList').should('contain.text', 'reviewed-video-id');
   });
 
+  it('uploads only checked videos from the pre-upload review', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Upload this video',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+        {
+          name: 'Skip this video',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-02T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage-file-input').eq(0).selectFile({
+      contents: Cypress.Buffer.from('stage-audio-0'),
+      fileName: 'review-0.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+    cy.get('.pipeline-stage-file-input').eq(1).selectFile({
+      contents: Cypress.Buffer.from('stage-audio-1'),
+      fileName: 'review-1.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'selected-video-id',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').click();
+    cy.get('.pipeline-review-select-checkbox').should('have.length', 2).and('be.checked');
+    cy.get('.pipeline-review-select-checkbox').last().uncheck();
+    cy.get('#confirmPipelineUploadsBtn').should('contain.text', 'Upload Selected').click();
+
+    cy.get('@pipelineUploadDirect').should('have.been.calledOnce');
+    cy.get('@pipelineUploadDirect').then((uploadDirect) => {
+      expect(uploadDirect.firstCall.args[0].metadata.title).to.equal('Upload this video');
+    });
+  });
+
+  it('disables reviewed upload when no rendered video is checked', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([{
+        name: 'Unchecked upload',
+        action: 'visualize-upload',
+        resolution: '1920x1080',
+        presetId: 'preset:preset-cypress-bars',
+        scheduleMode: 'absolute',
+        publishAtLocal: '2026-08-01T12:00',
+      }]);
+    });
+    cy.get('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'review.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').resolves({ id: 'not-used' });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').click();
+    cy.get('.pipeline-review-select-checkbox').uncheck();
+    cy.get('#confirmPipelineUploadsBtn').should('be.disabled');
+  });
+
   it('uploads rendered visualization results immediately when review is disabled', () => {
     cy.get('#pipelineSettingsBtn').click();
     cy.get('#pipelineReviewBeforeUpload').uncheck();

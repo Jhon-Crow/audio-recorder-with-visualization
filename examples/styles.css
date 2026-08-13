@@ -1133,6 +1133,29 @@ button:focus-visible {
   animation: slideInUp var(--transition-slow) ease-out;
 }
 
+.recording-select,
+.pipeline-review-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  cursor: pointer;
+}
+
+.recording-select-checkbox,
+.pipeline-review-select-checkbox {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.recording-item.is-unselected,
+.pipeline-review-item.is-unselected {
+  opacity: 0.58;
+}
+
 @keyframes slideInUp {
   from {
     opacity: 0;
@@ -1809,7 +1832,7 @@ button:focus-visible {
 
 .pipeline-review-item {
   display: grid;
-  grid-template-columns: minmax(180px, 240px) 1fr;
+  grid-template-columns: 24px minmax(180px, 240px) 1fr;
   gap: var(--spacing-md);
   align-items: center;
   padding: 12px;
