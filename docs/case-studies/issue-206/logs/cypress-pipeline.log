@@ -15,7 +15,7 @@ DevTools listening on ws://127.0.0.1:39919/devtools/browser/9b8ee348-e2c6-4706-8
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
+
   Running:  pipeline-mode.cy.js                                                             (1 of 1)
 
 
@@ -72,7 +72,7 @@ DevTools listening on ws://127.0.0.1:39919/devtools/browser/9b8ee348-e2c6-4706-8
       + expected - actual
 
       -'Select files for every stage before running.'
-      
+
       at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:219:40)
 
   2) Pipeline Mode
@@ -94,7 +94,7 @@ DevTools listening on ws://127.0.0.1:39919/devtools/browser/9b8ee348-e2c6-4706-8
 
       -'2026-08-18T12:42'
       +'2026-08-08T18:00'
-      
+
       at Context.eval (webpack://audio-recorder-with-visualization/./cypress/e2e/pipeline-mode.cy.js:438:7)
 
 
@@ -118,14 +118,14 @@ DevTools listening on ws://127.0.0.1:39919/devtools/browser/9b8ee348-e2c6-4706-8
   (Screenshots)
 
   -  /tmp/gh-issue-solver-1786623696703/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
-     ine Mode -- restores selected pipeline files after reload so the pipeline can ru               
-     n (failed).png                                                                                 
+     ine Mode -- restores selected pipeline files after reload so the pipeline can ru
+     n (failed).png
   -  /tmp/gh-issue-solver-1786623696703/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
-     ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag               
-     es without narrowing cards (failed).png                                                        
+     ine Mode -- shows a fixed numbered stage navigator that scrolls to pipeline stag
+     es without narrowing cards (failed).png
   -  /tmp/gh-issue-solver-1786623696703/cypress/screenshots/pipeline-mode.cy.js/Pipel     (1280x720)
-     ine Mode -- keeps relative publish dates current when the reference date changes               
-      (failed).png                                                                                  
+     ine Mode -- keeps relative publish dates current when the reference date changes
+      (failed).png
 
 
   (Video)
@@ -138,9 +138,8 @@ DevTools listening on ws://127.0.0.1:39919/devtools/browser/9b8ee348-e2c6-4706-8
   (Run Finished)
 
 
-       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ✖  pipeline-mode.cy.js                      02:39       40       37        3        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✖  1 of 1 failed (100%)                     02:39       40       37        3        -        -  
-
+    ✖  1 of 1 failed (100%)                     02:39       40       37        3        -        -

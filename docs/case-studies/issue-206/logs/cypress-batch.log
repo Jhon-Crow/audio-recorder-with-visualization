@@ -15,7 +15,7 @@ DevTools listening on ws://127.0.0.1:38325/devtools/browser/93da8a76-0ba9-4543-a
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
+
   Running:  batch-visualization.cy.js                                                       (1 of 1)
 
 
@@ -58,9 +58,8 @@ DevTools listening on ws://127.0.0.1:38325/devtools/browser/93da8a76-0ba9-4543-a
   (Run Finished)
 
 
-       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+       Spec                                              Tests  Passing  Failing  Pending  Skipped
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ✔  batch-visualization.cy.js                00:08        8        8        -        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✔  All specs passed!                        00:08        8        8        -        -        -  
-
+    ✔  All specs passed!                        00:08        8        8        -        -        -
