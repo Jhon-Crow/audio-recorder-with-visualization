@@ -1,0 +1,206 @@
+diff --git a/cypress/e2e/pipeline-mode.cy.js b/cypress/e2e/pipeline-mode.cy.js
+index 43ecc00..620d923 100644
+--- a/cypress/e2e/pipeline-mode.cy.js
++++ b/cypress/e2e/pipeline-mode.cy.js
+@@ -1888,6 +1888,97 @@ describe('Pipeline Mode', () => {
+       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-video-id');
+   });
+ 
++  it('starts YouTube authorization from Run for upload stages without a separate YouTube click', () => {
++    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
++      expect(req.headers.authorization).to.equal('Bearer electron-token');
++
++      req.reply({
++        statusCode: 200,
++        headers: { Location: 'https://upload.example/pipeline-auth-session' },
++        body: '',
++      });
++    }).as('startPipelineUpload');
++
++    cy.intercept('PUT', 'https://upload.example/pipeline-auth-session', {
++      statusCode: 201,
++      body: { id: 'pipeline-auth-video-id' },
++    }).as('finishPipelineUpload');
++
++    cy.reload();
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-desktop-client-id.apps.googleusercontent.com');
++        win.electronAPI = {
++          isElectron: true,
++          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
++            accessToken: 'electron-token',
++            expiresIn: 3600,
++            scope: combinedYouTubeScope,
++          }),
++        };
++      },
++    });
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.get('#clearPipelineBtn').click();
++    cy.get('#addPipelineStageBtn').click();
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Run authorizes upload');
++    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
++      contents: Cypress.Buffer.from('stage-video'),
++      fileName: 'direct-video.webm',
++      mimeType: 'video/webm',
++    }, { force: true });
++
++    cy.get('#runPipelineBtn').should('not.be.disabled').click();
++
++    cy.get('@authorizeYouTube')
++      .should('have.been.calledOnce')
++      .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
++  });
++
++  it('starts browser YouTube sign-in from Run without a separate YouTube click', () => {
++    cy.reload();
++    cy.visit('/examples/index.html', {
++      onBeforeLoad(win) {
++        seedSavedVisualizationPresets(win);
++        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-web-client-id.apps.googleusercontent.com');
++        win.google = {
++          accounts: {
++            oauth2: {
++              initTokenClient: cy.stub().callsFake(({ callback }) => ({
++                requestAccessToken: cy.stub().as('requestAccessToken').callsFake(() => callback({
++                  access_token: 'browser-token',
++                  expires_in: 3600,
++                  scope: combinedYouTubeScope,
++                })),
++              })).as('initTokenClient'),
++            },
++          },
++        };
++      },
++    });
++    cy.waitForVisualization();
++    cy.contains('.tab', 'Pipeline').click();
++
++    cy.get('#clearPipelineBtn').click();
++    cy.get('#addPipelineStageBtn').click();
++    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
++    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
++      contents: Cypress.Buffer.from('stage-video'),
++      fileName: 'direct-video.webm',
++      mimeType: 'video/webm',
++    }, { force: true });
++
++    cy.get('#runPipelineBtn').should('not.be.disabled').click();
++
++    cy.get('@initTokenClient').should('have.been.calledOnce');
++    cy.get('@requestAccessToken').should('have.been.calledOnceWith', { prompt: 'consent' });
++    cy.get('#youtubeAuthModal').should('not.be.visible');
++  });
++
+   it('keeps generated tooltip boxes inside the viewport', () => {
+     cy.viewport(360, 640);
+     cy.get('.pipeline-stage').first().find('.pipeline-file-btn').trigger('mouseover');
+diff --git a/examples/pipeline.js b/examples/pipeline.js
+index 80f4adb..e4175d4 100644
+--- a/examples/pipeline.js
++++ b/examples/pipeline.js
+@@ -2846,13 +2846,27 @@
+ 
+   function assertUploadReady(tasks) {
+     if (!tasks.some(task => actionIncludesUpload(task.stage.action))) {
+-      return;
++      return false;
+     }
+ 
+     const youtube = window.AudioRecorderYouTube;
+     if (!youtube || typeof youtube.uploadDirect !== 'function') {
+       throw new Error('YouTube upload is not ready. Run npm run build before using upload pipeline stages.');
+     }
++    return true;
++  }
++
++  async function ensureUploadReady(tasks) {
++    if (!assertUploadReady(tasks)) {
++      return;
++    }
++
++    const youtube = window.AudioRecorderYouTube;
++    if (typeof youtube.ensureAuthorizedForPipeline === 'function') {
++      await youtube.ensureAuthorizedForPipeline();
++      return;
++    }
++
+     if (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) {
+       throw new Error('Sign in to YouTube before running upload pipeline stages.');
+     }
+@@ -3125,7 +3139,7 @@
+     }
+ 
+     try {
+-      assertUploadReady(tasks);
++      await ensureUploadReady(tasks);
+       const uploadReports = [];
+       const reviewItems = [];
+ 
+diff --git a/examples/youtube-upload.js b/examples/youtube-upload.js
+index 4e081b8..03a7983 100644
+--- a/examples/youtube-upload.js
++++ b/examples/youtube-upload.js
+@@ -1177,8 +1177,42 @@
+     }
+   }
+ 
++  async function ensureAuthorizedForPipeline() {
++    if (hasValidAccessToken()) {
++      return true;
++    }
++
++    const clientId = clientIdInput.value.trim();
++    if (!clientId) {
++      openAuthModal();
++      throw new Error('Add a YouTube OAuth Client ID to sign in before running upload stages.');
++    }
++
++    if (!GOOGLE_CLIENT_ID_PATTERN.test(clientId)) {
++      openAuthModal();
++      throw new Error(getOAuthClientSetupMessage(clientId));
++    }
++
++    if (!isElectronYouTubeOAuthAvailable() && !isSupportedGoogleSignInOrigin()) {
++      openAuthModal();
++      throw new Error(UNSUPPORTED_ORIGIN_MESSAGE);
++    }
++
++    try {
++      await requestAccessToken(clientId);
++      await refreshYouTubeChannelDefaults({ force: true });
++      closeAuthModal();
++      return true;
++    } catch (error) {
++      openAuthModal();
++      setStatus(authStatus, error.message || 'Google authorization failed.', 'error');
++      throw error;
++    }
++  }
++
+   window.AudioRecorderYouTube = {
+     createPlaylist: createYouTubePlaylist,
++    ensureAuthorizedForPipeline,
+     getSavedPlaylists: loadSavedYouTubePlaylists,
+     hasValidAccessToken,
+     hasPlaylistScope,
+diff --git a/rollup.config.js b/rollup.config.mjs
+similarity index 97%
+rename from rollup.config.js
+rename to rollup.config.mjs
+index 7f8cf60..497b660 100644
+--- a/rollup.config.js
++++ b/rollup.config.mjs
+@@ -52,6 +52,7 @@ export default [
+       typescript({
+         tsconfig: './tsconfig.json',
+         declaration: false,
++        declarationDir: undefined,
+       }),
+     ],
+     external: [],

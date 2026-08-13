@@ -424,6 +424,47 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('allows relative offsets to be cleared and typed in every stage type', () => {
+    cy.get('.pipeline-stage').eq(1).within(() => {
+      cy.get('.pipeline-full-album-video').check();
+    });
+
+    cy.get('.pipeline-stage').should('have.length', 4);
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days')
+      .clear()
+      .should('have.value', '')
+      .type('12')
+      .should('have.value', '12');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days').blur();
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days')
+      .should('have.value', '12');
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours')
+      .clear()
+      .should('have.value', '');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours').blur();
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours')
+      .should('have.value', '0');
+
+    cy.get('.pipeline-stage').eq(2).should('have.class', 'pipeline-full-album-stage');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes')
+      .clear()
+      .should('have.value', '')
+      .type('45')
+      .should('have.value', '45');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').blur();
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes')
+      .should('have.value', '45');
+
+    cy.window().then((win) => {
+      const stages = JSON.parse(win.localStorage.getItem('audio-recorder-pipeline-stages'));
+      expect(stages[0].relativeOffsetDays).to.equal(12);
+      expect(stages[0].relativeOffsetHours).to.equal(0);
+      expect(stages[2].kind).to.equal('fullalbum');
+      expect(stages[2].relativeOffsetUnitMinutes).to.equal(45);
+    });
+  });
+
   it('keeps relative publish dates current when the reference date changes', () => {
     cy.get('.pipeline-stage').first().find('.pipeline-publish-at').then(($input) => {
       expect($input.val()).to.not.equal('');
@@ -677,6 +718,10 @@ describe('Pipeline Mode', () => {
     cy.wait('@createPipelineStagePlaylist');
     cy.get('.pipeline-stage').first().find('.pipeline-stage-playlist-ids')
       .should('have.value', 'PL-existing, PL-created');
+    cy.get('.pipeline-stage').first()
+      .contains('.youtube-playlist-option', 'Pipeline created playlist')
+      .find('input')
+      .should('be.checked');
   });
 
   it('replaces stale cached YouTube playlists in pipeline stages after restart', () => {
@@ -1722,6 +1767,102 @@ describe('Pipeline Mode', () => {
     cy.get('#pipelineReportList').should('contain.text', 'reviewed-video-id');
   });
 
+  it('uploads only checked videos from the pre-upload review', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([
+        {
+          name: 'Upload this video',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-01T12:00',
+        },
+        {
+          name: 'Skip this video',
+          action: 'visualize-upload',
+          resolution: '1920x1080',
+          presetId: 'preset:preset-cypress-bars',
+          scheduleMode: 'absolute',
+          publishAtLocal: '2026-08-02T12:00',
+        },
+      ]);
+    });
+    cy.get('.pipeline-stage-file-input').eq(0).selectFile({
+      contents: Cypress.Buffer.from('stage-audio-0'),
+      fileName: 'review-0.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+    cy.get('.pipeline-stage-file-input').eq(1).selectFile({
+      contents: Cypress.Buffer.from('stage-audio-1'),
+      fileName: 'review-1.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').as('pipelineUploadDirect').resolves({
+        id: 'selected-video-id',
+      });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').click();
+    cy.get('.pipeline-review-select-checkbox').should('have.length', 2).and('be.checked');
+    cy.get('.pipeline-review-select-checkbox').last().uncheck();
+    cy.get('#confirmPipelineUploadsBtn').should('contain.text', 'Upload Selected').click();
+
+    cy.get('@pipelineUploadDirect').should('have.been.calledOnce');
+    cy.get('@pipelineUploadDirect').then((uploadDirect) => {
+      expect(uploadDirect.firstCall.args[0].metadata.title).to.equal('Upload this video');
+    });
+  });
+
+  it('disables reviewed upload when no rendered video is checked', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderPipeline.replaceStages([{
+        name: 'Unchecked upload',
+        action: 'visualize-upload',
+        resolution: '1920x1080',
+        presetId: 'preset:preset-cypress-bars',
+        scheduleMode: 'absolute',
+        publishAtLocal: '2026-08-01T12:00',
+      }]);
+    });
+    cy.get('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-audio'),
+      fileName: 'review.mp3',
+      mimeType: 'audio/mpeg',
+    }, { force: true });
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-youtube-token-state', JSON.stringify({
+        accessToken: 'stored-token',
+        accessTokenExpiresAt: Date.now() + 3600 * 1000,
+        tokenScope: combinedYouTubeScope,
+      }));
+      cy.stub(win.AudioRecorderYouTube, 'hasValidAccessToken').returns(true);
+      cy.stub(win.AudioRecorderYouTube, 'uploadDirect').resolves({ id: 'not-used' });
+      cy.stub(win.AudioRecorderApp.converter, 'convertWithFallback').resolves({
+        blob: new win.Blob(['rendered-video'], { type: 'video/webm' }),
+        format: 'webm',
+        usedFallback: false,
+      });
+    });
+
+    cy.get('#runPipelineBtn').click();
+    cy.get('.pipeline-review-select-checkbox').uncheck();
+    cy.get('#confirmPipelineUploadsBtn').should('be.disabled');
+  });
+
   it('uploads rendered visualization results immediately when review is disabled', () => {
     cy.get('#pipelineSettingsBtn').click();
     cy.get('#pipelineReviewBeforeUpload').uncheck();
@@ -1886,6 +2027,101 @@ describe('Pipeline Mode', () => {
       .and('contain.text', 'PL-stage-created');
     cy.get('#pipelineReportList a')
       .should('have.attr', 'href', 'https://www.youtube.com/watch?v=pipeline-video-id');
+  });
+
+  it('starts YouTube authorization from Run for upload stages without a separate YouTube click', () => {
+    cy.intercept('POST', 'https://www.googleapis.com/upload/youtube/v3/videos*', (req) => {
+      expect(req.headers.authorization).to.equal('Bearer electron-token');
+
+      req.reply({
+        statusCode: 200,
+        headers: { Location: 'https://upload.example/pipeline-auth-session' },
+        body: '',
+      });
+    }).as('startPipelineUpload');
+
+    cy.intercept('PUT', 'https://upload.example/pipeline-auth-session', {
+      statusCode: 201,
+      body: { id: 'pipeline-auth-video-id' },
+    }).as('finishPipelineUpload');
+
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-desktop-client-id.apps.googleusercontent.com');
+        win.electronAPI = {
+          isElectron: true,
+          authorizeYouTube: cy.stub().as('authorizeYouTube').resolves({
+            accessToken: 'electron-token',
+            expiresIn: 3600,
+            scope: combinedYouTubeScope,
+          }),
+        };
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-name').clear().type('Run authorizes upload');
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-video'),
+      fileName: 'direct-video.webm',
+      mimeType: 'video/webm',
+    }, { force: true });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@authorizeYouTube')
+      .should('have.been.calledOnce')
+      .and('have.been.calledWith', '123-desktop-client-id.apps.googleusercontent.com');
+  });
+
+  it('starts browser YouTube sign-in from Run without a separate YouTube click', () => {
+    cy.intercept('GET', 'https://www.googleapis.com/youtube/v3/channels*', {
+      statusCode: 200,
+      body: { items: [{ brandingSettings: { channel: {} } }] },
+    }).as('refreshChannelDefaultsAfterBrowserAuth');
+    cy.reload();
+    cy.visit('/examples/index.html', {
+      onBeforeLoad(win) {
+        seedSavedVisualizationPresets(win);
+        win.localStorage.setItem('audio-recorder-youtube-client-id', '123-web-client-id.apps.googleusercontent.com');
+        win.google = {
+          accounts: {
+            oauth2: {
+              initTokenClient: cy.stub().callsFake(({ callback }) => ({
+                requestAccessToken: cy.stub().as('requestAccessToken').callsFake(() => callback({
+                  access_token: 'browser-token',
+                  expires_in: 3600,
+                  scope: combinedYouTubeScope,
+                })),
+              })).as('initTokenClient'),
+            },
+          },
+        };
+      },
+    });
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('#clearPipelineBtn').click();
+    cy.get('#addPipelineStageBtn').click();
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube');
+    cy.get('.pipeline-stage').first().find('.pipeline-stage-file-input').selectFile({
+      contents: Cypress.Buffer.from('stage-video'),
+      fileName: 'direct-video.webm',
+      mimeType: 'video/webm',
+    }, { force: true });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+
+    cy.get('@initTokenClient').should('have.been.calledOnce');
+    cy.get('@requestAccessToken').should('have.been.calledOnceWith', { prompt: 'consent' });
+    cy.get('#youtubeAuthModal').should('not.be.visible');
   });
 
   it('keeps generated tooltip boxes inside the viewport', () => {

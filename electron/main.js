@@ -23,6 +23,7 @@ const YOUTUBE_UPLOAD_AND_PLAYLIST_SCOPE = `${YOUTUBE_UPLOAD_SCOPE} ${YOUTUBE_PLA
 const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
 const YOUTUBE_AUTH_STORE_FILE = 'youtube-auth.json';
 let activeYouTubeOAuthCleanup = null;
+const activeVideoSaves = new Map();
 
 // Presentation window settings
 let presentationSettings = {
@@ -697,6 +698,15 @@ app.whenReady().then(async () => {
 // Unregister shortcuts when app is about to quit
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  for (const save of activeVideoSaves.values()) {
+    try {
+      fs.closeSync(save.fileDescriptor);
+      fs.rmSync(save.filePath, { force: true });
+    } catch (error) {
+      console.error('Error cleaning up incomplete video save:', error);
+    }
+  }
+  activeVideoSaves.clear();
   if (appServer) {
     appServer.close();
   }
@@ -750,10 +760,10 @@ app.on('web-contents-created', (event, contents) => {
   });
 });
 
-// IPC handler for saving file and showing in folder
-ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
+// Save large recordings incrementally so the renderer never has to duplicate the
+// entire Blob into one ArrayBuffer and one IPC message.
+ipcMain.handle('save-video-start', async (event, fileName) => {
   try {
-    // Show save dialog
     const result = await dialog.showSaveDialog(mainWindow, {
       defaultPath: fileName,
       filters: [
@@ -766,18 +776,54 @@ ipcMain.handle('save-video-and-show', async (event, blob, fileName) => {
       return { success: false, canceled: true };
     }
 
-    // Write the blob to the selected file
-    const buffer = Buffer.from(blob);
-    fs.writeFileSync(result.filePath, buffer);
-
-    // Show the file in folder
-    shell.showItemInFolder(result.filePath);
-
-    return { success: true, filePath: result.filePath };
+    const saveId = crypto.randomUUID();
+    activeVideoSaves.set(saveId, {
+      fileDescriptor: fs.openSync(result.filePath, 'w'),
+      filePath: result.filePath,
+    });
+    return { success: true, saveId };
   } catch (error) {
-    console.error('Error saving file:', error);
+    console.error('Error starting video save:', error);
     return { success: false, error: error.message };
   }
+});
+
+ipcMain.handle('save-video-chunk', async (event, saveId, chunk) => {
+  const save = activeVideoSaves.get(saveId);
+  if (!save) {
+    throw new Error('Video save session not found');
+  }
+  try {
+    fs.writeSync(save.fileDescriptor, Buffer.from(chunk));
+  } catch (error) {
+    activeVideoSaves.delete(saveId);
+    fs.closeSync(save.fileDescriptor);
+    fs.rmSync(save.filePath, { force: true });
+    throw error;
+  }
+  return { success: true };
+});
+
+ipcMain.handle('save-video-finish', async (event, saveId) => {
+  const save = activeVideoSaves.get(saveId);
+  if (!save) {
+    return { success: false, error: 'Video save session not found' };
+  }
+  activeVideoSaves.delete(saveId);
+  fs.closeSync(save.fileDescriptor);
+  shell.showItemInFolder(save.filePath);
+  return { success: true, filePath: save.filePath };
+});
+
+ipcMain.handle('save-video-cancel', async (event, saveId) => {
+  const save = activeVideoSaves.get(saveId);
+  if (!save) {
+    return { success: true };
+  }
+  activeVideoSaves.delete(saveId);
+  fs.closeSync(save.fileDescriptor);
+  fs.rmSync(save.filePath, { force: true });
+  return { success: true };
 });
 
 ipcMain.handle('save-all-videos-and-show', async (event, recordings) => {

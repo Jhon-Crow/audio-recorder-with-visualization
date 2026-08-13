@@ -2938,12 +2938,25 @@
 
   function assertUploadReady(tasks) {
     if (!tasks.some(task => actionIncludesUpload(task.stage.action))) {
-      return;
+      return false;
     }
 
     const youtube = window.AudioRecorderYouTube;
     if (!youtube || typeof youtube.uploadDirect !== 'function') {
       throw new Error('YouTube upload is not ready. Run npm run build before using upload pipeline stages.');
+    }
+    return true;
+  }
+
+  async function ensureUploadReady(tasks) {
+    if (!assertUploadReady(tasks)) {
+      return;
+    }
+
+    const youtube = window.AudioRecorderYouTube;
+    if (typeof youtube.ensureAuthorizedForPipeline === 'function') {
+      await youtube.ensureAuthorizedForPipeline();
+      return;
     }
     if (typeof youtube.hasValidAccessToken === 'function' && !youtube.hasValidAccessToken()) {
       throw new Error('Sign in to YouTube before running upload pipeline stages.');
@@ -3056,6 +3069,26 @@
       const item = document.createElement('article');
       item.className = 'pipeline-review-item';
 
+      const selectionLabel = document.createElement('label');
+      selectionLabel.className = 'pipeline-review-select';
+      selectionLabel.dataset.tooltip = 'Include this rendered video in the YouTube upload.';
+      const selectionCheckbox = document.createElement('input');
+      selectionCheckbox.type = 'checkbox';
+      selectionCheckbox.className = 'pipeline-review-select-checkbox';
+      selectionCheckbox.checked = true;
+      reviewItems[index].selected = true;
+      selectionCheckbox.setAttribute('aria-label', `Select ${task.title || `rendered video ${index + 1}`} for upload`);
+      selectionCheckbox.addEventListener('change', () => {
+        reviewItems[index].selected = selectionCheckbox.checked;
+        item.classList.toggle('is-unselected', !selectionCheckbox.checked);
+        const selectedCount = reviewItems.filter(reviewItem => reviewItem.selected !== false).length;
+        confirmUploadsBtn.disabled = selectedCount === 0;
+        confirmUploadsBtn.textContent = selectedCount === reviewItems.length
+          ? 'Upload Selected'
+          : `Upload Selected (${selectedCount})`;
+      });
+      selectionLabel.appendChild(selectionCheckbox);
+
       const video = document.createElement('video');
       video.className = 'pipeline-review-video';
       video.controls = true;
@@ -3075,11 +3108,14 @@
       details.appendChild(meta);
       details.appendChild(download);
 
+      item.appendChild(selectionLabel);
       item.appendChild(video);
       item.appendChild(details);
       reviewList.appendChild(item);
     });
     reportModal.style.display = 'flex';
+    confirmUploadsBtn.disabled = false;
+    confirmUploadsBtn.textContent = 'Upload Selected';
     confirmUploadsBtn.focus();
   }
 
@@ -3148,6 +3184,10 @@
     }
 
     const review = pendingUploadReview;
+    const selectedItems = review.items.filter(item => item.selected !== false);
+    if (!selectedItems.length) {
+      return;
+    }
     pendingUploadReview = null;
     isPipelineRunning = true;
     updateRunState();
@@ -3155,9 +3195,9 @@
     reportSummary.textContent = 'Uploading reviewed videos to YouTube...';
     try {
       const uploadReports = [...review.reports];
-      for (let index = 0; index < review.items.length; index++) {
-        const item = review.items[index];
-        const result = await uploadTask(item.task, item.video, index, review.items.length);
+      for (let index = 0; index < selectedItems.length; index++) {
+        const item = selectedItems[index];
+        const result = await uploadTask(item.task, item.video, index, selectedItems.length);
         uploadReports.push(createUploadReport(item.task, result));
       }
       revokeReviewUrls(review.items);
@@ -3226,7 +3266,7 @@
     }
 
     try {
-      assertUploadReady(tasks);
+      await ensureUploadReady(tasks);
       const uploadReports = [];
       const reviewItems = [];
 
@@ -3918,7 +3958,7 @@
   }
 
   function renderPlaylistChooser(stage, onChange, disabled = false) {
-    const selectedIds = getPlaylistIds(stage.playlistIds);
+    let selectedIds = getPlaylistIds(stage.playlistIds);
     const initialYouTube = window.AudioRecorderYouTube;
     const known = initialYouTube && typeof initialYouTube.getSavedPlaylists === 'function'
       ? initialYouTube.getSavedPlaylists()
@@ -3942,6 +3982,7 @@
     list.className = 'youtube-playlist-list';
     const setSelectedIds = (ids) => {
       const nextIds = ids.filter((item, index, list) => list.indexOf(item) === index);
+      selectedIds = nextIds;
       hidden.value = nextIds.join(', ');
       onChange(nextIds.join(', '));
     };
@@ -4033,6 +4074,8 @@
       try {
         const playlist = await youtube.createPlaylist(title);
         setSelectedIds([...selectedIds, playlist.id]);
+        saveSavedYouTubePlaylists([...known.filter(item => item.id !== playlist.id), playlist]);
+        renderStages();
       } catch (error) {
         updateAppStatus(error.message || 'Unable to create YouTube playlist.', 'error');
         input.focus();
@@ -4203,9 +4246,13 @@
         input.disabled = !isRelative;
         input.className = `pipeline-relative-offset pipeline-relative-${classSuffix}`;
         input.addEventListener('input', () => {
-          updateStage(stage.id, { [key]: input.value });
+          if (input.value !== '') {
+            updateStage(stage.id, { [key]: input.value });
+          }
         });
-        input.addEventListener('change', () => updateStage(stage.id, { [key]: input.value }, true));
+        input.addEventListener('change', () => {
+          updateStage(stage.id, { [key]: input.value === '' ? 0 : input.value }, true);
+        });
         field.appendChild(input);
         return field;
       });

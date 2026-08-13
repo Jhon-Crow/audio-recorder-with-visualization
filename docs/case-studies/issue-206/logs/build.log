@@ -1,0 +1,10 @@
+
+> audio-recorder-with-visualization@1.0.0 build
+> rollup -c
+
+(node:10485) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/gh-issue-solver-1786623696703/rollup.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /tmp/gh-issue-solver-1786623696703/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+src/index.ts → dist/index.js, dist/index.esm.js...
