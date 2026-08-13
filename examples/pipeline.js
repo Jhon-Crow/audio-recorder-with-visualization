@@ -4097,9 +4097,13 @@
         input.disabled = !isRelative;
         input.className = `pipeline-relative-offset pipeline-relative-${classSuffix}`;
         input.addEventListener('input', () => {
-          updateStage(stage.id, { [key]: input.value });
+          if (input.value !== '') {
+            updateStage(stage.id, { [key]: input.value });
+          }
         });
-        input.addEventListener('change', () => updateStage(stage.id, { [key]: input.value }, true));
+        input.addEventListener('change', () => {
+          updateStage(stage.id, { [key]: input.value === '' ? 0 : input.value }, true);
+        });
         field.appendChild(input);
         return field;
       });
