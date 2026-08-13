@@ -931,7 +931,7 @@
     if (shouldRender || affectsSchedule) {
       renderStages();
     } else {
-      renderStageNav();
+      updateStageNav();
       updateRunState();
     }
   }
@@ -2499,6 +2499,30 @@
       stageNav.appendChild(button);
     });
     setActiveStage(activeStageId || stages[0].id);
+  }
+
+  function updateStageNav() {
+    const buttons = Array.from(stageNav?.querySelectorAll('.pipeline-stage-nav-btn') || []);
+    if (buttons.length !== stages.length || buttons.some((button, index) => button.dataset.stageId !== stages[index].id)) {
+      renderStageNav();
+      return;
+    }
+
+    const stageBaseDates = computeStageBaseDates();
+    buttons.forEach((button, index) => {
+      const stage = stages[index];
+      button.setAttribute('aria-label', `Go to stage ${index + 1}: ${stage.name || 'Untitled stage'}`);
+      const title = button.querySelector('.pipeline-stage-nav-title');
+      const meta = button.querySelector('.pipeline-stage-nav-meta');
+      if (title) title.textContent = stage.name || 'Untitled stage';
+      if (meta) {
+        meta.textContent = [
+          getStageActionLabel(stage.action),
+          getStageDisplayDate(stage, stageBaseDates[index]),
+        ].filter(Boolean).join(' · ');
+      }
+      applyPipelinePreviewTooltip(button, stage, `Stage ${index + 1} preview`);
+    });
   }
 
   function getSavedPresetSettings(presetId) {

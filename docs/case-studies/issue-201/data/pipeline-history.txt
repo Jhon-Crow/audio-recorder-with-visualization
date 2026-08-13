@@ -1,0 +1,701 @@
+commit 66a526fc67bf103c24ca5a65e4eebead8705862f
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-07-21 16:44:23 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-07-21 16:44:23 +0000
+
+    Join completed album videos in one media container
+
+commit b66b455ed87b681dceb00ce7dbbcecd5963dc580
+Merge: d11b770 3feff54
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-27 01:39:34 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-27 01:39:34 +0000
+
+    Merge upstream main into issue 165 branch
+
+commit 65f527ba4c1259ab06c0ef2ee881d9ca3c85c344
+Merge: a7b1c9c ce4ffbc
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 19:04:16 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 19:04:16 +0000
+
+    Merge remote-tracking branch 'upstream/main' into issue-184-361501480150
+
+    # Conflicts:
+    #       examples/pipeline.js
+
+commit a7b1c9c6854515328154fe68ea3b61fe9a9587b9
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 19:03:16 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 19:03:16 +0000
+
+    Use YouTube defaults for new pipeline stages
+
+commit a8f0e769fbc15e1e3776526942fa44e399398c93
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 18:48:16 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 18:48:16 +0000
+
+    Update cover tooltip verification artifacts
+
+commit d39e57a89dd850f6b217757c3b04a69750717f35
+Merge: 2136dee 27f3fc3
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 18:34:28 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 18:34:28 +0000
+
+    Merge remote-tracking branch 'upstream/main' into issue-193-aa5c729475e8
+
+    # Conflicts:
+    #       examples/pipeline.js
+
+commit 2136deeb384bcabeea43df634700d4c2769c9f79
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 18:33:48 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 18:33:48 +0000
+
+    Render cover preview tooltip image element
+
+commit 27f3fc3332c1e67017c7b69c47cb882b2f5f514a
+Merge: ca9ba86 93394c7
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-26 21:14:20 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-26 21:14:20 +0300
+
+    Merge pull request #198 from konard/issue-197-ebe3e53bcb00
+
+    Persist pipeline file selections across reloads
+
+commit ca9ba86a5be7f442769bcf52cc4e1c2d38b9bf42
+Merge: 6dd2d48 a745f2d
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-26 19:52:04 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-26 19:52:04 +0300
+
+    Merge pull request #196 from konard/issue-195-383c9e0c08f6
+
+    Add right-click menu for pipeline stage nav items
+
+commit dd35185b5a11caeb5af0ca8c4739af08ab731741
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 16:23:21 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 16:23:21 +0000
+
+    Persist pipeline stage file selections
+
+commit 6dd2d48ff85175782b5a1914c3fd36f8509154dd
+Merge: de9e1b3 68f551a
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-26 19:22:10 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-26 19:22:10 +0300
+
+    Merge pull request #174 from konard/issue-173-4a84f26ae816
+
+    Add review step before pipeline YouTube upload
+
+commit 2371bbe9aba93b45ab19f47371d1a664ff9648d6
+Merge: e918fe7 de9e1b3
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 16:11:45 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 16:11:45 +0000
+
+    Merge remote-tracking branch 'upstream/main' into issue-193-aa5c729475e8
+
+    # Conflicts:
+    #       examples/pipeline.js
+
+commit e918fe7544b37452da61582063f64010ef2d79f6
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 16:05:45 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 16:05:45 +0000
+
+    Persist pipeline cover previews
+
+commit bb02d76624bf8470cc7919bb03f5f2c2c6c448d9
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 15:49:50 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 15:49:50 +0000
+
+    Add pipeline stage nav context menu
+
+commit 459de66cf55e0e63ea02cc1456b2c40cb0ffe3e1
+Merge: 6ca4b4b de9e1b3
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 15:46:25 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 15:46:25 +0000
+
+    Merge remote-tracking branch 'upstream/main' into issue-184-361501480150
+
+    # Conflicts:
+    #       cypress/e2e/pipeline-mode.cy.js
+
+commit de9e1b3603c776b333c82e271b0e26f274b7ffc0
+Merge: 742df8b 8ca57e8
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-26 18:41:06 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-26 18:41:06 +0300
+
+    Merge pull request #192 from konard/issue-190-b1a768dfa055
+
+    Add saved visualization thumbnails
+
+commit 742df8bcbe3103e021addfdcd2c9def02ab7e096
+Merge: 20179c8 4522010
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-26 18:25:42 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-26 18:25:42 +0300
+
+    Merge pull request #183 from konard/issue-181-0b636e7c0712
+
+    Keep YouTube playlists fresh after restart
+
+commit 89e45a19c2e1d756bd220d28bdc5b627e57f3eca
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:49:14 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:49:14 +0000
+
+    Refresh pipeline playlists after Electron reauth
+
+commit 4522010730b8b77c6233b8c0190ed27794642bd9
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:41:04 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:41:04 +0000
+
+    Restore YouTube auth before forced playlist refresh
+
+commit 96cb4252725217080208733628484faadffe6894
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:20:58 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:20:58 +0000
+
+    Fix cover preview tooltip image refresh
+
+commit 8ca57e8c6c27758c4a854f5b02b997f2368a4d11
+Merge: f3e7c12 20179c8
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:12:22 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:12:22 +0000
+
+    Merge upstream main into issue 190 branch
+
+commit f3e7c1204a67141ae478997894079ebd531d8cfb
+Merge: 8598b00 e94c870
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:08:21 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:08:21 +0000
+
+    Fix saved pipeline thumbnails and merge rename shortcut
+
+commit bfba9b07bb260cf53dc914c1e789d4eced0ca0fc
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:03:22 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:03:22 +0000
+
+    Share YouTube playlist selector with pipeline
+
+commit 2bdc8690cdb4b0827f8bb9a37d8b263e8a308f57
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 13:00:01 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 13:00:01 +0000
+
+    Log pipeline playlist refresh diagnostics
+
+commit c73538195e508318a78be72d4fa221a8f616221e
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:44:05 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:44:05 +0000
+
+    Show YouTube cover preview on cover field
+
+commit ae0ced36a8e9dd97a755a25c64543fcd7d8a176e
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:38:01 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:38:01 +0000
+
+    Enable manual pipeline playlist refresh
+
+commit 4f5ef225f51885b366501702e076fa75fd6e71d5
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:36:23 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:36:23 +0000
+
+    Refresh YouTube account data on startup
+
+commit 8598b00c14523f8b3d30e54a39f4571c80f82bad
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:25:06 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:25:06 +0000
+
+    Add legacy save thumbnail fallback
+
+commit 6d9d2f23cf13d2a6592581e4e04a136f22e1cd87
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:17:17 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:17:17 +0000
+
+    Fix full album file label inheritance
+
+commit 7b31f9564c73f91cf769de1c78946ba15f17daf0
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 12:14:25 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 12:14:25 +0000
+
+    Keep YouTube playlist cache fresh after restart
+
+commit de75dfe7cd94f64b9af8ad72861868f1c2108146
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 09:05:17 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 09:05:17 +0000
+
+    Add saved item visualization thumbnails
+
+commit f053a7fcdd8d34d73debaf61eed3b34dc405a6ed
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 09:03:58 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 09:03:58 +0000
+
+    Fix full album cover inheritance
+
+commit b76ca5b9e0f8fcc3175e0a85f9e343ebf0c6ce28
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 09:02:18 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 09:02:18 +0000
+
+    Add shift-click rename for saved items
+
+commit 238e9cf1a3908d947d528665fa9519ae60240864
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 08:58:34 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 08:58:34 +0000
+
+    Fix saved pipeline rename input focus
+
+commit 41c5f6eca05babe128fb4976066b4ac37bdca94d
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-26 08:58:20 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-26 08:58:20 +0000
+
+    Fix pipeline YouTube playlist creation readiness
+
+commit b83b3f028341a342d08e355a312cf1eac7c53250
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 18:38:12 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 18:38:12 +0000
+
+    Fix added pipeline stage release controls
+
+commit db5062cae6a48311d8392e10b1bf695e817b3174
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 17:58:48 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 17:58:48 +0000
+
+    Join derived full album rendered videos
+
+commit 5bcd3f0295437286b369816d1b4ebf5cc42d8924
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 17:33:45 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 17:33:45 +0000
+
+    Show full album stage type selector
+
+commit cecf29bce7c10edff9870ef61b046b0b32140653
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 16:37:03 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 16:37:03 +0000
+
+    Fix derived full album stage follow-ups
+
+commit 157dce076d8a8b83ca6b832cc2f8fc3019bd05ba
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 14:53:53 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 14:53:53 +0000
+
+    Add derived full album pipeline stage
+
+commit d11b7701be854369a70ee04941f315f4ec34dd82
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 14:19:15 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 14:19:15 +0000
+
+    feat: add combined album upload mode
+
+commit 87829c123730332447179b0bdac31576bff8ee01
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-25 13:53:11 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-25 13:53:11 +0000
+
+    Add full album pipeline video option
+
+commit 6ae901b1ff38c1e9871cc96065a4d2d54b29ec9d
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 04:05:43 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 04:05:43 +0000
+
+    Add pipeline review toggle setting
+
+commit 37aeb653a1ec9e966eec7aa9094598c63b3ea28b
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 04:01:32 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 04:01:32 +0000
+
+    Make pipeline YouTube auth automatic
+
+commit c068a4bbcbb4b5c14aed6e75b5a0aefd9e38f288
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 03:53:29 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 03:53:29 +0000
+
+    Fix YouTube upload follow-up errors
+
+commit 9e936b0b24ca6621dac70980f844053d5f0afd7f
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 03:50:03 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 03:50:03 +0000
+
+    Add pipeline upload review step
+
+commit 70f0dc553958ce0c32e5d65dbc316dc42362b1c9
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 03:42:08 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 03:42:08 +0000
+
+    Refresh pipeline tooltip previews on visualization changes
+
+commit 3f1edbc991f3d112d1e7a05fab6d435fe948b94f
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-23 03:31:39 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-23 03:31:39 +0000
+
+    Fix pipeline playlist creation refresh
+
+commit 74fb01594c0ac50131390f9330d1baf51dfe2915
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-21 05:04:07 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-21 05:04:07 +0000
+
+    fix: use spaces and skip zero fields in relative offset format
+
+    Per feedback: use space separator instead of '/' and omit zero-value
+    fields. E.g. '-7d/0h/0m' → '-7d', '+1d/0h/30m' → '+1d 30m'.
+
+commit 6f01d76d90c9178e38e7c386e5c16d77c6a93b4b
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-21 04:39:47 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-21 04:39:47 +0000
+
+    fix: show release date with relative offset in navbar for pipeline stages
+
+    For relative pipeline stages in the stage navigator, replace the raw
+    minute offset (e.g. -10080 min) with the computed release date and a
+    compact relative offset in (±Xd/Yh/Zm) format, matching the
+    requested дд/чч/мм display.
+
+    Update the Cypress test to match the new format.
+
+commit cf8a87ed3c03d77c2e54b09a6efbf2e1d83496be
+Merge: cbe35ed 7e8f2ed
+Author:     Jhon-Crow <t4t1.tati@yandex.ru>
+AuthorDate: 2026-06-21 07:33:06 +0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-21 07:33:06 +0300
+
+    Merge pull request #157 from konard/issue-150-47d7e7deca6d
+
+    Add rename, delete, and reorder to pipeline preset sidebar
+
+commit 7dfeec2337292e07b8f28d6b6784aac0fd3b190d
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-21 04:10:03 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-21 04:10:03 +0000
+
+    Add rename, delete, and reorder to pipeline preset sidebar
+
+    The pipeline sidebar lacked right-click context menu functionality
+    that is already present in the left visualization preset sidebar.
+    This adds context menu (right-click), a rename modal, delete with
+    confirmation, and drag-to-reorder for saved pipeline entries.
+
+commit f254f2da3989e7bc09d3852e48f72ff1f524f584
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-21 04:04:45 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-21 04:04:45 +0000
+
+    Fix pipeline navbar scrolling behind sticky canvas preview
+
+    When clicking a navbar button, scrollIntoView({block:'start'}) placed
+    the stage at viewport position 0, hidden behind the sticky .canvas-container.
+    Replace with a manual scroll that offsets for the sticky canvas height,
+    so the stage number and title are always visible below the preview.
+
+    Update the Cypress test to verify the stage top lands at the sticky
+    canvas bottom, not just anywhere within 120px of the viewport top.
+
+commit 31a40b922887b6e1f1f78d12777f152e4e5ba0cf
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-19 14:27:16 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-19 14:27:16 +0000
+
+    Preserve tooltip preview aspect during downsampling
+
+commit c8caee9aeac8ddd02140d88ef033a11555eb1c7c
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-19 12:37:52 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-19 12:37:52 +0000
+
+    Scale pipeline tooltip preview transforms
+
+commit ceef49b40402fefe4c6e2e6ebb7859b757d93c29
+Merge: edbbd7d d500fa5
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-19 12:30:34 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-19 12:30:34 +0000
+
+    Merge branch 'pr-152' into issue-141-8924f786e492
+
+    # Conflicts:
+    #       examples/pipeline.js
+
+commit d500fa52d4338d109ee9b861f4cc0162618af40c
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-11 10:37:49 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-11 10:37:49 +0000
+
+    Add regular posts release scheduling
+
+commit 342b806c0be408dac0e872314d9ffec62e79146b
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-09 14:31:01 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-09 14:31:01 +0000
+
+    Fix pipeline preview tooltip position overridden by [data-tooltip] CSS rule
+
+    Setting data-tooltip on the tooltip div caused [data-tooltip] { position: relative }
+    (line 1875 in styles.css) to override .pipeline-preview-tooltip { position: fixed },
+    because the attribute selector has equal specificity but appears later in the file.
+    With position: relative the tooltip was placed in document flow rather than as a fixed
+    overlay, pushing it thousands of pixels below the viewport and making it invisible.
+
+    Fix: remove data-tooltip from the tooltip element and replace with aria-label for
+    accessibility. Also add !important to position: fixed on .pipeline-preview-tooltip
+    to guard against future specificity conflicts from other [data-*] rules.
+
+commit 07ff57ded453d40ce1fbfee579083e25042be020
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 06:59:21 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-09 13:25:04 +0000
+
+    Fix pipeline stage navigator layout
+
+commit be6c845cf891d5e99f905c31b1e152b0762dabf0
+Merge: 505d714 a7d97bf
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-09 13:24:31 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-09 13:24:31 +0000
+
+    Merge upstream main into issue-141 branch
+
+commit 505d714abc367082d3129bf1956e981897ae929b
+Merge: a3b61c1 c996ac5
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 07:18:16 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-08 07:18:16 +0000
+
+    Merge upstream main into issue 141 branch
+
+commit 7e3503fc3497dbfd1a7d900995196cd5991c7a90
+Merge: b31b4d1 c996ac5
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 07:13:44 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-08 07:13:44 +0000
+
+    Merge remote-tracking branch 'upstream/main' into issue-143-702e3c2b0957
+
+commit b31b4d1b593f46abe65df6f4087c5ed75c20d3d7
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 07:13:03 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-08 07:13:03 +0000
+
+    Fix pipeline preset refresh after storage failures
+
+commit a3b61c10e4d6c2a6ba34484f97cc94e0d26002f8
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 07:12:03 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-08 07:12:03 +0000
+
+    Fix pipeline preview tooltip containment
+
+commit 84d2632d95aaa79e875bbecaea95eae9cfac3f63
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-08 06:59:21 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-08 06:59:21 +0000
+
+    Fix pipeline stage navigator layout
+
+commit eea9ba273decabdd79d5ad668287489c9fd3bc95
+Merge: efc5d0a 73c45f7
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 20:03:09 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 20:03:09 +0000
+
+    Fix pipeline stage navigator viewport anchoring
+
+commit b45d8133ac767848652578ae70ac35abf9af41df
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 19:56:32 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 19:56:32 +0000
+
+    Refresh pipeline presets after save
+
+commit 00c008573ea212877a75ea4eee5cbd694e04d50f
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 19:55:38 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 19:55:38 +0000
+
+    Fix pipeline preview tooltip frame
+
+commit 42e389aba5b797fd5a9f29ffea7cb16b4fcb6c2c
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 16:20:50 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 16:20:50 +0000
+
+    Fix pipeline presets and playlist previews
+
+commit efc5d0a6c2dd7cfdfae5fe5cd2da7580610a1ef5
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 15:50:56 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 15:50:56 +0000
+
+    Fix pipeline navigator fixed overlay layout
+
+commit 3f540ae4e7ef719cc7dbb0ee486edcc4d2ff6bba
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 13:48:47 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 13:48:47 +0000
+
+    Fix pipeline stage navigator sticky layout
+
+commit 8821768582f51fd9ab893f1becee032f75954513
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 13:48:00 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 13:48:00 +0000
+
+    Address pipeline follow-up feedback
+
+commit f440de6f6e45a9c67578f919a187af9b6206bbc9
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 04:39:50 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 04:39:50 +0000
+
+    Implement pipeline scheduling and playlist reports
+
+commit 7e6cd60177cb728ea080f0a957f4895b6bbd52b3
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 04:22:39 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 04:22:39 +0000
+
+    Add pipeline stage navigator
+
+commit 31b16731f2c551db5b166ddbf392ce6a06ead744
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 04:12:42 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 04:12:42 +0000
+
+    Add pipeline preview tooltips
+
+commit 1e3f5cc48e3d94e54eb61dde135fc506efe3fd04
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-07 02:30:05 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-07 02:30:05 +0000
+
+    Implement pipeline execution feedback
+
+commit c63d9a58c3f399e34ca540ab52d262f892d31608
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-06 20:57:38 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-06 20:57:38 +0000
+
+    Implement critical pipeline mode UI
+
+commit 8aafcfcd872425edb28370a79fc1097b19054c35
+Author:     konard <drakonard@gmail.com>
+AuthorDate: 2026-06-06 20:19:13 +0000
+Commit:     konard <drakonard@gmail.com>
+CommitDate: 2026-06-06 20:19:13 +0000
+
+    Add pipeline stage deletion and upload settings

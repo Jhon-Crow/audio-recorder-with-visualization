@@ -2090,4 +2090,42 @@ describe('Pipeline Mode', () => {
       expect(pipelines.map(p => p.name)).to.deep.equal(['Renamed', 'Alpha']);
     });
   });
+
+  it('keeps pipeline editing controls connected while typing', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('audio-recorder-pipeline-stages', JSON.stringify([
+        {
+          id: 'stage-a',
+          name: 'Initial stage',
+          action: 'visualize-upload',
+          publishImmediately: false,
+          scheduleMode: 'relative',
+          relativeOffsetDirection: 'after',
+          relativeOffsetDays: '0',
+        },
+      ]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+
+    cy.get('.pipeline-stage-nav-btn').first().then(($button) => {
+      const button = $button[0];
+      cy.wrap($button).rightclick();
+      cy.get('#pipelineStageRenameBtn').click();
+      cy.get('.pipeline-stage-name').first().type(' renamed');
+      cy.then(() => {
+        expect(button.isConnected, 'stage navigator button remains connected').to.be.true;
+      });
+    });
+
+    cy.get('.pipeline-relative-days').first().then(($input) => {
+      const input = $input[0];
+      cy.wrap($input).clear().type('12');
+      cy.then(() => {
+        expect(input.isConnected, 'relative date input remains connected').to.be.true;
+        expect(input.value).to.equal('12');
+      });
+    });
+  });
 });
