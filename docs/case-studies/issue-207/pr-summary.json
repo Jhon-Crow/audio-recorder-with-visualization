@@ -1,0 +1,35 @@
+{
+  "number": 211,
+  "title": "Reuse completed renders for upload-only pipeline stages",
+  "body": "## Summary\n\n- persist completed pipeline track videos and full-album videos in IndexedDB render history\n- reuse those saved video blobs when the same album stage is switched to **Upload to YouTube**, including after a page reload\n- preserve existing direct-video upload fallback when no prior render exists\n- document the root cause, alternatives, external references, and preserved issue data in `docs/case-studies/issue-207`\n\n## Reproduction\n\n1. Configure a two-track `One track one video + full album` release stage as visualization-only.\n2. Run it to create two visualized tracks and the combined full-album video.\n3. Switch that stage to upload-only and reload the application.\n4. Before this change, the track tasks use the selected source audio and the full album must be joined again or fails. After this change, all three previously rendered videos are restored from history and uploaded directly.\n\n## Tests\n\n- `npm test -- --runInBand` — 10 suites, 354 tests passing\n- `npm run typecheck` — passing\n- `npm run lint` — passing\n- `npm run build` — passing (existing Rollup warnings remain)\n- `npm run test:e2e -- --spec cypress/e2e/pipeline-album-rendering.cy.js` — 3 passing, including render-history reuse across reload\n- broader pipeline suite — 36/38 passing; the two remaining failures are the pre-existing navigator/date assertions already documented by issue 199\n\nFixes Jhon-Crow/audio-recorder-with-visualization#207\n",
+  "state": "OPEN",
+  "isDraft": true,
+  "updatedAt": "2026-08-13T17:01:40Z",
+  "url": "https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/211",
+  "commits": [
+    {
+      "oid": "de50681c5ee2af5036ad567844a08eb0bb2c00e2",
+      "messageHeadline": "Initial commit with task details"
+    },
+    {
+      "oid": "df27a659d1ba2b6bf6567973f4ae4751a24a71d8",
+      "messageHeadline": "Persist pipeline render history"
+    },
+    {
+      "oid": "46f39c355094fe80f9423ff925fa75204c949569",
+      "messageHeadline": "Revert \"Initial commit with task details\""
+    }
+  ],
+  "checks": [
+    {
+      "name": "build",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS"
+    },
+    {
+      "name": "release",
+      "status": "COMPLETED",
+      "conclusion": "SKIPPED"
+    }
+  ]
+}

@@ -184,18 +184,20 @@ describe('Pipeline album rendering', () => {
     cy.get('#runPipelineBtn').click();
     cy.get('#status').should('contain.text', 'Pipeline complete: 3 tasks finished');
 
-    cy.window().then((win) => {
-      const stage = win.AudioRecorderPipeline.getStages()[0];
-      win.localStorage.setItem('audio-recorder-pipeline-stages', JSON.stringify([{
-        ...stage,
-        action: 'upload-youtube',
-        publishImmediately: true,
-      }]));
-    });
+    cy.get('.pipeline-stage').first().find('select').first().select('upload-youtube', { force: true });
+    cy.get('.pipeline-render-history-status').should(
+      'contain.text',
+      'Render history: 2/2 videos ready for upload'
+    );
     cy.reload();
     cy.waitForVisualization();
     cy.contains('.tab', 'Pipeline').click();
     cy.get('.pipeline-file-names').should('contain.text', '2 selected');
+    cy.get('.pipeline-render-history-status').should('have.length', 1);
+    cy.get('.pipeline-render-history-status').eq(0).should(
+      'contain.text',
+      'Render history: 2/2 videos ready for upload'
+    );
     cy.window().then((win) => {
       win.AudioRecorderYouTube = {
         hasValidAccessToken: () => true,

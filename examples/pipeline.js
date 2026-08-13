@@ -325,6 +325,43 @@
     return null;
   }
 
+  async function getStageRenderHistorySummary(stage) {
+    if (stage.action !== 'upload-youtube') {
+      return null;
+    }
+    const sourceStage = isFullAlbumStage(stage)
+      ? stages.find(item => item.id === stage.derivedFromStageId)
+      : stage;
+    if (!sourceStage) {
+      return { available: 0, expected: 0 };
+    }
+    const outputIndexes = isFullAlbumStage(stage)
+      ? ['full-album']
+      : getStageFiles(stage).map((_file, index) => index);
+    const records = await Promise.all(outputIndexes.map(outputIndex => (
+      loadRenderedVideo(sourceStage.id, outputIndex)
+    )));
+    return {
+      available: records.filter(record => Boolean(record?.blob)).length,
+      expected: outputIndexes.length,
+    };
+  }
+
+  async function refreshStageRenderHistoryStatus(stageId) {
+    const stage = stages.find(item => item.id === stageId);
+    const element = stagesContainer.querySelector(
+      `.pipeline-stage[data-stage-id="${stageId}"] .pipeline-render-history-status`
+    );
+    if (!stage || !element) return;
+
+    const summary = await getStageRenderHistorySummary(stage);
+    if (!element.isConnected || stage.action !== 'upload-youtube' || !summary) return;
+    element.textContent = summary.expected > 0 && summary.available === summary.expected
+      ? `Render history: ${summary.available}/${summary.expected} videos ready for upload`
+      : `Render history: ${summary.available}/${summary.expected} videos; source files will be used where history is missing`;
+    element.classList.toggle('is-complete', summary.expected > 0 && summary.available === summary.expected);
+  }
+
   function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -4086,6 +4123,11 @@
       });
       actionField.appendChild(actionSelect);
 
+      const renderHistoryStatus = document.createElement('div');
+      renderHistoryStatus.className = 'pipeline-render-history-status span-12';
+      renderHistoryStatus.textContent = 'Checking render history…';
+      renderHistoryStatus.hidden = stage.action !== 'upload-youtube';
+
       const isImmediate = Boolean(stage.publishImmediately);
       const isRelative = !isImmediate && stage.scheduleMode === 'relative';
       const isAbsolute = !isImmediate && stage.scheduleMode === 'absolute';
@@ -4185,6 +4227,7 @@
 
       fields.insertBefore(nameField, fields.firstChild);
       fields.appendChild(actionField);
+      fields.appendChild(renderHistoryStatus);
       fields.appendChild(timingField);
       fields.appendChild(publishField);
       fields.appendChild(referenceField);
@@ -4277,6 +4320,9 @@
       item.appendChild(fields);
       item.appendChild(actions);
       stagesContainer.appendChild(item);
+      if (stage.action === 'upload-youtube') {
+        refreshStageRenderHistoryStatus(stage.id);
+      }
     });
     renderStageNav();
 

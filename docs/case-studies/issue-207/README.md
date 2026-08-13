@@ -22,6 +22,35 @@ Upload-only execution resolves this history before falling back to the selected 
 
 Stage replacement preserves selected files for unchanged stage IDs, so changing only the action does not disconnect the stage from its inputs or history.
 
+Upload-only stages now show a render-history status before execution. For example, `Render history: 2/2 videos ready for upload` confirms that the stage will reuse both completed track videos. If an entry is missing, the status says that the corresponding source file will be used, making fallback behavior visible instead of silent.
+
+## Timeline
+
+- 2026-08-13 11:08 UTC: issue 207 requested reuse of already visualized tracks and a full-album render when choosing upload-only, including persistent render history.
+- 2026-08-13 13:12 UTC: commit `df27a65` added IndexedDB render persistence and a reload regression test; GitHub Actions passed.
+- 2026-08-13 13:40 UTC: the maintainer reported that the result appeared not to work and requested another check plus clear Russian instructions.
+- 2026-08-13 17:01 UTC: the follow-up investigation began and the PR returned to draft.
+- 2026-08-13 follow-up: the regression was found to mutate `localStorage` directly instead of exercising the visible Action selector. The test was changed to use the real UI and the app gained an explicit history-availability indicator.
+
+## Root-cause analysis
+
+There were two separate UX failures:
+
+1. The original application had no durable output history, so upload-only could only see source files.
+2. The first fix made history durable but kept its presence invisible. Its test changed the action by rewriting storage directly, which proved persistence but did not prove or explain the maintainer's actual UI workflow. A user could not distinguish “history found” from the direct-source fallback until after upload.
+
+The follow-up closes the observability and test-fidelity gap: the visible selector is part of the regression path, and every upload-only stage reports how many expected renders were found.
+
+## Инструкция по проверке
+
+1. В этапе альбома выберите действие **Visualization only**, добавьте исходные аудиофайлы, включите полный альбом и запустите пайплайн до сообщения об успешном завершении.
+2. В том же этапе, не удаляя и не создавая его заново, смените **Action** на **Upload to YouTube**.
+3. Под полем Action должна появиться строка `Render history: N/N videos ready for upload`. Она подтверждает, что готовые визуализации найдены.
+4. Можно перезагрузить страницу: после восстановления файлов строка должна снова показать `N/N`.
+5. Авторизуйтесь в YouTube и запустите пайплайн. Он загрузит сохранённые видео без повторной визуализации. Для конфигурации из двух треков с полным альбомом будет загружено три видео.
+
+Важно: история привязана к ID этапа и хранится в данных сайта браузера. Удаление этапа и создание нового, очистка данных сайта, приватный режим или другой браузер создают другую/пустую историю. Если показано меньше `N/N`, недостающие позиции используют исходные выбранные файлы.
+
 ## Alternatives considered
 
 - `localStorage` cannot store video `Blob` values and has a small synchronous quota.
@@ -42,6 +71,8 @@ IndexedDB is the smallest compatible choice because the application already uses
 
 `cypress/e2e/pipeline-album-rendering.cy.js` now runs a two-track album visualization, persists both tracks and the full album, switches the same stage to upload-only, reloads the page, and verifies that three uploads receive the rendered video contents without any new rendering or joining.
 
+The follow-up regression uses the actual Action dropdown and asserts the render-history status both before and after reload; it no longer edits storage as a shortcut.
+
 Local verification:
 
 - focused Cypress album suite: 3 passing;
@@ -54,3 +85,6 @@ Local verification:
 
 - `issue.json`: issue metadata captured from GitHub on 2026-08-13.
 - `issue-comments.json`: complete issue comment list (empty at capture time).
+- `pr-summary.json`: PR metadata and description captured during the follow-up investigation.
+- `pr-conversation-comments-summary.json`, `pr-review-comments-summary.json`, and `pr-reviews-summary.json`: author, timestamp, location/state, and body from all three paginated PR feedback channels.
+- `ci-runs.json`: recent upstream branch runs with timestamps and commit SHAs.
