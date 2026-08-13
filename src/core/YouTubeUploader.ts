@@ -757,11 +757,15 @@ function waitForRetry(attempt: number, signal?: AbortSignal): Promise<void> {
       return;
     }
 
-    const timeoutId = setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
-    signal?.addEventListener('abort', () => {
+    const handleAbort = (): void => {
       clearTimeout(timeoutId);
       reject(new DOMException('Upload aborted', 'AbortError'));
-    }, { once: true });
+    };
+    const timeoutId = setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort);
+      resolve();
+    }, RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
+    signal?.addEventListener('abort', handleAbort, { once: true });
   });
 }
 

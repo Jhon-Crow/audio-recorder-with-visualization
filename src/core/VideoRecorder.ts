@@ -229,33 +229,33 @@ export class VideoRecorder {
       this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions);
       this.recordedChunks = [];
 
-    this.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        this.recordedChunks.push(event.data);
-        this.log('Received chunk:', event.data.size, 'bytes');
-      }
-    };
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+          this.log('Received chunk:', event.data.size, 'bytes');
+        }
+      };
 
       this.mediaRecorder.onerror = (event) => {
-      // MediaRecorder error event contains an error property with DOMException
-      const errorEvent = event as Event & { error?: DOMException };
-      const error = errorEvent.error || new Error('Unknown MediaRecorder error');
-      console.error('[VideoRecorder] Encoder error:', error.name, error.message);
-      this.log('Encoder error details:', {
-        name: error.name,
-        message: error.message,
-        mimeType: this.mediaRecorder?.mimeType,
-        state: this.mediaRecorder?.state,
-      });
-      if (this.onErrorCallback) {
-        this.onErrorCallback(error);
-      }
-      if (this.pendingStopReject) {
-        this.pendingStopReject(error);
-      }
-    };
+        // MediaRecorder error event contains an error property with DOMException
+        const errorEvent = event as Event & { error?: DOMException };
+        const error = errorEvent.error || new Error('Unknown MediaRecorder error');
+        console.error('[VideoRecorder] Encoder error:', error.name, error.message);
+        this.log('Encoder error details:', {
+          name: error.name,
+          message: error.message,
+          mimeType: this.mediaRecorder?.mimeType,
+          state: this.mediaRecorder?.state,
+        });
+        if (this.onErrorCallback) {
+          this.onErrorCallback(error);
+        }
+        if (this.pendingStopReject) {
+          this.pendingStopReject(error);
+        }
+      };
 
-    // Request data every second for better memory management
+      // Request data every second for better memory management
       this.mediaRecorder.start(1000);
       this._state = 'recording';
       this.log('Started recording with mimeType:', mimeType);
