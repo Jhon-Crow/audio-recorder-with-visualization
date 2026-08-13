@@ -15,8 +15,9 @@
   const PLAYLISTS_KEY = 'audio-recorder-youtube-playlists';
   const CHANNEL_DEFAULTS_KEY = 'audio-recorder-youtube-channel-defaults';
   const PIPELINE_FILE_DB_NAME = 'audio-recorder-pipeline-files';
-  const PIPELINE_FILE_DB_VERSION = 1;
+  const PIPELINE_FILE_DB_VERSION = 2;
   const PIPELINE_FILE_STORE_NAME = 'stage-files';
+  const PIPELINE_RENDER_STORE_NAME = 'render-history';
   const HOLD_TO_RESET_MS = 600;
   const DEFAULT_RELATIVE_OFFSET_MINUTES = 30;
   const PREVIEW_MAX_SIDE = 360;
@@ -163,17 +164,25 @@
         if (!db.objectStoreNames.contains(PIPELINE_FILE_STORE_NAME)) {
           db.createObjectStore(PIPELINE_FILE_STORE_NAME, { keyPath: 'stageId' });
         }
+        if (!db.objectStoreNames.contains(PIPELINE_RENDER_STORE_NAME)) {
+          db.createObjectStore(PIPELINE_RENDER_STORE_NAME, { keyPath: 'key' });
+        }
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error || new Error('Failed to open pipeline file storage.'));
     });
   }
 
-  async function withPipelineFileStore(mode, callback) {
+  async function withPipelineFileStore(storeNameOrMode, modeOrCallback, optionalCallback) {
+    const storeName = typeof optionalCallback === 'function'
+      ? storeNameOrMode
+      : PIPELINE_FILE_STORE_NAME;
+    const mode = typeof optionalCallback === 'function' ? modeOrCallback : storeNameOrMode;
+    const callback = typeof optionalCallback === 'function' ? optionalCallback : modeOrCallback;
     const db = await openPipelineFileDb();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(PIPELINE_FILE_STORE_NAME, mode);
-      const store = transaction.objectStore(PIPELINE_FILE_STORE_NAME);
+      const transaction = db.transaction(storeName, mode);
+      const store = transaction.objectStore(storeName);
       let result;
       transaction.oncomplete = () => {
         Promise.resolve(result).then(value => {
@@ -254,7 +263,6 @@
   }
 
   async function hydratePersistedPipelineFiles() {
-    let restoredAny = false;
     await Promise.all(stages.map(async (stage) => {
       if (!stage.fileNames.length || selectedFilesByStageId.has(stage.id)) {
         return;
@@ -263,13 +271,58 @@
       const matchingFiles = files.filter((file, index) => file && file.name === stage.fileNames[index]);
       if (matchingFiles.length === stage.fileNames.length) {
         selectedFilesByStageId.set(stage.id, matchingFiles);
-        restoredAny = true;
         updateSelectedFileDurations(stage.id, matchingFiles);
       }
     }));
-    if (restoredAny) {
-      renderStages();
+    renderStages();
+  }
+
+  function getRenderHistoryKey(stageId, outputIndex) {
+    return `${stageId}:${outputIndex}`;
+  }
+
+  async function persistRenderedVideo(stageId, outputIndex, result) {
+    if (!stageId || !result?.blob) {
+      return;
     }
+    const record = {
+      key: getRenderHistoryKey(stageId, outputIndex),
+      stageId,
+      outputIndex,
+      blob: result.blob,
+      format: result.format || 'webm',
+      createdAt: new Date().toISOString(),
+    };
+    renderedPipelineVideos.set(record.key, record);
+    try {
+      await withPipelineFileStore(PIPELINE_RENDER_STORE_NAME, 'readwrite', store => store.put(record));
+    } catch (error) {
+      console.warn('Failed to persist pipeline render history:', error);
+    }
+  }
+
+  async function loadRenderedVideo(stageId, outputIndex) {
+    const key = getRenderHistoryKey(stageId, outputIndex);
+    const cached = renderedPipelineVideos.get(key);
+    if (cached?.blob) {
+      return cached;
+    }
+    try {
+      const record = await withPipelineFileStore(PIPELINE_RENDER_STORE_NAME, 'readonly', store => (
+        new Promise((resolve, reject) => {
+          const request = store.get(key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error('Pipeline render history request failed.'));
+        })
+      ));
+      if (record?.blob) {
+        renderedPipelineVideos.set(key, record);
+        return record;
+      }
+    } catch (error) {
+      console.warn('Failed to restore pipeline render history:', error);
+    }
+    return null;
   }
 
   function createId(prefix) {
@@ -2206,7 +2259,7 @@
   }
 
   function getRenderedVideoCacheKey(stageId, fileIndex) {
-    return `${stageId}:${fileIndex}`;
+    return getRenderHistoryKey(stageId, fileIndex);
   }
 
   function pluralRu(value, one, few, many) {
@@ -2677,7 +2730,7 @@
       });
     }
 
-    renderedPipelineVideos.set(getRenderedVideoCacheKey(task.stage.id, task.fileIndex), result);
+    await persistRenderedVideo(task.stage.id, task.fileIndex, result);
 
     return result;
   }
@@ -2694,9 +2747,9 @@
     }
 
     const sourceStage = stages.find(item => item.id === task.stage.derivedFromStageId) || task.stage;
-    const renderedResults = files.map((_file, index) => (
-      renderedPipelineVideos.get(getRenderedVideoCacheKey(sourceStage.id, index))
-    ));
+    const renderedResults = await Promise.all(files.map((_file, index) => (
+      loadRenderedVideo(sourceStage.id, index)
+    )));
     const hasAnyRenderedResult = renderedResults.some(result => Boolean(result?.blob));
     const hasAllRenderedResults = renderedResults.every(result => Boolean(result?.blob));
 
@@ -2745,6 +2798,8 @@
         format: result.format,
       });
     }
+
+    await persistRenderedVideo(sourceStage.id, 'full-album', result);
 
     return result;
   }
@@ -2860,8 +2915,18 @@
 
   async function executePipelineTask(task, taskIndex, totalTasks) {
     if (task.stage.action === 'upload-youtube' && !isCombinedAlbumTask(task)) {
-      const result = await uploadTask(task, task.file, taskIndex, totalTasks);
+      const rendered = await loadRenderedVideo(task.stage.id, task.fileIndex);
+      const result = await uploadTask(task, rendered?.blob || task.file, taskIndex, totalTasks);
       return { type: 'uploaded', report: createUploadReport(task, result) };
+    }
+
+    if (task.stage.action === 'upload-youtube' && isCombinedAlbumTask(task)) {
+      const sourceStage = stages.find(item => item.id === task.stage.derivedFromStageId) || task.stage;
+      const rendered = await loadRenderedVideo(sourceStage.id, 'full-album');
+      if (rendered?.blob) {
+        const result = await uploadTask(task, rendered.blob, taskIndex, totalTasks);
+        return { type: 'uploaded', report: createUploadReport(task, result) };
+      }
     }
 
     const rendered = await renderTask(task, taskIndex, totalTasks);
@@ -3109,7 +3174,6 @@
     const app = getPipelineApp();
     hasPipelineRun = true;
     isPipelineRunning = true;
-    renderedPipelineVideos.clear();
     setPipelineProgress(0);
     updateRunState();
 
@@ -4733,11 +4797,18 @@
       renderStages();
     },
     replaceStages(nextStages) {
-      removePersistedStageFiles(stages.map(stage => stage.id));
+      const filesByStageId = new Map(selectedFilesByStageId);
+      const durationsByStageId = new Map(selectedFileDurationsByStageId);
       selectedFilesByStageId.clear();
       selectedFileDurationsByStageId.clear();
       selectedCoversByStageId.clear();
       stages = Array.isArray(nextStages) ? nextStages.map(normalizeStage) : [];
+      stages.forEach(stage => {
+        const files = filesByStageId.get(stage.id);
+        const durations = durationsByStageId.get(stage.id);
+        if (files) selectedFilesByStageId.set(stage.id, files);
+        if (durations) selectedFileDurationsByStageId.set(stage.id, durations);
+      });
       saveStages();
       renderStages();
     },
@@ -4755,6 +4826,9 @@
   updateTimezoneButton();
   renderPipelineList();
   renderStages();
-  hydratePersistedPipelineFiles();
+  hydratePersistedPipelineFiles().catch(error => {
+    console.warn('Failed to hydrate pipeline files:', error);
+    renderStages();
+  });
   syncPipelineSidebar();
 })();

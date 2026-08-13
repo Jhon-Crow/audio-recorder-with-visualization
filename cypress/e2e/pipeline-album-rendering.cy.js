@@ -161,6 +161,70 @@ describe('Pipeline album rendering', () => {
     cy.get('#recordingsList').should('contain.text', 'Regression album (full album).webm');
   });
 
+  it('reuses completed track and full-album renders after switching to upload only', () => {
+    cy.window().then((win) => {
+      const app = win.AudioRecorderApp;
+      cy.stub(app.converter, 'convertWithFallback')
+        .callsFake(({ audioSource }) => Promise.resolve({
+          blob: new win.Blob([`rendered:${audioSource.name}`], { type: 'video/webm' }),
+          format: 'webm',
+          usedFallback: false,
+        }))
+        .as('renderPipelineTrack');
+      cy.stub(app.converter, 'concatenateVideosWithFallback')
+        .resolves({
+          blob: new win.Blob(['rendered:full-album'], { type: 'video/webm' }),
+          format: 'webm',
+          usedFallback: false,
+          sourceCount: 2,
+        })
+        .as('stitchPipelineAlbum');
+    });
+
+    cy.get('#runPipelineBtn').click();
+    cy.get('#status').should('contain.text', 'Pipeline complete: 3 tasks finished');
+
+    cy.window().then((win) => {
+      const stage = win.AudioRecorderPipeline.getStages()[0];
+      win.localStorage.setItem('audio-recorder-pipeline-stages', JSON.stringify([{
+        ...stage,
+        action: 'upload-youtube',
+        publishImmediately: true,
+      }]));
+    });
+    cy.reload();
+    cy.waitForVisualization();
+    cy.contains('.tab', 'Pipeline').click();
+    cy.get('.pipeline-file-names').should('contain.text', '2 selected');
+    cy.window().then((win) => {
+      win.AudioRecorderYouTube = {
+        hasValidAccessToken: () => true,
+        ensureAuthorized: () => Promise.resolve(),
+        uploadDirect: cy.stub().callsFake(({ video, title }) => video.text().then(body => ({
+            id: title,
+            url: body,
+            warnings: [],
+          }))),
+      };
+      cy.wrap(win.AudioRecorderYouTube.uploadDirect).as('uploadRenderedVideo');
+    });
+
+    cy.get('#runPipelineBtn').should('not.be.disabled').click();
+    cy.get('#status').should('contain.text', 'Pipeline complete: 3 tasks finished');
+    cy.get('@renderPipelineTrack').should('have.callCount', 2);
+    cy.get('@stitchPipelineAlbum').should('have.been.calledOnce');
+    cy.get('@uploadRenderedVideo').should('have.callCount', 3).then((upload) => {
+      expect(upload.getCalls().map(call => call.returnValue)).to.have.length(3);
+      return Cypress.Promise.all(upload.getCalls().map(call => call.returnValue));
+    }).then((results) => {
+      expect(results.map(result => result.url)).to.deep.equal([
+        'rendered:track-one.mp3',
+        'rendered:track-two.mp3',
+        'rendered:full-album',
+      ]);
+    });
+  });
+
   it('creates a playable container from completed browser-recorded videos', () => {
     cy.window().then(async (win) => {
       const sources = [
