@@ -3,6 +3,7 @@ const {
   resolveSafeRecordingPath,
   serializeYouTubeAuth,
 } = require('../electron/security');
+const path = require('path');
 
 describe('Electron security helpers', () => {
   const safeStorage = {
@@ -43,7 +44,8 @@ describe('Electron security helpers', () => {
     ['bad:name?.webm', 'bad-name-.webm'],
     ['..', 'recording'],
   ])('contains recording filename %s as %s', (fileName, expected) => {
-    expect(resolveSafeRecordingPath('/selected/folder', fileName))
-      .toBe(`/selected/folder/${expected}`);
+    const folderPath = path.join(path.parse(process.cwd()).root, 'selected', 'folder');
+    expect(resolveSafeRecordingPath(folderPath, fileName))
+      .toBe(path.join(folderPath, expected));
   });
 });
