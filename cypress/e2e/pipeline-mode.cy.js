@@ -424,6 +424,47 @@ describe('Pipeline Mode', () => {
     });
   });
 
+  it('allows relative offsets to be cleared and typed in every stage type', () => {
+    cy.get('.pipeline-stage').eq(1).within(() => {
+      cy.get('.pipeline-full-album-video').check();
+    });
+
+    cy.get('.pipeline-stage').should('have.length', 4);
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days')
+      .clear()
+      .should('have.value', '')
+      .type('12')
+      .should('have.value', '12');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days').blur();
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-days')
+      .should('have.value', '12');
+
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours')
+      .clear()
+      .should('have.value', '');
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours').blur();
+    cy.get('.pipeline-stage').eq(0).find('.pipeline-relative-hours')
+      .should('have.value', '0');
+
+    cy.get('.pipeline-stage').eq(2).should('have.class', 'pipeline-full-album-stage');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes')
+      .clear()
+      .should('have.value', '')
+      .type('45')
+      .should('have.value', '45');
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes').blur();
+    cy.get('.pipeline-stage').eq(2).find('.pipeline-relative-minutes')
+      .should('have.value', '45');
+
+    cy.window().then((win) => {
+      const stages = JSON.parse(win.localStorage.getItem('audio-recorder-pipeline-stages'));
+      expect(stages[0].relativeOffsetDays).to.equal(12);
+      expect(stages[0].relativeOffsetHours).to.equal(0);
+      expect(stages[2].kind).to.equal('fullalbum');
+      expect(stages[2].relativeOffsetUnitMinutes).to.equal(45);
+    });
+  });
+
   it('keeps relative publish dates current when the reference date changes', () => {
     cy.get('.pipeline-stage').first().find('.pipeline-publish-at').then(($input) => {
       expect($input.val()).to.not.equal('');
