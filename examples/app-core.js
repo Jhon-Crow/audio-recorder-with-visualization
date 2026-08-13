@@ -569,7 +569,8 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   }
 
   async function saveAllRecordings() {
-    if (!savedRecordings.length || saveAllRecordingsBtn.disabled) {
+    const selectedRecordings = savedRecordings.filter(recording => recording.selected !== false);
+    if (!selectedRecordings.length || saveAllRecordingsBtn.disabled) {
       return;
     }
 
@@ -579,28 +580,28 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
     try {
       if (window.electronAPI && window.electronAPI.isElectron && window.electronAPI.saveAllVideosAndShow) {
-        const result = await window.electronAPI.saveAllVideosAndShow(savedRecordings);
+        const result = await window.electronAPI.saveAllVideosAndShow(selectedRecordings);
         if (!result.success && !result.canceled) {
           throw new Error(result.error || 'Failed to save videos');
         }
       } else {
-        for (let i = 0; i < savedRecordings.length; i++) {
-          saveAllRecordingsBtn.textContent = `Saving ${i + 1}/${savedRecordings.length}...`;
-          await saveRecording(savedRecordings[i], saveAllRecordingsBtn);
+        for (let i = 0; i < selectedRecordings.length; i++) {
+          saveAllRecordingsBtn.textContent = `Saving ${i + 1}/${selectedRecordings.length}...`;
+          await saveRecording(selectedRecordings[i], saveAllRecordingsBtn);
           await new Promise(resolve => setTimeout(resolve, 150));
         }
       }
       saveAllRecordingsBtn.textContent = 'Saved All';
       setTimeout(() => {
         saveAllRecordingsBtn.textContent = originalText;
-        saveAllRecordingsBtn.disabled = savedRecordings.length === 0;
+        saveAllRecordingsBtn.disabled = !savedRecordings.some(recording => recording.selected !== false);
       }, 2000);
     } catch (error) {
       console.error('Error saving all recordings:', error);
       saveAllRecordingsBtn.textContent = 'Error - Try Again';
       setTimeout(() => {
         saveAllRecordingsBtn.textContent = originalText;
-        saveAllRecordingsBtn.disabled = savedRecordings.length === 0;
+        saveAllRecordingsBtn.disabled = !savedRecordings.some(recording => recording.selected !== false);
       }, 2000);
     }
   }
@@ -1234,6 +1235,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       url,
       fileName,
       index: recordingCount,
+      selected: true,
     };
     savedRecordings.push(recording);
     if (saveAllRecordingsBtn) {
@@ -1242,6 +1244,23 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
 
     const item = document.createElement('div');
     item.className = 'recording-item';
+
+    const selectionLabel = document.createElement('label');
+    selectionLabel.className = 'recording-select';
+    selectionLabel.dataset.tooltip = 'Include this rendered video in Save Selected.';
+    const selectionCheckbox = document.createElement('input');
+    selectionCheckbox.type = 'checkbox';
+    selectionCheckbox.className = 'recording-select-checkbox';
+    selectionCheckbox.checked = true;
+    selectionCheckbox.setAttribute('aria-label', `Select ${fileName} for saving`);
+    selectionCheckbox.addEventListener('change', () => {
+      recording.selected = selectionCheckbox.checked;
+      item.classList.toggle('is-unselected', !recording.selected);
+      if (saveAllRecordingsBtn) {
+        saveAllRecordingsBtn.disabled = !savedRecordings.some(saved => saved.selected !== false);
+      }
+    });
+    selectionLabel.appendChild(selectionCheckbox);
 
     const videoEl = document.createElement('video');
     videoEl.controls = true;
@@ -1336,6 +1355,7 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
       });
     }
 
+    item.appendChild(selectionLabel);
     item.appendChild(videoEl);
     item.appendChild(infoDiv);
     recordingsList.appendChild(item);

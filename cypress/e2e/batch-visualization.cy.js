@@ -30,7 +30,7 @@ describe('Batch Visualization Mode', () => {
     cy.get('#saveAllRecordings')
       .should('be.visible')
       .and('be.disabled')
-      .and('contain.text', 'Save All');
+      .and('contain.text', 'Save Selected');
   });
 
   it('uses one Electron batch save request for Save All', () => {
@@ -65,6 +65,48 @@ describe('Batch Visualization Mode', () => {
       expect(recordings[0].fileName).to.equal('first-track.webm');
       expect(recordings[1].fileName).to.equal('second-track.webm');
     });
+  });
+
+  it('saves only checked recordings from the completed visualizations list', () => {
+    cy.window().then((win) => {
+      win.electronAPI = {
+        isElectron: true,
+        saveVideoAndShow: cy.stub(),
+        saveAllVideosAndShow: cy.stub().resolves({ success: true }).as('batchSave'),
+      };
+
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['one'], { type: 'video/webm' }),
+        { sourceName: 'first-track.mp3', format: 'webm' }
+      );
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['two'], { type: 'video/webm' }),
+        { sourceName: 'second-track.wav', format: 'webm' }
+      );
+    });
+
+    cy.get('.recording-select-checkbox').should('have.length', 2).and('be.checked');
+    cy.get('.recording-select-checkbox').first().uncheck({ force: true });
+    cy.get('#saveAllRecordings').should('contain.text', 'Save Selected').click({ force: true });
+
+    cy.get('@batchSave').should('have.been.calledOnce');
+    cy.get('@batchSave').then((stub) => {
+      const recordings = stub.firstCall.args[0];
+      expect(recordings).to.have.length(1);
+      expect(recordings[0].fileName).to.equal('second-track.webm');
+    });
+  });
+
+  it('disables bulk saving when no completed visualization is checked', () => {
+    cy.window().then((win) => {
+      win.AudioRecorderApp.addRecording(
+        new win.Blob(['one'], { type: 'video/webm' }),
+        { sourceName: 'first-track.mp3', format: 'webm' }
+      );
+    });
+
+    cy.get('.recording-select-checkbox').should('be.checked').uncheck({ force: true });
+    cy.get('#saveAllRecordings').should('be.disabled');
   });
 
   it('names every MP4 batch recording from the actual rendered blob type', () => {

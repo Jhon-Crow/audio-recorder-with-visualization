@@ -2954,6 +2954,26 @@
       const item = document.createElement('article');
       item.className = 'pipeline-review-item';
 
+      const selectionLabel = document.createElement('label');
+      selectionLabel.className = 'pipeline-review-select';
+      selectionLabel.dataset.tooltip = 'Include this rendered video in the YouTube upload.';
+      const selectionCheckbox = document.createElement('input');
+      selectionCheckbox.type = 'checkbox';
+      selectionCheckbox.className = 'pipeline-review-select-checkbox';
+      selectionCheckbox.checked = true;
+      reviewItems[index].selected = true;
+      selectionCheckbox.setAttribute('aria-label', `Select ${task.title || `rendered video ${index + 1}`} for upload`);
+      selectionCheckbox.addEventListener('change', () => {
+        reviewItems[index].selected = selectionCheckbox.checked;
+        item.classList.toggle('is-unselected', !selectionCheckbox.checked);
+        const selectedCount = reviewItems.filter(reviewItem => reviewItem.selected !== false).length;
+        confirmUploadsBtn.disabled = selectedCount === 0;
+        confirmUploadsBtn.textContent = selectedCount === reviewItems.length
+          ? 'Upload Selected'
+          : `Upload Selected (${selectedCount})`;
+      });
+      selectionLabel.appendChild(selectionCheckbox);
+
       const video = document.createElement('video');
       video.className = 'pipeline-review-video';
       video.controls = true;
@@ -2973,11 +2993,14 @@
       details.appendChild(meta);
       details.appendChild(download);
 
+      item.appendChild(selectionLabel);
       item.appendChild(video);
       item.appendChild(details);
       reviewList.appendChild(item);
     });
     reportModal.style.display = 'flex';
+    confirmUploadsBtn.disabled = false;
+    confirmUploadsBtn.textContent = 'Upload Selected';
     confirmUploadsBtn.focus();
   }
 
@@ -3046,6 +3069,10 @@
     }
 
     const review = pendingUploadReview;
+    const selectedItems = review.items.filter(item => item.selected !== false);
+    if (!selectedItems.length) {
+      return;
+    }
     pendingUploadReview = null;
     isPipelineRunning = true;
     updateRunState();
@@ -3053,9 +3080,9 @@
     reportSummary.textContent = 'Uploading reviewed videos to YouTube...';
     try {
       const uploadReports = [...review.reports];
-      for (let index = 0; index < review.items.length; index++) {
-        const item = review.items[index];
-        const result = await uploadTask(item.task, item.video, index, review.items.length);
+      for (let index = 0; index < selectedItems.length; index++) {
+        const item = selectedItems[index];
+        const result = await uploadTask(item.task, item.video, index, selectedItems.length);
         uploadReports.push(createUploadReport(item.task, result));
       }
       revokeReviewUrls(review.items);
