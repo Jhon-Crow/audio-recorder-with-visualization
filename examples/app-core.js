@@ -1464,6 +1464,11 @@ window.AudioRecorderApp = window.AudioRecorderApp || {};
   // Helper function to show preview after settings change
   function updatePreview() {
     updatePreviewGuides();
+    window.dispatchEvent(new CustomEvent('audioRecorderVisualizationSettingsChanged', {
+      detail: {
+        settings: getCurrentSettings(),
+      },
+    }));
     // Show demo visualization if no audio source is active
     if (!recorder.sourceType) {
       recorder.showDemoVisualization(500);
