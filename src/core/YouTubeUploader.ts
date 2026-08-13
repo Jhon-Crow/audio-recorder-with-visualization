@@ -15,6 +15,8 @@ export const YOUTUBE_SHORT_HASHTAG = '#shorts';
 const DEFAULT_CATEGORY_ID = '10';
 const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024;
 const MIN_CHUNK_SIZE = 256 * 1024;
+const MAX_CHUNK_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 250;
 
 export type YouTubePrivacyStatus = 'private' | 'unlisted' | 'public';
 export type YouTubeUploadStage = 'starting' | 'session' | 'uploading' | 'complete';
@@ -572,19 +574,42 @@ export class YouTubeUploader {
     while (offset < total) {
       const end = Math.min(offset + chunkSize, total) - 1;
       const chunk = request.video.slice(offset, end + 1, contentType);
-      const response = await fetchImpl(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${request.accessToken}`,
-          'Content-Type': contentType,
-          'Content-Range': `bytes ${offset}-${end}/${total}`,
-        },
-        body: chunk,
-        signal: request.signal,
-      });
+      let response: Response;
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          response = await fetchImpl(uploadUrl, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${request.accessToken}`,
+              'Content-Type': contentType,
+              'Content-Range': `bytes ${offset}-${end}/${total}`,
+            },
+            body: chunk,
+            signal: request.signal,
+          });
+        } catch (error) {
+          if (attempt >= MAX_CHUNK_ATTEMPTS || request.signal?.aborted) {
+            throw error;
+          }
+          await waitForRetry(attempt, request.signal);
+          continue;
+        }
+
+        if (!isRetryableUploadStatus(response.status) || attempt >= MAX_CHUNK_ATTEMPTS) {
+          break;
+        }
+        await waitForRetry(attempt, request.signal);
+      }
 
       if (response.status === 308) {
-        offset = getNextOffset(response.headers.get('Range'), end);
+        const nextOffset = getNextOffset(response.headers.get('Range'), end);
+        if (nextOffset <= offset) {
+          throw new YouTubeUploadError(
+            'YouTube upload session did not advance after a resumable response',
+            response.status
+          );
+        }
+        offset = nextOffset;
         request.onProgress?.({
           loaded: Math.min(offset, total),
           total,
@@ -719,6 +744,29 @@ function getNextOffset(rangeHeader: string | null, fallbackEnd: number): number 
   }
 
   return parseInt(match[1], 10) + 1;
+}
+
+function isRetryableUploadStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function waitForRetry(attempt: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Upload aborted', 'AbortError'));
+      return;
+    }
+
+    const handleAbort = (): void => {
+      clearTimeout(timeoutId);
+      reject(new DOMException('Upload aborted', 'AbortError'));
+    };
+    const timeoutId = setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort);
+      resolve();
+    }, RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
+    signal?.addEventListener('abort', handleAbort, { once: true });
+  });
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {

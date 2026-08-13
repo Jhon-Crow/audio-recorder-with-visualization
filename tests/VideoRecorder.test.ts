@@ -76,6 +76,46 @@ describe('VideoRecorder', () => {
     expect(recorder.state).toBe('inactive');
   });
 
+  test('should reject a pending stop when the encoder errors', async () => {
+    recorder.start(canvas);
+    const mediaRecorder = (recorder as unknown as { mediaRecorder: MediaRecorder }).mediaRecorder;
+    mediaRecorder.stop = jest.fn();
+
+    const stopPromise = recorder.stop();
+    const error = new DOMException('Encoder crashed', 'EncodingError');
+    const event = new Event('error') as Event & { error?: DOMException };
+    Object.defineProperty(event, 'error', { value: error });
+    mediaRecorder.onerror?.(event as ErrorEvent);
+
+    await expect(stopPromise).rejects.toThrow('Encoder crashed');
+    expect(recorder.state).toBe('inactive');
+  });
+
+  test('should stop the canvas stream when MediaRecorder construction fails', () => {
+    const stop = jest.fn();
+    const stream = new MediaStream();
+    jest.spyOn(MediaStream.prototype, 'getTracks').mockReturnValue([
+      { kind: 'video', stop } as unknown as MediaStreamTrack,
+    ]);
+    const captureStreamSpy = jest
+      .spyOn(HTMLCanvasElement.prototype, 'captureStream')
+      .mockReturnValue(stream);
+    const OriginalMediaRecorder = global.MediaRecorder;
+    try {
+      global.MediaRecorder = class {
+        static isTypeSupported(): boolean { return true; }
+        constructor() { throw new Error('construction failed'); }
+      } as unknown as typeof MediaRecorder;
+
+      expect(() => recorder.start(canvas)).toThrow('construction failed');
+      expect(stop).toHaveBeenCalled();
+      expect(recorder.state).toBe('inactive');
+    } finally {
+      global.MediaRecorder = OriginalMediaRecorder;
+      captureStreamSpy.mockRestore();
+    }
+  });
+
   test('should throw when stopping without recording', async () => {
     await expect(recorder.stop()).rejects.toThrow();
   });

@@ -4,12 +4,14 @@ import { RecordingFormat, RecordingState, SUPPORTED_MIME_TYPES } from '../types'
  * Video recorder that combines canvas and audio into video file
  */
 export class VideoRecorder {
+  private static readonly STOP_TIMEOUT_MS = 10000;
   private mediaRecorder: MediaRecorder | null = null;
   private recordedChunks: Blob[] = [];
   private stream: MediaStream | null = null;
   private _state: RecordingState = 'inactive';
   private debug: boolean;
   private onErrorCallback: ((error: Error) => void) | null = null;
+  private pendingStopReject: ((error: Error) => void) | null = null;
 
   constructor(options: { debug?: boolean } = {}) {
     this.debug = options.debug ?? false;
@@ -108,7 +110,12 @@ export class VideoRecorder {
 
     return new Promise((resolve) => {
       let resolved = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const cleanup = (): void => {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -147,7 +154,7 @@ export class VideoRecorder {
         recorder.start(100);
 
         // Timeout fallback
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           if (!resolved) {
             resolved = true;
             if (recorder.state !== 'inactive') {
@@ -218,36 +225,45 @@ export class VideoRecorder {
       recorderOptions.audioBitsPerSecond = options.audioBitrate;
     }
 
-    this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions);
-    this.recordedChunks = [];
+    try {
+      this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions);
+      this.recordedChunks = [];
 
-    this.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        this.recordedChunks.push(event.data);
-        this.log('Received chunk:', event.data.size, 'bytes');
-      }
-    };
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+          this.log('Received chunk:', event.data.size, 'bytes');
+        }
+      };
 
-    this.mediaRecorder.onerror = (event) => {
-      // MediaRecorder error event contains an error property with DOMException
-      const errorEvent = event as Event & { error?: DOMException };
-      const error = errorEvent.error || new Error('Unknown MediaRecorder error');
-      console.error('[VideoRecorder] Encoder error:', error.name, error.message);
-      this.log('Encoder error details:', {
-        name: error.name,
-        message: error.message,
-        mimeType: this.mediaRecorder?.mimeType,
-        state: this.mediaRecorder?.state,
-      });
-      if (this.onErrorCallback) {
-        this.onErrorCallback(error);
-      }
-    };
+      this.mediaRecorder.onerror = (event) => {
+        // MediaRecorder error event contains an error property with DOMException
+        const errorEvent = event as Event & { error?: DOMException };
+        const error = errorEvent.error || new Error('Unknown MediaRecorder error');
+        console.error('[VideoRecorder] Encoder error:', error.name, error.message);
+        this.log('Encoder error details:', {
+          name: error.name,
+          message: error.message,
+          mimeType: this.mediaRecorder?.mimeType,
+          state: this.mediaRecorder?.state,
+        });
+        if (this.onErrorCallback) {
+          this.onErrorCallback(error);
+        }
+        if (this.pendingStopReject) {
+          this.pendingStopReject(error);
+        }
+      };
 
-    // Request data every second for better memory management
-    this.mediaRecorder.start(1000);
-    this._state = 'recording';
-    this.log('Started recording with mimeType:', mimeType);
+      // Request data every second for better memory management
+      this.mediaRecorder.start(1000);
+      this._state = 'recording';
+      this.log('Started recording with mimeType:', mimeType);
+    } catch (error) {
+      this.stream?.getTracks().forEach(track => track.stop());
+      this.cleanup();
+      throw error;
+    }
   }
 
   /**
@@ -288,7 +304,23 @@ export class VideoRecorder {
         return;
       }
 
+      let settled = false;
+      const settleReject = (error: Error): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        this.cleanup();
+        reject(error);
+      };
+      this.pendingStopReject = settleReject;
+      const timeoutId = setTimeout(() => {
+        settleReject(new Error('Timed out waiting for MediaRecorder to stop'));
+      }, VideoRecorder.STOP_TIMEOUT_MS);
+
       this.mediaRecorder.onstop = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
         const mimeType = this.mediaRecorder?.mimeType ?? 'video/webm';
         const blob = new Blob(this.recordedChunks, { type: mimeType });
         this.log('Recording stopped, total size:', blob.size, 'bytes');
@@ -299,7 +331,11 @@ export class VideoRecorder {
         resolve(blob);
       };
 
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (error) {
+        settleReject(error instanceof Error ? error : new Error(String(error)));
+      }
     });
   }
 
@@ -315,6 +351,7 @@ export class VideoRecorder {
       this.stream = null;
     }
     this.mediaRecorder = null;
+    this.pendingStopReject = null;
     this.recordedChunks = [];
     this._state = 'inactive';
   }

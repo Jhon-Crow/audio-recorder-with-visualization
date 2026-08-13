@@ -461,6 +461,59 @@ describe('YouTubeUploader', () => {
       });
     });
 
+    test('retries a chunk after a transient server failure', async () => {
+      jest.useFakeTimers();
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(null, { status: 503 }))
+        .mockResolvedValueOnce(createResponse(JSON.stringify({ id: 'video-retried' }), {
+          status: 201,
+        }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const uploadPromise = uploader.upload({
+        video: new Blob(['video'], { type: 'video/webm' }),
+        accessToken: 'token-123',
+        metadata: { title: 'Retried upload' },
+      });
+      await jest.runAllTimersAsync();
+
+      await expect(uploadPromise).resolves.toMatchObject({ id: 'video-retried' });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      jest.useRealTimers();
+    });
+
+    test('rejects a resumable response that does not advance the offset', async () => {
+      const fetchMock = createFetchMock();
+      fetchMock
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 200,
+          headers: { Location: 'https://upload.example/session' },
+        }))
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 308,
+          headers: { Range: 'bytes=0-0' },
+        }))
+        .mockResolvedValueOnce(createResponse(null, {
+          status: 308,
+          headers: { Range: 'bytes=0-0' },
+        }));
+
+      const uploader = new YouTubeUploader({ fetch: fetchMock });
+      const video = new Blob([new Uint8Array(300 * 1024)], { type: 'video/webm' });
+
+      await expect(uploader.upload({
+        video,
+        accessToken: 'token-123',
+        metadata: { title: 'Stalled upload' },
+        chunkSize: 256 * 1024,
+      })).rejects.toThrow('did not advance');
+    });
+
     test('throws a descriptive error for API failures', async () => {
       const fetchMock = createFetchMock();
       fetchMock.mockResolvedValueOnce(createResponse(JSON.stringify({

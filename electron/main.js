@@ -1,9 +1,14 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut, Menu, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
+const {
+  deserializeYouTubeAuth,
+  resolveSafeRecordingPath,
+  serializeYouTubeAuth,
+} = require('./security');
 
 // Keep a global reference of the window objects to prevent garbage collection
 let mainWindow = null;
@@ -132,7 +137,11 @@ function readStoredYouTubeAuth() {
     if (!fs.existsSync(filePath)) {
       return null;
     }
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const stored = deserializeYouTubeAuth(fs.readFileSync(filePath, 'utf8'), safeStorage);
+    if (stored.needsMigration) {
+      writeStoredYouTubeAuth(stored.authState);
+    }
+    return stored.authState;
   } catch (error) {
     console.warn('Failed to read stored YouTube authorization:', error);
     return null;
@@ -142,7 +151,9 @@ function readStoredYouTubeAuth() {
 function writeStoredYouTubeAuth(authState) {
   try {
     fs.mkdirSync(path.dirname(getYouTubeAuthStorePath()), { recursive: true });
-    fs.writeFileSync(getYouTubeAuthStorePath(), JSON.stringify(authState, null, 2));
+    fs.writeFileSync(getYouTubeAuthStorePath(), serializeYouTubeAuth(authState, safeStorage), {
+      mode: 0o600,
+    });
   } catch (error) {
     console.warn('Failed to store YouTube authorization:', error);
   }
@@ -840,7 +851,7 @@ ipcMain.handle('save-all-videos-and-show', async (event, recordings) => {
     const savedFiles = [];
 
     for (const recording of recordings) {
-      const filePath = path.join(folderPath, recording.fileName);
+      const filePath = resolveSafeRecordingPath(folderPath, recording.fileName);
       fs.writeFileSync(filePath, Buffer.from(recording.blob));
       savedFiles.push(filePath);
     }
