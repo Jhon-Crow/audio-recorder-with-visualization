@@ -1,7 +1,7 @@
 /**
  * Test for Issue #29: Large file save handling
- * Tests that large video files (200MB+) can be saved without
- * "Invalid array length" errors
+ * Tests that large video files can be saved without materializing the complete
+ * Blob as a second renderer-side ArrayBuffer.
  */
 
 describe('Large File Handling', () => {
@@ -9,6 +9,14 @@ describe('Large File Handling', () => {
     cy.clearLocalStorage();
     cy.visit('/examples/index.html');
     cy.waitForVisualization();
+  });
+
+  it('streams Electron saves in bounded chunks', () => {
+    cy.readFile('electron/preload.js').then((source) => {
+      expect(source).to.include('blob.stream().getReader()');
+      expect(source).to.include("ipcRenderer.invoke('save-video-chunk'");
+      expect(source).not.to.include('await blob.arrayBuffer()');
+    });
   });
 
   it('should handle Uint8Array conversion for file transfer', () => {

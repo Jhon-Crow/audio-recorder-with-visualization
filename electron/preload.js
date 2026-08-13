@@ -4,12 +4,23 @@ const { contextBridge, ipcRenderer } = require('electron');
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   saveVideoAndShow: async (blob, fileName) => {
-    // Convert Blob to ArrayBuffer for IPC transfer
-    // Use Uint8Array directly instead of converting to Array to avoid
-    // "Invalid array length" error with large files (200MB+)
-    const arrayBuffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    return ipcRenderer.invoke('save-video-and-show', uint8Array, fileName);
+    const saveSession = await ipcRenderer.invoke('save-video-start', fileName);
+    if (!saveSession.success) {
+      return saveSession;
+    }
+
+    try {
+      const reader = blob.stream().getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await ipcRenderer.invoke('save-video-chunk', saveSession.saveId, value);
+      }
+      return await ipcRenderer.invoke('save-video-finish', saveSession.saveId);
+    } catch (error) {
+      await ipcRenderer.invoke('save-video-cancel', saveSession.saveId);
+      throw error;
+    }
   },
   saveAllVideosAndShow: async (recordings) => {
     const serializedRecordings = await Promise.all(recordings.map(async (recording) => {

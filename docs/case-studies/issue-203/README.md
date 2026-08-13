@@ -38,6 +38,12 @@ The fix updates the local selection, persists the merged playlist collection, an
 
 The final HTTP 400 in the log is not an authentication error. The YouTube upload API accepts video media; the attempted object had `audio/wav`. The pipeline should upload a rendered video blob for visualization/upload stages. This report records that secondary failure rather than conflating it with the sign-in-button defect. The regression tests use `video/webm` so they exercise the intended direct-upload contract.
 
+### 4. Full-album Electron save duplicated the complete Blob
+
+After the authorization fix was verified, the reporter confirmed that individual videos uploaded correctly but the full album could not be saved from the application and appeared as WebM. WebM is an expected recording container and extension, not a misspelling or an error state. The actual size-dependent difference was the Electron save bridge: `saveVideoAndShow` called `blob.arrayBuffer()` and sent the entire result in one IPC message. A long album therefore required another contiguous copy of the complete recording in renderer memory, in addition to Electron's serialization and main-process buffer, while shorter track files remained small enough to succeed.
+
+The follow-up fix opens the save dialog first and streams the Blob to Electron in bounded chunks. The main process writes each chunk immediately, closes and reveals the completed file, and removes a partial file if streaming fails or the app exits. This keeps peak transfer memory independent of full-album duration.
+
 ## Related work
 
 - PR [#178](https://github.com/Jhon-Crow/audio-recorder-with-visualization/pull/178), “Authorize YouTube directly from pipeline Run,” contains the same async authorization ownership model and Electron/browser regressions. It is still open, so its changes were applied explicitly rather than assumed to be in `main`.
@@ -50,12 +56,14 @@ Automated regressions cover:
 - clicking Pipeline Run invokes Electron authorization without a separate YouTube-button click;
 - clicking Pipeline Run invokes Google Identity Services in a browser and completes the authorization path;
 - a playlist created inside a pipeline stage appears immediately and remains checked.
+- Electron recording saves use the chunked IPC path without calling `blob.arrayBuffer()`.
 
-Local results on 2026-08-08:
+Local results on 2026-08-08 and follow-up validation on 2026-08-13:
 
 - Jest: 10 suites, 354 tests passed;
 - ESLint: passed;
 - Rollup build: passed (with the repository's existing `declarationDir` warning);
+- the focused large-file Cypress spec: 5/5 passed;
 - the three changed Cypress cases passed individually within the affected spec;
 - the complete two-spec browser run reached 52/66 passing. Its unrelated failures are existing time/date, sidebar actionability, persisted-file, and visualization-review cases; the first attempted run also exposed that `npm run serve` serves `examples/` while tests visit `/examples/index.html`, so validation was repeated with the repository root served.
 
