@@ -73,4 +73,17 @@ describe('Preview Alignment Guides', () => {
     cy.get('[data-guide="vertical-grid"]').should('have.css', 'display', 'none');
     cy.get('[data-guide="horizontal-grid"]').should('have.css', 'display', 'none');
   });
+
+  it('applies visualization scale slider changes to the active visualizer', () => {
+    setRangeValue('#visualizationScale', 150);
+
+    cy.get('#scaleValue').should('contain.text', '150%');
+    cy.getVisualizerOptions().then((options) => {
+      expect(options.scale).to.equal(1.5);
+    });
+    cy.window().then((win) => {
+      const saved = JSON.parse(win.localStorage.getItem('audio-recorder-settings'));
+      expect(saved.scale).to.equal(150);
+    });
+  });
 });
